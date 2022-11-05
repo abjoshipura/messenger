@@ -13,12 +13,14 @@ public class AccountHandler {
     public AccountHandler(String pf) {
         passwordFile = pf; //sets password file to input filename
         try (BufferedReader br = new BufferedReader(new FileReader(pf))) {
+            //this adds users previously created into the arraylist
             String line = br.readLine();
             while (line != null) {
                 String[] lineArray = line.split(",");
                 userArrayList.add(new User(lineArray[0], lineArray[1], lineArray[2]));
                 line = br.readLine();
             }
+
         } catch (FileNotFoundException e) {
             System.out.println("File not found!");
         } catch (Exception e) {

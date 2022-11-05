@@ -4,10 +4,27 @@ import java.util.*;
 public class AccountHandler {
     private static String passwordFile;
     /* where logins are stored in the format:
-    login,password
-    login,password
-    login,password
+    name,email,password
+    name,email,password
+    name,email,password
      */
+    private static ArrayList<User> userArrayList;
+
+    public AccountHandler(String pf) {
+        passwordFile = pf; //sets password file to input filename
+        try (BufferedReader br = new BufferedReader(new FileReader(pf))) {
+            String line = br.readLine();
+            while (line != null) {
+                String[] lineArray = line.split(",");
+                userArrayList.add(new User(lineArray[0], lineArray[1], lineArray[2]));
+                line = br.readLine();
+            }
+        } catch (FileNotFoundException e) {
+            System.out.println("File not found!");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     //TODO Handle unique conversation
     //TODO New Conversation
     //TODO Handle un/blocking
@@ -22,13 +39,14 @@ public class AccountHandler {
     //TODO Edit Accounts
     //TODO SignIn Accounts
     //TODO New Accounts
-    public static boolean makeNewAcc(String login, String password) {
+    public static boolean makeNewAcc(String name, String email, String password) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(passwordFile, true))) {
-            if (accountExists(login)) {
+            if (accountExists(email)) {
                 System.out.println("Account already exists!");
                 return false;
             }
-            bw.write(String.format("%s,%s", login, password));
+            bw.write(String.format("%s,%s,%s", name, email, password)); //adds to the file
+            userArrayList.add(new User(name, email, password)); //adds to the in-program arraylist
             return true;
 
         } catch (FileNotFoundException e) {
@@ -49,7 +67,7 @@ public class AccountHandler {
         String line = br.readLine();
         while (line != null) {
             String[] lineArray = line.split(",");
-            if (login.equalsIgnoreCase(lineArray[0])) {
+            if (login.equalsIgnoreCase(lineArray[1])) {
                 return true;
             }
             line = br.readLine();

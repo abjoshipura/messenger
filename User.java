@@ -4,13 +4,14 @@ import java.util.Map;
 public class User {
     private String name;
     private String email; //TODO ensure uniqueness
+    private String password;
     private ArrayList<User> blockedUsers;
     private ArrayList<User> invisibleUsers;
 
     private boolean requestsCensorship;
     private Map<String, String> censoredWords;
 
-    public User(String name, String email) {
+    public User(String name, String email, String password) {
         this.name = name;
         this.email = email;
     }

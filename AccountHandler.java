@@ -40,6 +40,23 @@ public class AccountHandler {
 
     //TODO Edit Accounts
     //TODO SignIn Accounts
+    public static boolean login(String email, String password) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(passwordFile));
+
+        // This block reads every line in the passwords file
+        // Returns true if login and passwords match
+        String line = br.readLine();
+        while (line != null) {
+            String[] lineArray = line.split(",");
+            if (email.equalsIgnoreCase(lineArray[1]) && email.equals(lineArray[2])) {
+                return true;
+            }
+            line = br.readLine();
+        }
+
+        br.close();
+        return false;
+    }
     //TODO New Accounts
     public static boolean makeNewAcc(String name, String email, String password) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(passwordFile, true))) {
@@ -61,15 +78,15 @@ public class AccountHandler {
     }
     //TODO Deleting Accounts
     //TODO check if account already exists
-    public static boolean accountExists(String login) throws IOException {
+    public static boolean accountExists(String email) throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(passwordFile));
 
-        // This block reads every line in the passwords section
-        // Returns true if login exists
+        // This block reads every line in the passwords file
+        // Returns true if email exists
         String line = br.readLine();
         while (line != null) {
             String[] lineArray = line.split(",");
-            if (login.equalsIgnoreCase(lineArray[1])) {
+            if (email.equalsIgnoreCase(lineArray[1])) {
                 return true;
             }
             line = br.readLine();

@@ -6,8 +6,8 @@ public class Seller extends User {
     private Map<Customer, ArrayList<Message>> customerDetails;
     private SortOrder sortOrder;
 
-    public Seller(String name, String email) {
-        super(name, email);
+    public Seller(String name, String email, String password) {
+        super(name, email, password);
         //TODO implement
     }
 

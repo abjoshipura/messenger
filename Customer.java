@@ -6,8 +6,8 @@ public class Customer extends User {
     private Map<Store, ArrayList<Message>> storeDetailsByReceived;
     private SortOrder sortOrder;
 
-    public Customer(String name, String email) {
-        super(name, email);
+    public Customer(String name, String email, String password) {
+        super(name, email, password);
         //TODO implement
     }
 

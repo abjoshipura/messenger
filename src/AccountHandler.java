@@ -77,6 +77,7 @@ public class AccountHandler {
         }
     }
     //TODO Deleting Accounts
+
     //TODO check if account already exists
     public static boolean accountExists(String email) throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(passwordFile));

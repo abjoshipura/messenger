@@ -9,7 +9,7 @@ public class AccountHandler {
     name,email,password
      */
     private static ArrayList<User> userArrayList;
-
+    private static ArrayList<Conversation> conversationList;
     public AccountHandler(String pf) {
         passwordFile = pf; //sets password file to input filename
         try (BufferedReader br = new BufferedReader(new FileReader(pf))) {
@@ -94,5 +94,13 @@ public class AccountHandler {
 
         br.close();
         return false;
+    }
+
+    public static ArrayList<Conversation> getConversationList() {
+        return conversationList;
+    }
+
+    public static void addConversation(Conversation conversation) {
+        conversationList.add(conversation);
     }
 }

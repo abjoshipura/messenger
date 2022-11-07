@@ -77,8 +77,41 @@ public class AccountHandler {
         }
     }
     //TODO Deleting Accounts
+    public static boolean deleteAcc(String email, String password) {
 
-    //TODO check if account already exists
+        ArrayList<String> temp = new ArrayList<>();
+
+        try (BufferedReader br = new BufferedReader(new FileReader(passwordFile));
+        BufferedWriter bw = new BufferedWriter(new FileWriter(passwordFile, true));
+        BufferedWriter del = new BufferedWriter(new FileWriter(passwordFile, false))){
+
+            String line = br.readLine();
+            while (line != null) {
+                String[] lineArray = line.split(",");
+                if (!email.equalsIgnoreCase(lineArray[1]) && !password.equals(lineArray[2])) {
+                    temp.add(line);
+                }
+                line = br.readLine();
+            }
+
+            del.write("");
+
+            for (String l : temp) {
+                bw.write(l);
+            }
+
+            return true;
+            //todo userarraylist.remove()
+
+        } catch (FileNotFoundException e) {
+            System.out.println("File not found!");
+            return false;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public static boolean accountExists(String email) throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(passwordFile));
 

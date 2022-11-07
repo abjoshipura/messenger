@@ -100,8 +100,14 @@ public class AccountHandler {
                 bw.write(l);
             }
 
+            for (int i = 0; i < temp.size(); i++) {
+                if (userArrayList.get(i).getEmail().equalsIgnoreCase(email)) {
+                    userArrayList.remove(i);
+                    i++;
+                }
+
+            }
             return true;
-            //todo userarraylist.remove()
 
         } catch (FileNotFoundException e) {
             System.out.println("File not found!");

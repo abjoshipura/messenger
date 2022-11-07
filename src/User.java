@@ -146,4 +146,56 @@ public class User {
     public String getName() {
         return name;
     }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public ArrayList<User> getBlockedUsers() {
+        return blockedUsers;
+    }
+
+    public void setBlockedUsers(ArrayList<User> blockedUsers) {
+        this.blockedUsers = blockedUsers;
+    }
+
+    public ArrayList<User> getInvisibleUsers() {
+        return invisibleUsers;
+    }
+
+    public void setInvisibleUsers(ArrayList<User> invisibleUsers) {
+        this.invisibleUsers = invisibleUsers;
+    }
+
+    public boolean isRequestsCensorship() {
+        return requestsCensorship;
+    }
+
+    public void setRequestsCensorship(boolean requestsCensorship) {
+        this.requestsCensorship = requestsCensorship;
+    }
+
+    public Map<String, String> getCensoredWords() {
+        return censoredWords;
+    }
+
+    public void setCensoredWords(Map<String, String> censoredWords) {
+        this.censoredWords = censoredWords;
+    }
 }

@@ -45,7 +45,6 @@ public class Message {
     }
 
     public String toString() {
-        //TODO implement
-        return "";
+        return id + ";" + sender.getName() + ";" + message;
     }
 }

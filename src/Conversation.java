@@ -36,6 +36,7 @@ public class Conversation {
                 return false;
             }
         }
+
         return user.equals(customer) || user.equals(seller);
     }
 

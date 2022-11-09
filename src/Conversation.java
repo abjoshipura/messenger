@@ -26,8 +26,20 @@ public class Conversation {
     }
 
     public boolean isParticipant(User user) {
+        for(int i = 0; i < customer.getBlockedUsers().size(); i++) {
+            if(user.equals(customer.getBlockedUsers().get(i))) {
+                return false;
+            }
+        }
+        for(int i = 0; i < seller.getBlockedUsers().size(); i++) {
+            if(user.equals(seller.getBlockedUsers().get(i))) {
+                return false;
+            }
+        }
+
         return user.equals(customer) || user.equals(seller);
     }
+
     public String getFileName() {
         return fileName;
     }

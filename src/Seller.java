@@ -11,13 +11,34 @@ public class Seller extends User {
         //TODO implement
     }
 
-    public ArrayList<Customer> listCustomers() {
-        //TODO implement
-        return null;
+    public ArrayList<Customer> listCustomers(ArrayList<User> userList) {
+        ArrayList<Customer> customerList = new ArrayList<Customer>();
+        for(int i = 0; i < userList.size(); i++) {
+            if(userList.get(i) instanceof Customer) {
+                customerList.add((Customer) userList.get(i));
+            }
+        }
+        return customerList;
     }
 
-    public Customer searchCustomers(String searchString) {
-        //TODO implement
+    public Customer searchCustomers(String searchString, ArrayList<User> userList) {
+        for (int i = 0 ; i < userList.size(); i++) {
+            boolean unblocked = true;
+            User user = userList.get(i);
+            if(user instanceof Customer && (user.getName().equalsIgnoreCase(searchString)
+                    || user.getEmail().equalsIgnoreCase(searchString))) {
+                ArrayList<User> invisible = user.getInvisibleUsers();
+                for(int bl = 0; bl < invisible.size(); bl++) {
+                    if(user.equals(invisible.get(bl))) {
+                        unblocked = false;
+                        break;
+                    }
+                }
+                if(unblocked) {
+                    return (Customer) user;
+                }
+            }
+        }
         return null;
     }
 

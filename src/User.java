@@ -61,7 +61,6 @@ public class User {
 
     public boolean editMessage(String messageID, String newMessage) {
         ArrayList<Conversation> tempList = AccountHandler.getConversationList();
-        // This is probably all very inefficient, but it's how I did Project 3, and it worked there, so...
         try {
 
             for (int i = 0; i < tempList.size(); i++) {
@@ -136,11 +135,11 @@ public class User {
     }
 
     public void blockUser(User user) {
-        //TODO implement
+        blockedUsers.add(user);
     }
 
     public void becomeInvisibleToUser(User user) {
-        //TODO implement
+        invisibleUsers.add(user);
     }
 
     public String getName() {

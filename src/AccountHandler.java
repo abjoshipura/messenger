@@ -139,6 +139,10 @@ public class AccountHandler {
     public static ArrayList<Conversation> getConversationList() {
         return conversationList;
     }
+    
+    public static ArrayList<User> getUserArrayList() {
+        return userArrayList;
+    }
 
     public static void addConversation(Conversation conversation) {
         conversationList.add(conversation);

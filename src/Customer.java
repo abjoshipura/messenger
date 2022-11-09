@@ -16,8 +16,24 @@ public class Customer extends User {
         return null;
     }
 
-    public Customer searchSeller(String searchString) {
-        //TODO implement
+    public Seller searchSeller(String searchString, ArrayList<User> userList) {
+        for (int i = 0 ; i < userList.size(); i++) {
+            boolean unblocked = true;
+            User user = userList.get(i);
+            if(user instanceof Seller && (user.getName().equalsIgnoreCase(searchString)
+                    || user.getEmail().equalsIgnoreCase(searchString))) {
+                ArrayList<User> invisible = user.getInvisibleUsers();
+                for(int bl = 0; bl < invisible.size(); bl++) {
+                    if(user.equals(invisible.get(bl))) {
+                        unblocked = false;
+                        break;
+                    }
+                }
+                if(unblocked) {
+                    return (Seller) user;
+                }
+            }
+        }
         return null;
     }
 

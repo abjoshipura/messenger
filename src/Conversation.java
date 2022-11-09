@@ -38,6 +38,7 @@ public class Conversation {
         }
         return user.equals(customer) || user.equals(seller);
     }
+
     public String getFileName() {
         return fileName;
     }

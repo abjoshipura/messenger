@@ -1,16 +1,46 @@
+import java.io.*;
 import java.util.ArrayList;
 
 public class Conversation {
     private String title;
     private String fileName;
+    /*
+    title,EMAIL1(buyer),EMAIL2(seller)
+     */
     private Customer customer;
     private Seller seller;
 
     private boolean isDisappearing;
 
     public Conversation(String title, String fileName, Customer customer, Seller seller) {
+        File convo = new File(fileName);
+        this.fileName = fileName;
+        this.title = title;
+        this.customer = customer;
+        this.seller = seller;
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName, true))) {
+            convo.createNewFile();
+            bw.write(String.format("%s,%s,%s", title, customer.getEmail(), seller.getEmail()));
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public Conversation(String fileName) {
+        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+            String[] lineArray = br.readLine().split(",");
+            this.title = lineArray[0];
+            this.fileName = fileName;
+            this.customer = Seller.searchCustomers(lineArray[1], AccountHandler.getUserArrayList());
+            this.seller = Customer.searchSeller(lineArray[2], AccountHandler.getUserArrayList());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
     }
+
     public ArrayList<String> readFile(User user) {
         //TODO implement
         //TODO Individual messages should be labeled with the senders name in the conversation.

@@ -21,7 +21,7 @@ public class Seller extends User {
         return customerList;
     }
 
-    public Customer searchCustomers(String searchString, ArrayList<User> userList) {
+    public static Customer searchCustomers(String searchString, ArrayList<User> userList) {
         for (int i = 0 ; i < userList.size(); i++) {
             boolean unblocked = true;
             User user = userList.get(i);

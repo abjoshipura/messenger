@@ -47,7 +47,6 @@ public class AccountHandler {
                  BufferedWriter bw = new BufferedWriter(new FileWriter(passwordFile, true)); // Append mode
                  BufferedWriter del = new BufferedWriter(new FileWriter(passwordFile, false))) { // Overwrite mode
                 int lineIndex = 0;
-                int userIndex = 0;
                 String line;
                 String userLine;
                 while ((line = br.readLine()) != null) {
@@ -55,20 +54,16 @@ public class AccountHandler {
                     if (!email.equalsIgnoreCase(lineArray[1])) { // Uniquely identifies user
                         temp.add(line);
                     } else { // Line corresponds to user
-                        userIndex = lineIndex; // To add edited user information
                         userLine = newName + "," + lineArray[1] + "," + lineArray[2]; // Change name
+                        temp.add(userLine);
+                        userArrayList.set(lineIndex, userLine);
                     }
                     lineIndex++;
                 }
                 
                 del.write(""); // Empty file contents
                 for (int i = 0; i < temp.size(); i++) {
-                    if (i != lineIndex) {
-                        bw.write(temp.get(i)); // Unchanged file contents
-                    } else {
-                        bw.write(userLine); // Line with changed name
-                        userArrayList.set(i, userLine);
-                    }
+                    bw.write(temp.get(i));
                     if (i != temp.size() - 1) { // Keep file format consistent
                         bw.newLine();
                     }
@@ -96,7 +91,6 @@ public class AccountHandler {
                      BufferedWriter bw = new BufferedWriter(new FileWriter(passwordFile, true)); // Append mode
                      BufferedWriter del = new BufferedWriter(new FileWriter(passwordFile, false))) { // Overwrite mode
                     int lineIndex = 0;
-                    int userIndex = 0;
                     String line;
                     String userLine;
                     while ((line = br.readLine()) != null) {
@@ -104,20 +98,16 @@ public class AccountHandler {
                         if (!email.equalsIgnoreCase(lineArray[1])) { // Uniquely identifies user
                             temp.add(line);
                         } else { // Line corresponds to user
-                            userIndex = lineIndex; // To add edited user information
                             userLine = lineArray[0] + "," + newEmail + "," + lineArray[2]; // Change e-mail
+                            temp.add(userLine);
+                            userArrayList.set(lineIndex, userLine);
                         }
                         lineIndex++;
                     }
                     
                     del.write(""); // Empty file contents
                     for (int i = 0; i < temp.size(); i++) {
-                        if (i != lineIndex) {
-                            bw.write(temp.get(i)); // Unchanged file contents
-                        } else {
-                            bw.write(userLine); // Line with changed e-mail
-                            userArrayList.set(i, userLine);
-                        }
+                        bw.write(temp.get(i));
                         if (i != temp.size() - 1) { // Keep file format consistent
                             bw.newLine();
                         }
@@ -142,7 +132,6 @@ public class AccountHandler {
                  BufferedWriter bw = new BufferedWriter(new FileWriter(passwordFile, true)); // Append mode
                  BufferedWriter del = new BufferedWriter(new FileWriter(passwordFile, false))) { // Overwrite mode
                 int lineIndex = 0;
-                int userIndex = 0;
                 String line;
                 String userLine;
                 while ((line = br.readLine()) != null) {
@@ -150,20 +139,16 @@ public class AccountHandler {
                     if (!email.equalsIgnoreCase(lineArray[1])) { // Uniquely identifies user
                         temp.add(line);
                     } else { // Line corresponds to user
-                        userIndex = lineIndex; // To add edited user information
                         userLine = lineArray[0] + "," + lineArray[1] + "," + newPassword; // Change password
+                        temp.add(userLine);
+                        userArrayList.set(lineIndex, userLine);
                     }
                     lineIndex++;
                 }
                 
                 del.write(""); // Empty file contents
                 for (int i = 0; i < temp.size(); i++) {
-                    if (i != lineIndex) {
-                        bw.write(temp.get(i)); // Unchanged file contents
-                    } else {
-                        bw.write(userLine); // Line with changed password
-                        userArrayList.set(i, userLine);
-                    }
+                    bw.write(temp.get(i));
                     if (i != temp.size() - 1) { // Keep file format consistent
                         bw.newLine();
                     }

@@ -38,12 +38,27 @@ public class Conversation {
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
     public ArrayList<String> readFile(User user) {
         //TODO implement
         //TODO Individual messages should be labeled with the senders name in the conversation.
+        ArrayList<String> ret = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+            br.readLine();
+            String line = br.readLine();
+            while (line != null) {
+                Message temp = new Message(line);
+                if (user instanceof Customer && temp.isBuyerVisibility()) {
+                    ret.add(line);
+                } else if (user instanceof Seller && temp.isSellerVisibility()) {
+                    ret.add(line);
+                }
+                line = br.readLine();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return null;
     }
 

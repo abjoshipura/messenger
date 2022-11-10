@@ -38,7 +38,147 @@ public class AccountHandler {
     //TODO Sorting the Dashboard
     //TODO Disappearing Messages
 
-    //TODO Edit Accounts
+    // Edit Account --> TODO: How to ensure that the user is editing/deleting their own account?
+    public static boolean editName(String email, String password, String newName) {
+        if (login(email, password)) { // User is logged in?
+            ArrayList<String> temp = new ArrayList<>(); // Stores file contents
+
+            try (BufferedReader br = new BufferedReader(new FileReader(passwordFile));
+                 BufferedWriter bw = new BufferedWriter(new FileWriter(passwordFile, true)); // Append mode
+                 BufferedWriter del = new BufferedWriter(new FileWriter(passwordFile, false))) { // Overwrite mode
+                int lineIndex = 0;
+                int userIndex = 0;
+                String line;
+                String userLine;
+                while ((line = br.readLine()) != null) {
+                    String[] lineArray = line.split(",");
+                    if (!email.equalsIgnoreCase(lineArray[1])) { // Uniquely identifies user
+                        temp.add(line);
+                    } else { // Line corresponds to user
+                        userIndex = lineIndex; // To add edited user information
+                        userLine = newName + "," + lineArray[1] + "," + lineArray[2]; // Change name
+                    }
+                    lineIndex++;
+                }
+                
+                del.write(""); // Empty file contents
+                for (int i = 0; i < temp.size(); i++) {
+                    if (i != lineIndex) {
+                        bw.write(temp.get(i)); // Unchanged file contents
+                    } else {
+                        bw.write(userLine); // Line with changed name
+                        userArrayList.set(i, userLine);
+                    }
+                    if (i != temp.size() - 1) { // Keep file format consistent
+                        bw.newLine();
+                    }
+                }
+                return true;
+            } catch (FileNotFoundException e) {
+                System.out.println("File not found!");
+                return false;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+    }
+    
+    public static boolean editEmail(String email, String password, String newEmail) {
+        if (passwordFile.contains(newEmail)) {
+            System.out.println("E-mail already in use!");
+                return false;
+        } else {
+            if (login(email, password)) { // User is logged in?
+                ArrayList<String> temp = new ArrayList<>(); // Stores file contents
+                
+                try (BufferedReader br = new BufferedReader(new FileReader(passwordFile));
+                     BufferedWriter bw = new BufferedWriter(new FileWriter(passwordFile, true)); // Append mode
+                     BufferedWriter del = new BufferedWriter(new FileWriter(passwordFile, false))) { // Overwrite mode
+                    int lineIndex = 0;
+                    int userIndex = 0;
+                    String line;
+                    String userLine;
+                    while ((line = br.readLine()) != null) {
+                        String[] lineArray = line.split(",");
+                        if (!email.equalsIgnoreCase(lineArray[1])) { // Uniquely identifies user
+                            temp.add(line);
+                        } else { // Line corresponds to user
+                            userIndex = lineIndex; // To add edited user information
+                            userLine = lineArray[0] + "," + newEmail + "," + lineArray[2]; // Change e-mail
+                        }
+                        lineIndex++;
+                    }
+                    
+                    del.write(""); // Empty file contents
+                    for (int i = 0; i < temp.size(); i++) {
+                        if (i != lineIndex) {
+                            bw.write(temp.get(i)); // Unchanged file contents
+                        } else {
+                            bw.write(userLine); // Line with changed e-mail
+                            userArrayList.set(i, userLine);
+                        }
+                        if (i != temp.size() - 1) { // Keep file format consistent
+                            bw.newLine();
+                        }
+                    }
+                    return true;
+                } catch (FileNotFoundException e) {
+                    System.out.println("File not found!");
+                    return false;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            }
+        }
+    }
+    
+    public static boolean editPassword(String email, String password, String newPassword) {
+        if (login(email, password)) { // User is logged in?
+            ArrayList<String> temp = new ArrayList<>(); // Stores file contents
+                
+            try (BufferedReader br = new BufferedReader(new FileReader(passwordFile));
+                 BufferedWriter bw = new BufferedWriter(new FileWriter(passwordFile, true)); // Append mode
+                 BufferedWriter del = new BufferedWriter(new FileWriter(passwordFile, false))) { // Overwrite mode
+                int lineIndex = 0;
+                int userIndex = 0;
+                String line;
+                String userLine;
+                while ((line = br.readLine()) != null) {
+                    String[] lineArray = line.split(",");
+                    if (!email.equalsIgnoreCase(lineArray[1])) { // Uniquely identifies user
+                        temp.add(line);
+                    } else { // Line corresponds to user
+                        userIndex = lineIndex; // To add edited user information
+                        userLine = lineArray[0] + "," + lineArray[1] + "," + newPassword; // Change password
+                    }
+                    lineIndex++;
+                }
+                
+                del.write(""); // Empty file contents
+                for (int i = 0; i < temp.size(); i++) {
+                    if (i != lineIndex) {
+                        bw.write(temp.get(i)); // Unchanged file contents
+                    } else {
+                        bw.write(userLine); // Line with changed password
+                        userArrayList.set(i, userLine);
+                    }
+                    if (i != temp.size() - 1) { // Keep file format consistent
+                        bw.newLine();
+                    }
+                }
+                return true;
+            } catch (FileNotFoundException e) {
+                System.out.println("File not found!");
+                return false;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
+            }
+        }
+    }
+    
     //TODO SignIn Accounts
     public static boolean login(String email, String password) throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(passwordFile));

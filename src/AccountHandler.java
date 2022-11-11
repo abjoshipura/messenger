@@ -56,7 +56,7 @@ public class AccountHandler {
                     } else { // Line corresponds to user
                         userLine = newName + "," + lineArray[1] + "," + lineArray[2]; // Change name
                         temp.add(userLine);
-                        userArrayList.set(lineIndex, userLine);
+                        userArrayList.get(lineIndex).setEmail(newName);
                     }
                     lineIndex++;
                 }
@@ -77,12 +77,12 @@ public class AccountHandler {
                 return false;
             }
         }
+        return false;
     }
     
     public static boolean editEmail(String email, String password, String newEmail) throws IOException {
         if (passwordFile.contains(newEmail)) {
             System.out.println("E-mail already in use!");
-                return false;
         } else {
             if (login(email, password)) { // User is logged in?
                 ArrayList<String> temp = new ArrayList<>(); // Stores file contents
@@ -100,7 +100,7 @@ public class AccountHandler {
                         } else { // Line corresponds to user
                             userLine = lineArray[0] + "," + newEmail + "," + lineArray[2]; // Change e-mail
                             temp.add(userLine);
-                            userArrayList.set(lineIndex, userLine);
+                            userArrayList.get(lineIndex).setEmail(newEmail);;
                         }
                         lineIndex++;
                     }
@@ -122,6 +122,7 @@ public class AccountHandler {
                 }
             }
         }
+        return false;
     }
     
     public static boolean editPassword(String email, String password, String newPassword) throws IOException {
@@ -141,7 +142,7 @@ public class AccountHandler {
                     } else { // Line corresponds to user
                         userLine = lineArray[0] + "," + lineArray[1] + "," + newPassword; // Change password
                         temp.add(userLine);
-                        userArrayList.set(lineIndex, userLine);
+                        userArrayList.get(lineIndex).setEmail(newPassword);
                     }
                     lineIndex++;
                 }

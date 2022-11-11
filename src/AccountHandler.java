@@ -39,7 +39,7 @@ public class AccountHandler {
     //TODO Disappearing Messages
 
     // Edit Account --> TODO: How to ensure that the user is editing/deleting their own account?
-    public static boolean editName(String email, String password, String newName) {
+    public static boolean editName(String email, String password, String newName) throws IOException {
         if (login(email, password)) { // User is logged in?
             ArrayList<String> temp = new ArrayList<>(); // Stores file contents
 
@@ -79,7 +79,7 @@ public class AccountHandler {
         }
     }
     
-    public static boolean editEmail(String email, String password, String newEmail) {
+    public static boolean editEmail(String email, String password, String newEmail) throws IOException {
         if (passwordFile.contains(newEmail)) {
             System.out.println("E-mail already in use!");
                 return false;
@@ -124,7 +124,7 @@ public class AccountHandler {
         }
     }
     
-    public static boolean editPassword(String email, String password, String newPassword) {
+    public static boolean editPassword(String email, String password, String newPassword) throws IOException {
         if (login(email, password)) { // User is logged in?
             ArrayList<String> temp = new ArrayList<>(); // Stores file contents
                 
@@ -162,6 +162,7 @@ public class AccountHandler {
                 return false;
             }
         }
+        return false;
     }
     
     //TODO SignIn Accounts

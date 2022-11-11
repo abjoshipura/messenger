@@ -44,6 +44,10 @@ public class Message {
         this.sellerVisibility = sellerVisibility;
     }
 
+    public String getId() {
+        return id;
+    }
+
     public String toString() {
         return id + ";" + sender.getName() + ";" + message;
     }

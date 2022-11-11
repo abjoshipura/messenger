@@ -21,7 +21,7 @@ public class User {
     public boolean sendMessageToUser(String message, User user) {
         try {
             String fileName = null;
-            String title;
+            String title = "";
             if(user instanceof Customer) {
                 fileName = user.name.replace(" ", "_") + "&" +
                         this.name.replace(" ", "_") + ".txt";
@@ -33,10 +33,23 @@ public class User {
             }
             File newMessage = new File(fileName);
 
-            FileWriter fileWriter = new FileWriter(newMessage);
+            FileWriter fileWriter = new FileWriter(fileName);
             PrintWriter printWriter = new PrintWriter(fileWriter);
-            Message sentMessage = new Message(message, this, user, false, true, true);
-            printWriter.println(sentMessage);
+            boolean convoAlreadyExists = false;
+            for(int i = 0; i < AccountHandler.getConversationList().size(); i++) {
+                if(AccountHandler.getConversationList().get(i).getTitle().equals(title)) {
+                    break;
+                }
+            }
+            if(!convoAlreadyExists) {
+                if (this instanceof Customer) {
+                    Conversation conversation = new Conversation(title, fileName, (Customer) this, (Seller) user);
+                } else if (this instanceof Seller) {
+                    Conversation conversation = new Conversation(title, fileName, (Customer) user, (Seller) this);
+                }
+            }
+            Message sentMessage = new Message(message); //Creates new message. String parameter message must be parseable by the constructor
+            printWriter.println(sentMessage + "\n");
             printWriter.close();
 
             return true;
@@ -50,7 +63,7 @@ public class User {
         try {
             FileWriter fileWriter = new FileWriter(conversation.getFileName(), true);
             PrintWriter printWriter = new PrintWriter(fileWriter);
-            printWriter.println(message);
+            printWriter.println(message + "\n");
             printWriter.close();
             return true;
         } catch (IOException e) {
@@ -62,26 +75,29 @@ public class User {
     public boolean editMessage(String messageID, String newMessage) {
         ArrayList<Conversation> tempList = AccountHandler.getConversationList();
         try {
-
+            Message replace = new Message(newMessage);
             for (int i = 0; i < tempList.size(); i++) {
                 BufferedReader reader = new BufferedReader(new FileReader(tempList.get(i).getFileName()));
                 FileWriter fileWriter = new FileWriter(tempList.get(i).getFileName(), false);
                 if (tempList.get(i).isParticipant(this)) {
+                    String title = reader.readLine();
                     String line = reader.readLine();
-                    ArrayList<String[]> addLines = new ArrayList<String[]>();
+                    ArrayList<Message> addMessage = new ArrayList<Message>();
                     while (line != null) {
-                        String[] messageComponents = line.split(";");
-                        addLines.add(messageComponents);
+                        // Create message object that is parsed and generated within constructor
+                        Message msg = new Message(line);
+                        addMessage.add(msg);
                         line = reader.readLine();
                     }
-                    String theWholeDamnFile = "";
-                    for(int index = 0; index < addLines.size(); index++) {
-                        if(addLines.get(index)[0].equals(messageID)) {
-                            addLines.get(index)[1] = newMessage;
+                    String theWholeFile = title + "\n";
+                    for(int index = 0; index < addMessage.size(); index++) {
+                        if(addMessage.get(index).getId().equals(messageID)) {
+                            addMessage.set(index, replace);
                         }
-                        theWholeDamnFile += String.join(";", addLines.get(index)[0], addLines.get(index)[1], addLines.get(index)[2]) + "\n";
-                        fileWriter.write(theWholeDamnFile);
+                        theWholeFile += addMessage.get(index).toString() + "\n";
+
                     }
+                    fileWriter.write(theWholeFile);
                 }
                 reader.close();
                 fileWriter.flush();
@@ -104,21 +120,25 @@ public class User {
                 BufferedReader reader = new BufferedReader(new FileReader(tempList.get(i).getFileName()));
                 FileWriter fileWriter = new FileWriter(tempList.get(i).getFileName(), false);
                 if (tempList.get(i).isParticipant(this)) {
+                    String title = reader.readLine();
                     String line = reader.readLine();
-                    ArrayList<String[]> addLines = new ArrayList<String[]>();
+                    ArrayList<Message> addMessage = new ArrayList<Message>();
                     while (line != null) {
-                        String[] messageComponents = line.split(";");
-                        addLines.add(messageComponents);
+                        Message msg = new Message(line);
+                        addMessage.add(msg);
                         line = reader.readLine();
                     }
-                    String theWholeDamnFile = "";
-                    for(int index = 0; index < addLines.size(); index++) {
-                        if(addLines.get(index)[0].equals(messageID)) {
+                    String theWholeFile = title + "\n";
+                    for(int index = 0; index < addMessage.size(); index++) {
+                        if(addMessage.get(index).getId().equals(messageID)) {
+                            addMessage.remove(index);
+                            index--;
                             continue;
                         }
-                        theWholeDamnFile += String.join(";", addLines.get(index)[0], addLines.get(index)[1], addLines.get(index)[2]) + "\n";
-                        fileWriter.write(theWholeDamnFile);
+                        theWholeFile += addMessage.get(index).toString() + "\n";
+
                     }
+                    fileWriter.write(theWholeFile);
                 }
                 reader.close();
                 fileWriter.flush();

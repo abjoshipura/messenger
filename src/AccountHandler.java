@@ -9,6 +9,7 @@ public class AccountHandler {
     name,email,password
      */
     private static ArrayList<User> userArrayList;
+    private static ArrayList<Store> storeArrayList;
     private static ArrayList<Conversation> conversationList;
     public AccountHandler(String pf) {
         passwordFile = pf; //sets password file to input filename
@@ -56,7 +57,7 @@ public class AccountHandler {
                     } else { // Line corresponds to user
                         userLine = newName + "," + lineArray[1] + "," + lineArray[2]; // Change name
                         temp.add(userLine);
-                        userArrayList.get(lineIndex).setEmail(newName);
+                        userArrayList.get(lineIndex).setName(newName);
                     }
                     lineIndex++;
                 }
@@ -142,7 +143,8 @@ public class AccountHandler {
                     } else { // Line corresponds to user
                         userLine = lineArray[0] + "," + lineArray[1] + "," + newPassword; // Change password
                         temp.add(userLine);
-                        userArrayList.get(lineIndex).setEmail(newPassword);
+
+                        userArrayList.get(lineIndex).setPassword(newPassword);
                     }
                     lineIndex++;
                 }
@@ -273,5 +275,13 @@ public class AccountHandler {
 
     public static void addConversation(Conversation conversation) {
         conversationList.add(conversation);
+    }
+
+    public static void addStore(Store store) {
+        storeArrayList.add(store);
+    }
+
+    public static ArrayList<Store> getStoreArrayList() {
+        return storeArrayList;
     }
 }

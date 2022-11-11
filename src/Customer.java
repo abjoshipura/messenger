@@ -37,4 +37,17 @@ public class Customer extends User {
         return null;
     }
 
+    public boolean sendMessageStore(Store store, String message) {
+        ArrayList<Store> listOfStores = AccountHandler.getStoreArrayList();
+        for(int i = 0; i < listOfStores.size(); i++) {
+            if(store.equals(listOfStores.get(i))) {
+                super.sendMessageToUser(message, store.getSeller());
+                store.alreadyContacted(this);
+                return true;
+            }
+
+        }
+        return false;
+    }
+
 }

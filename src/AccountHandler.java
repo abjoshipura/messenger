@@ -84,7 +84,6 @@ public class AccountHandler {
     public static boolean editEmail(String email, String password, String newEmail) throws IOException {
         if (passwordFile.contains(newEmail)) {
             System.out.println("E-mail already in use!");
-                return false;
         } else {
             if (login(email, password)) { // User is logged in?
                 ArrayList<String> temp = new ArrayList<>(); // Stores file contents
@@ -144,7 +143,8 @@ public class AccountHandler {
                     } else { // Line corresponds to user
                         userLine = lineArray[0] + "," + lineArray[1] + "," + newPassword; // Change password
                         temp.add(userLine);
-                        userArrayList.get(lineIndex).setName(newPassword);
+
+                        userArrayList.get(lineIndex).setPassword(newPassword);
                     }
                     lineIndex++;
                 }

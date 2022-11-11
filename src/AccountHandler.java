@@ -100,7 +100,7 @@ public class AccountHandler {
                         } else { // Line corresponds to user
                             userLine = lineArray[0] + "," + newEmail + "," + lineArray[2]; // Change e-mail
                             temp.add(userLine);
-                            userArrayList.get(lineIndex).setEmail(newEmail);;
+                            userArrayList.get(lineIndex).setEmail(newEmail);
                         }
                         lineIndex++;
                     }

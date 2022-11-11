@@ -88,4 +88,8 @@ public class Conversation {
     public String getFileName() {
         return fileName;
     }
+
+    public String getTitle(){
+        return title;
+    }
 }

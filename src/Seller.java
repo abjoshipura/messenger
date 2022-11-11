@@ -42,5 +42,8 @@ public class Seller extends User {
         return null;
     }
 
+    public void addStore(Store store) {
+        stores.add(store);
+    }
 
 }

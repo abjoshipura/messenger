@@ -4,9 +4,9 @@ import java.util.*;
 public class AccountHandler {
     private static String passwordFile;
     /* where logins are stored in the format:
-    name,email,password
-    name,email,password
-    name,email,password
+    name,email,password,boolean(true if seller)
+    name,email,password,boolean
+    name,email,password,boolean
      */
     private static ArrayList<User> userArrayList;
     private static ArrayList<Store> storeArrayList;
@@ -187,14 +187,18 @@ public class AccountHandler {
         return false;
     }
     //TODO New Accounts
-    public static boolean makeNewAcc(String name, String email, String password) {
+    public static boolean makeNewAcc(String name, String email, String password, boolean isSeller) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(passwordFile, true))) {
             if (accountExists(email)) {
                 System.out.println("Account already exists!");
                 return false;
             }
-            bw.write(String.format("%s,%s,%s", name, email, password)); //adds to the file
-            userArrayList.add(new User(name, email, password)); //adds to the in-program arraylist
+            bw.write(String.format("%s,%s,%s,%b", name, email, password, isSeller)); //adds to the file
+            if (isSeller) {
+                userArrayList.add(new Seller(name, email, password)); //adds to the in-program arraylist
+            } else {
+                userArrayList.add(new Customer(name, email, password));
+            }
             return true;
 
         } catch (FileNotFoundException e) {

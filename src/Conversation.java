@@ -2,69 +2,100 @@ import java.io.*;
 import java.util.ArrayList;
 
 public class Conversation {
-    private String fileName;
-    /*
-    EMAIL1(buyer),EMAIL2(seller)
-     */
-    private Customer customer;
-    private Seller seller;
+    private String conversationID;
+    private final String fileName;
+    private final Seller seller;
+    private final Customer customer;
+    private boolean sellerUnread;
+    private boolean customerUnread;
 
-    private boolean isDisappearing;
-
-    private ArrayList<Message> msgList;
-
-    public Conversation(String title, String fileName, Customer customer, Seller seller) {
-        File convo = new File(fileName);
+    public Conversation(String conversationID, String fileName, Seller seller, Customer customer) {
+        this.conversationID = conversationID;
         this.fileName = fileName;
-        this.customer = customer;
         this.seller = seller;
+        this.customer = customer;
 
-        try (BufferedWriter bw = new BufferedWriter(new FileWriter(fileName, true))) {
-            convo.createNewFile();
-            bw.write(String.format("%s,%s,%s", title, customer.getEmail(), seller.getEmail()));
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        this.sellerUnread = false;
+        this.customerUnread = false;
     }
 
-    public Conversation(String fileName) {
-        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
-            String[] lineArray = br.readLine().split(",");
-            this.fileName = fileName;
-            this.customer = Seller.searchCustomers(lineArray[0], AccountHandler.getUserArrayList());
-            this.seller = Customer.searchSeller(lineArray[1], AccountHandler.getUserArrayList());
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+    public String getConversationID() {
+        return conversationID;
     }
 
-    public ArrayList<String> readFile(User user) {
-        //TODO implement
-        //TODO Individual messages should be labeled with the senders name in the conversation.
-        ArrayList<String> ret = new ArrayList<>();
-        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
-            br.readLine();
-            String line = br.readLine();
-            while (line != null) {
-                Message temp = new Message(line);
-                if (user instanceof Customer && temp.isBuyerVisibility()) {
-                    ret.add(line);
-                } else if (user instanceof Seller && temp.isSellerVisibility()) {
-                    ret.add(line);
-                }
-                line = br.readLine();
+    public boolean isCustomerUnread() {
+        return customerUnread;
+    }
+
+    public boolean isSellerUnread() {
+        return sellerUnread;
+    }
+
+    public void setCustomerUnread(boolean customerUnread) {
+        this.customerUnread = customerUnread;
+    }
+
+    public void setSellerUnread(boolean sellerUnread) {
+        this.sellerUnread = sellerUnread;
+    }
+
+    public ArrayList<Message> readFile(User user) {
+        ArrayList<Message> readMessages = new ArrayList<>();
+        try (BufferedReader bfr = new BufferedReader(new FileReader(this.fileName))) {
+            Message message = null;
+
+            bfr.readLine();
+            String messageLine = bfr.readLine();
+
+            if (messageLine != null) {
+                message = new Message(messageLine);
             }
+
+            while (message != null && ((message.getSender().equals(user) && message.isSenderVisibility()) || (message.getRecipient().equals(user) && message.isRecipientVisibility()))) {
+                readMessages.add(message);
+                messageLine = bfr.readLine();
+                if (messageLine != null) {
+                    message = new Message(messageLine);
+                } else {
+                    message = null;
+                }
+            }
+            return readMessages;
         } catch (IOException e) {
-            e.printStackTrace();
+            return readMessages;
         }
-        return null;
+        //TODO Individual messages should be labeled with the senders name in the conversation.
     }
 
-    public void addMessage(Message msg) throws IOException {
-        BufferedWriter bw = new BufferedWriter(new FileWriter(fileName, true));
-        bw.write(msg.toString());
-        bw.close();
+    public boolean writeFile(ArrayList<Message> messages) {
+        try (PrintWriter pw = new PrintWriter(new FileOutputStream(this.fileName, false))) {
+            for (Message message : messages) {
+                if (message.isSenderVisibility() || message.isRecipientVisibility()) {
+                    pw.println(message);
+                }
+            }
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    public boolean appendToFile(String stringMessage, User sender, User recipient, boolean isDisappearing) {
+        try (PrintWriter pw = new PrintWriter(new FileOutputStream(this.fileName, true))) {
+            Message message = new Message(stringMessage, sender, recipient, isDisappearing);
+            pw.println(message);
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
+    }
+
+    public void toCSV() {
+        //TODO Implement
+    }
+
+    public void importTXT() {
+        //TODO Implement
     }
 
     public String censorFile() {
@@ -75,30 +106,15 @@ public class Conversation {
         //TODO Handle deleted user
     }
 
-    public boolean isParticipant(User user) {
-        for(int i = 0; i < customer.getBlockedUsers().size(); i++) {
-            if(user.equals(customer.getBlockedUsers().get(i))) {
-                return false;
-            }
-        }
-        for(int i = 0; i < seller.getBlockedUsers().size(); i++) {
-            if(user.equals(seller.getBlockedUsers().get(i))) {
-                return false;
-            }
-        }
-
-        return user.equals(customer) || user.equals(seller);
-    }
-
     public String getFileName() {
         return fileName;
     }
 
-    public Seller getSeller() {
+    public User getSeller() {
         return seller;
     }
 
-    public Customer getCustomer() {
+    public User getCustomer() {
         return customer;
     }
 }

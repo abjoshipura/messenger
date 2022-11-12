@@ -13,6 +13,7 @@ public class Message {
 
     public Message(String message, User sender, User recepient, boolean isDisappearing, boolean buyerVisibility,
                    boolean sellerVisibility) {
+
         //TODO implement using generateID();
     }
 

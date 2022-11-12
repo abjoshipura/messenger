@@ -61,8 +61,10 @@ public class Conversation {
         return null;
     }
 
-    public void addMessage() {
-
+    public void addMessage(Message msg) throws IOException {
+        BufferedWriter bw = new BufferedWriter(new FileWriter(fileName, true));
+        bw.write(msg.toString());
+        bw.close();
     }
 
     public String censorFile() {

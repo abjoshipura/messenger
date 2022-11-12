@@ -27,6 +27,7 @@ public class User {
 
         hasNewMessages = false;
     }
+    /*
 
     public boolean sendMessageToUser(String message, User user) {
         try {
@@ -67,6 +68,19 @@ public class User {
         } catch (IOException e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+     */
+
+    public boolean sendMessage(String msg, User user) throws IOException {
+        Conversation conversation = AccountHandler.findConversation(user);
+        if (conversation == null) {
+            //todo make new convo
+        } else {
+            BufferedWriter bw = new BufferedWriter(new FileWriter(conversation.getFileName(), true));
+            bw.write(msg.toString());
+            bw.close();
         }
     }
 

@@ -4,6 +4,7 @@ import java.util.*;
 
 public class AccountHandler {
     private static String passwordFile;
+    private static String conversationDirectory;
     /* where logins are stored in the format:
     name,email,password,boolean(true if seller)
     name,email,password,boolean
@@ -12,8 +13,13 @@ public class AccountHandler {
     private static ArrayList<User> userArrayList;
     private static ArrayList<Store> storeArrayList;
     private static ArrayList<Conversation> conversationList;
-    public AccountHandler(String pf) {
+    public AccountHandler(String pf, String cd) {
         passwordFile = pf; //sets password file to input filename
+        conversationDirectory = cd;
+        conversationList = new ArrayList<>();
+        userArrayList = new ArrayList<>();
+        storeArrayList = new ArrayList<>();
+
         try (BufferedReader br = new BufferedReader(new FileReader(pf))) {
             //this adds users previously created into the arraylist
             String line = br.readLine();
@@ -27,6 +33,13 @@ public class AccountHandler {
             System.out.println("File not found!");
         } catch (Exception e) {
             e.printStackTrace();
+        }
+
+        File convDir[] = (new File(cd)).listFiles();
+        if (convDir != null) {
+            for (File conv : convDir) {
+                conversationList.add(new Conversation(conv.getAbsolutePath()));
+            }
         }
     }
 
@@ -372,7 +385,7 @@ public class AccountHandler {
         return null;
     }
 
-    public static Conversation findConvo(User user) {
+    public static Conversation findConversation(User user) {
         for (Conversation c : conversationList) {
             if (user instanceof Seller) {
                 if (c.getSeller().equals(user)) {

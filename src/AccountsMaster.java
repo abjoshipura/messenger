@@ -3,12 +3,12 @@ import java.util.*;
 
 public class AccountsMaster {
     private final String passwordFile;
-    private final String conversationsFile;
+    private final String conversationDirectory;
     public static ArrayList<User> userArrayList = new ArrayList<>();
     public static ArrayList<Conversation> conversationList = new ArrayList<>();
 
     //TODO Update for new Strings, reload conversationList just as userArrayList
-    public AccountsMaster(String passwordFile, String conversationsFile) {
+    public AccountsMaster(String passwordFile, String conversationDirectory) {
         this.passwordFile = passwordFile;
         this.conversationsFile = conversationsFile;
 
@@ -25,6 +25,13 @@ public class AccountsMaster {
             System.out.println("File not found!");
         } catch (Exception e) {
             e.printStackTrace();
+        }
+        
+        File convDir[] = (new File(conversationDirectory)).listFiles();
+        if (convDir != null) {
+            for (File conv : convDir) {
+                conversationList.add(new Conversation(conv.getAbsolutePath()));
+            }
         }
     }
     public User fetchAccount(String usernameOrEmail) {

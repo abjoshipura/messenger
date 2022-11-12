@@ -363,6 +363,30 @@ public class AccountHandler {
         return false;
     }
 
+    public static User findUser(String email) {
+        for (User u : userArrayList) {
+            if (u.getEmail().equalsIgnoreCase(email)) {
+                return u;
+            }
+        }
+        return null;
+    }
+
+    public static Conversation findConvo(User user) {
+        for (Conversation c : conversationList) {
+            if (user instanceof Seller) {
+                if (c.getSeller().equals(user)) {
+                    return c;
+                }
+            } else {
+                if (c.getCustomer().equals(user)) {
+                    return c;
+                }
+            }
+        }
+        return null;
+    }
+
     public static ArrayList<Conversation> getConversationList() {
         return conversationList;
     }

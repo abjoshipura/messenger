@@ -12,6 +12,8 @@ public class Conversation {
 
     private boolean isDisappearing;
 
+    private ArrayList<Message> msgList;
+
     public Conversation(String title, String fileName, Customer customer, Seller seller) {
         File convo = new File(fileName);
         this.fileName = fileName;
@@ -60,6 +62,10 @@ public class Conversation {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public void addMessage() {
+
     }
 
     public String censorFile() {

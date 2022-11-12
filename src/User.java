@@ -1,6 +1,7 @@
 import java.util.ArrayList;
 import java.util.Map;
 import java.io.*;
+import java.util.Objects;
 
 public class User {
     private String name; 
@@ -12,10 +13,19 @@ public class User {
     private boolean requestsCensorship;
     private Map<String, String> censoredWords;
 
+    private boolean hasNewMessages;
+
+
+
     public User(String name, String email, String password) {
         this.name = name;
         this.email = email;
         this.password = password;
+        blockedUsers = new ArrayList<>();
+        invisibleUsers = new ArrayList<>();
+        requestsCensorship = false;
+
+        hasNewMessages = false;
     }
 
     public boolean sendMessageToUser(String message, User user) {
@@ -26,12 +36,13 @@ public class User {
                 fileName = user.name.replace(" ", "_") + "&" +
                         this.name.replace(" ", "_") + ".txt";
                 title = user.name + " & " + this.name;
-            } else if(user instanceof Seller) {
+            } else {
                 fileName = this.name.replace(" ", "_") + "&" +
                         user.name.replace(" ", "_") + ".txt";
                 title = this.name + " & " + user.name;
             }
             File newMessage = new File(fileName);
+            newMessage.createNewFile();
 
             FileWriter fileWriter = new FileWriter(fileName);
             PrintWriter printWriter = new PrintWriter(fileWriter);
@@ -216,5 +227,24 @@ public class User {
 
     public void setCensoredWords(Map<String, String> censoredWords) {
         this.censoredWords = censoredWords;
+    }
+    public boolean isHasNewMessages() {
+        return hasNewMessages;
+    }
+
+    public void setHasNewMessages(boolean hasNewMessages) {
+        this.hasNewMessages = hasNewMessages;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof User user)) return false;
+        return isRequestsCensorship() == user.isRequestsCensorship() && isHasNewMessages() == user.isHasNewMessages() && getName().equals(user.getName()) && getEmail().equals(user.getEmail()) && getPassword().equals(user.getPassword()) && Objects.equals(getBlockedUsers(), user.getBlockedUsers()) && Objects.equals(getInvisibleUsers(), user.getInvisibleUsers()) && Objects.equals(getCensoredWords(), user.getCensoredWords());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getName(), getEmail(), getPassword(), getBlockedUsers(), getInvisibleUsers(), isRequestsCensorship(), getCensoredWords(), isHasNewMessages());
     }
 }

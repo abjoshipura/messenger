@@ -189,51 +189,6 @@ public class AccountHandler {
         return false;
     }
     
-    public static boolean editEmail(String email, String password, String newEmail) throws IOException {
-        if (passwordFile.contains(newEmail)) {
-            System.out.println("E-mail already in use!");
-        } else {
-            if (login(email, password)) { // User is logged in?
-                ArrayList<String> temp = new ArrayList<>(); // Stores file contents
-                
-                try (BufferedReader br = new BufferedReader(new FileReader(passwordFile));
-                     BufferedWriter bw = new BufferedWriter(new FileWriter(passwordFile, true)); // Append mode
-                     BufferedWriter del = new BufferedWriter(new FileWriter(passwordFile, false))) { // Overwrite mode
-                    int lineIndex = 0;
-                    String line;
-                    String userLine;
-                    while ((line = br.readLine()) != null) {
-                        String[] lineArray = line.split(",");
-                        if (!email.equalsIgnoreCase(lineArray[1])) { // Uniquely identifies user
-                            temp.add(line);
-                        } else { // Line corresponds to user
-                            userLine = lineArray[0] + "," + newEmail + "," + lineArray[2]; // Change e-mail
-                            temp.add(userLine);
-                            userArrayList.get(lineIndex).setEmail(newEmail);
-                        }
-                        lineIndex++;
-                    }
-                    
-                    del.write(""); // Empty file contents
-                    for (int i = 0; i < temp.size(); i++) {
-                        bw.write(temp.get(i));
-                        if (i != temp.size() - 1) { // Keep file format consistent
-                            bw.newLine();
-                        }
-                    }
-                    return true;
-                } catch (FileNotFoundException e) {
-                    System.out.println("File not found!");
-                    return false;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    return false;
-                }
-            }
-        }
-        return false;
-    }
-    
     public static boolean editPassword(String email, String password, String newPassword) throws IOException {
         if (login(email, password)) { // User is logged in?
             ArrayList<String> temp = new ArrayList<>(); // Stores file contents
@@ -340,6 +295,40 @@ public class AccountHandler {
             for (String l : temp) {
                 bw.write(l);
             }
+
+            for (int i = 0; i < temp.size(); i++) {
+                if (userArrayList.get(i).getEmail().equalsIgnoreCase(email)) {
+                    userArrayList.remove(i);
+                    i++;
+                }
+
+            }
+            return true;
+
+        } catch (FileNotFoundException e) {
+            System.out.println("File not found!");
+            return false;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public static boolean accountExists(String email) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(passwordFile));
+
+        // This block reads every line in the passwords file
+        // Returns true if email exists
+        String line = br.readLine();
+        while (line != null) {
+            String[] lineArray = line.split(",");
+            if (email.equalsIgnoreCase(lineArray[1])) {
+                return true;
+            }
+            line = br.readLine();
+        }
+
+        br.close();
         return false;
     }
 

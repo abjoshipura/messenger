@@ -1,15 +1,14 @@
 import java.util.*;
-import java.time.Instant;
-import java.sql.Timestamp;
 
 public class Message {
-    private final String timeStamp;
+    private String timeStamp;
     private final UUID id;
     private String message;
     private final User sender;
     private final User recipient;
     private boolean senderVisibility;
     private boolean recipientVisibility;
+    private boolean isDisappearing;
 
     public Message(String messageString) {
         String strippedMessage = messageString.substring(messageString.indexOf("<") + 1,
@@ -25,25 +24,24 @@ public class Message {
         for (int i = indexOfNextElem; i < indexOfNextElem + elementsInUserString; i++) {
             senderString.append(messageDetails[i]).append(", ");
         }
-        this.sender = new User(senderString.toString(), false);
+        this.sender = new User(senderString.toString());
         indexOfNextElem = indexOfNextElem + elementsInUserString;
 
         StringBuilder recipientString = new StringBuilder();
         for (int i = indexOfNextElem; i < indexOfNextElem + elementsInUserString; i++) {
             recipientString.append(messageDetails[i]).append(", ");
         }
-        this.recipient = new User(recipientString.toString(), false);
+        this.recipient = new User(recipientString.toString());
         indexOfNextElem = indexOfNextElem + elementsInUserString;
 
         this.message = messageDetails[indexOfNextElem++];
         this.senderVisibility = Boolean.parseBoolean(messageDetails[indexOfNextElem++]);
-        this.recipientVisibility = Boolean.parseBoolean(messageDetails[indexOfNextElem]);
+        this.recipientVisibility = Boolean.parseBoolean(messageDetails[indexOfNextElem++]);
+        this.isDisappearing = Boolean.parseBoolean(messageDetails[indexOfNextElem++]);
     }
 
-    public Message(String message, User sender, User recipient) {
-        Timestamp instant = Timestamp.from(Instant.now());
-        this.timeStamp = instant.toString();
-
+    public Message(String timeStamp, String message, User sender, User recipient, boolean isDisappearing) {
+        this.timeStamp = timeStamp;
         this.id = UUID.randomUUID();
         this.sender = sender;
         this.recipient = recipient;
@@ -51,16 +49,12 @@ public class Message {
 
         this.senderVisibility = true;
         this.recipientVisibility = true;
+        this.isDisappearing = isDisappearing;
     }
 
     public String toString() {
-        return String.format("Message<%s, %s, %s, %s, %s, %b, %b>", this.timeStamp, this.id,
-                this.sender.toString(), this.recipient.toString(), this.message, this.senderVisibility, this.recipientVisibility);
-    }
-
-    public String csvToString() {
-        return String.format("%s, %s, %s, %s, %s, %b, %b", this.timeStamp, this.id,
-                this.sender.csvToString(), this.recipient.csvToString(), this.message, this.senderVisibility, this.recipientVisibility);
+        return String.format("Message<%s, %s, %s, %s, %s, %b, %b, %b>", this.timeStamp, this.id, this.sender, this.recipient, this.message,
+                this.senderVisibility, this.recipientVisibility, this.isDisappearing);
     }
 
     @Override
@@ -68,7 +62,7 @@ public class Message {
         if (this == o) return true;
         if (!(o instanceof Message message1)) return false;
         return senderVisibility == message1.senderVisibility && recipientVisibility == message1.recipientVisibility
-                && id.equals(message1.id) && message.equals(message1.message) && timeStamp.equals(message1.timeStamp)
+                && isDisappearing == message1.isDisappearing && id.equals(message1.id) && message.equals(message1.message)
                 && sender.equals(message1.sender) && recipient.equals(message1.recipient);
     }
 
@@ -93,17 +87,6 @@ public class Message {
         return message;
     }
 
-    public String getCensoredMessage(User user) {
-        String tempMessage = this.message;
-        ArrayList<String> censoredWords = user.getCensoredWords();
-        for (int i = 1; i < censoredWords.size(); i++) {
-            tempMessage = tempMessage.replaceAll("(?i)" + censoredWords.get(i).substring(0,
-                            censoredWords.get(i).indexOf(":")), censoredWords.get(i).substring(
-                                    censoredWords.get(i).indexOf(":") + 1));
-        }
-        return tempMessage;
-    }
-
     public void setMessage(String message) {
         this.message = message;
     }
@@ -122,5 +105,13 @@ public class Message {
 
     public void setRecipientVisibility(boolean recipientVisibility) {
         this.recipientVisibility = recipientVisibility;
+    }
+
+    public boolean isDisappearing() {
+        return isDisappearing;
+    }
+
+    public void setDisappearing(boolean isDisappearing) {
+        this.isDisappearing = isDisappearing;
     }
 }

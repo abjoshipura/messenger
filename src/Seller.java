@@ -1,53 +1,46 @@
 import java.util.ArrayList;
+import java.util.Map;
 
 public class Seller extends User {
     private ArrayList<Store> stores;
-
-    public Seller(String sellerString, boolean hasDetails) {
-        super(sellerString, hasDetails);
-        if (hasDetails) {
-            this.stores = new ArrayList<>();
-            for (int i = 0; i < 3; i++) {
-                sellerString = sellerString.substring(sellerString.indexOf("]") + 3);
-            }
-            String[] storesArray = sellerString.substring(sellerString.indexOf("[") + 1,
-                    sellerString.indexOf("]")).split(", ");
-            if (storesArray.length > 1) {
-                for (String storeString : storesArray) {
-                    this.stores.add(new Store(storeString));
-                }
-            }
-        } else {
-            this.stores = new ArrayList<>();
-        }
-    }
+    private Map<Customer, ArrayList<Message>> customerDetails;
+    private SortOrder sortOrder;
 
     public Seller(String name, String email, String password) {
         super(name, email, password);
-        this.stores = new ArrayList<>();
+        //TODO implement
     }
 
-    public String detailedToString() {
-        return String.format("Seller<%s, %s, %s, %b, %s, %s, %s, %s>", this.getUsername(), this.getEmail(),
-                this.getPassword(), this.isRequestsCensorship(), this.getBlockedUsers(), this.getInvisibleUsers(),
-                this.getCensoredWords(), this.stores);
+    public ArrayList<Customer> listCustomers(ArrayList<User> userList) {
+        ArrayList<Customer> customerList = new ArrayList<Customer>();
+        for (int i = 0; i < userList.size(); i++) {
+            if (userList.get(i) instanceof Customer) {
+                customerList.add((Customer) userList.get(i));
+            }
+        }
+        return customerList;
     }
 
-    public String toString() {
-        return super.toString();
+    public Customer searchCustomers(String searchString, ArrayList<User> userList) {
+        for (int i = 0; i < userList.size(); i++) {
+            boolean unblocked = true;
+            User user = userList.get(i);
+            if (user instanceof Customer && (user.getUsername().equalsIgnoreCase(searchString)
+                    || user.getEmail().equalsIgnoreCase(searchString))) {
+                ArrayList<User> invisible = user.getInvisibleUsers();
+                for (int bl = 0; bl < invisible.size(); bl++) {
+                    if (user.equals(invisible.get(bl))) {
+                        unblocked = false;
+                        break;
+                    }
+                }
+                if (unblocked) {
+                    return (Customer) user;
+                }
+            }
+        }
+        return null;
     }
 
-    public ArrayList<Store> getStores() {
-        return this.stores;
-    }
 
-    public void createStore(String storeName, Seller seller) {
-        Store store = new Store(storeName, this);
-        stores.add(store);
-    }
-
-    public void setStores(ArrayList<Store> stores) {
-        this.stores = stores;
-        super.updateUserFields();
-    }
 }

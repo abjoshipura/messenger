@@ -4,9 +4,8 @@ import java.util.*;
 public class AccountsMaster {
     private final String passwordFile;
     private final String conversationsFile;
-    public static ArrayList<Seller> sellerArrayList = new ArrayList<>();
-    public static ArrayList<Customer> customerArrayList = new ArrayList<>();
-    public static ArrayList<Conversation> conversationArrayList = new ArrayList<>();
+    public static ArrayList<User> userArrayList = new ArrayList<>();
+    public static ArrayList<Conversation> conversationList = new ArrayList<>();
 
     public AccountsMaster(String passwordFile, String conversationsFile) {
         this.passwordFile = passwordFile;
@@ -15,33 +14,134 @@ public class AccountsMaster {
         try (BufferedReader bfr = new BufferedReader(new FileReader(passwordFile))) {
             String userString = bfr.readLine();
             while (userString != null) {
-                if (userString.substring(0, userString.indexOf("<")).equalsIgnoreCase("Seller")) {
-                    sellerArrayList.add(new Seller(userString, true));
-                } else {
-                    customerArrayList.add(new Customer(userString, true));
-                }
+                String strippedMessage = userString.substring(userString.indexOf("<") + 1, userString.lastIndexOf(">"));
+                String[] userDetails = strippedMessage.split(", ");
+                userArrayList.add(new User(userDetails[0], userDetails[1], userDetails[2]));
+
                 userString = bfr.readLine();
             }
         } catch (FileNotFoundException e) {
             System.out.println("File not found!");
         } catch (Exception e) {
             e.printStackTrace();
-            System.out.println("Error: Could Not Populate Users");
-        }
-
-        try (BufferedReader bfr = new BufferedReader(new FileReader(conversationsFile))) {
-            String conversationString = bfr.readLine();
-            while (conversationString != null) {
-                conversationArrayList.add(new Conversation(conversationString));
-                conversationString = bfr.readLine();
-            }
-        } catch (FileNotFoundException e) {
-            System.out.println("Conversations File Not Found!");
-        } catch (Exception e) {
-            System.out.println("Error: ");
         }
     }
 
+    //TODO Handle un/blocking
+    //TODO Handle in/visibility
+    //TODO Open Conversations w/ w/o censoring as per user
+    //TODO Edits to accounts should update all conversation Users
+
+    //TODO Customer/Seller Dashboards
+    //TODO Sorting the Dashboard
+    public User fetchAccount(String usernameOrEmail) {
+        User account = null;
+        for (User user: userArrayList) {
+            if (user.getUsername().equalsIgnoreCase(usernameOrEmail) ||
+                    user.getEmail().equalsIgnoreCase(usernameOrEmail)) {
+                account = user;
+            }
+        }
+        return account;
+    }
+    public User createAccount(String username, String email, String password, String role) {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(passwordFile, true))) {
+            if (role.equalsIgnoreCase("SELLER")) {
+                Seller newSeller = new Seller(username, email, password);
+                userArrayList.add(newSeller);
+                pw.println(newSeller);
+                return newSeller;
+            } else {
+                Customer newCustomer = new Customer(username, email, password);
+                userArrayList.add(newCustomer);
+                pw.println(newCustomer);
+                return newCustomer;
+            }
+        } catch (Exception e) {
+            System.out.println("We hit an error! :|");
+            return null;
+        }
+    }
+
+    //TODO Deleting Accounts
+    public boolean deleteAcc(User user) {
+        ArrayList<String> temp = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(passwordFile));
+             BufferedWriter bw = new BufferedWriter(new FileWriter(passwordFile, true));
+             BufferedWriter del = new BufferedWriter(new FileWriter(passwordFile, false))) {
+            String line = br.readLine();
+            while (line != null) {
+                String[] lineArray = line.split(",");
+                if (!user.getEmail().equalsIgnoreCase(lineArray[1]) && !user.getPassword().equals(lineArray[2])) {
+                    temp.add(line);
+                }
+                line = br.readLine();
+            }
+
+            del.write("");
+
+            for (String l : temp) {
+                bw.write(l);
+            }
+
+            for (int i = 0; i < temp.size(); i++) {
+                if (userArrayList.get(i).getEmail().equalsIgnoreCase(user.getEmail())) {
+                    userArrayList.remove(i);
+                    i++;
+                }
+
+            }
+            return true;
+
+        } catch (FileNotFoundException e) {
+            System.out.println("File not found!");
+            return false;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public int numUnreadConversations(User user) {
+        int numUnreadConversations = 0;
+        ArrayList<Conversation> userConversations = listConversations(user);
+        for (Conversation conversation: userConversations) {
+            if (user instanceof Seller && conversation.isSellerUnread()) {
+                numUnreadConversations++;
+            } else if (user instanceof Customer && conversation.isCustomerUnread()) {
+                numUnreadConversations++;
+            }
+        }
+        return numUnreadConversations;
+    }
+
+    public ArrayList<Conversation> listConversations(User user) {
+        ArrayList<Conversation> conversations = new ArrayList<>();
+        if (user instanceof Seller) {
+            for (Conversation conversation: conversationList) {
+                if (conversation.getSeller().equals(user) && !conversation.getCustomer().getInvisibleUsers().contains(user)) {
+                    if (conversation.isSellerUnread()) {
+                        conversations.add(0, conversation);
+                    } else {
+                        conversations.add(conversation);
+                    }
+                }
+            }
+        } else {
+            for (Conversation conversation: conversationList) {
+                if (conversation.getCustomer().equals(user) && !conversation.getSeller().getInvisibleUsers().contains(user)) {
+                    if (conversation.isCustomerUnread()) {
+                        conversations.add(0, conversation);
+                    } else {
+                        conversations.add(conversation);
+                    }
+                }
+            }
+        }
+        return conversations;
+    }
+
+    //TODO Update For Buyer and Customer
     public boolean usernameAlreadyTaken(String username) {
         try (BufferedReader bfr = new BufferedReader(new FileReader(this.passwordFile))) {
             String userString = bfr.readLine();
@@ -59,6 +159,7 @@ public class AccountsMaster {
         }
     }
 
+    //TODO Update For Buyer and Customer
     public boolean emailAlreadyRegistered(String email) {
         try (BufferedReader bfr = new BufferedReader(new FileReader(this.passwordFile))) {
             String userString = bfr.readLine();
@@ -74,196 +175,5 @@ public class AccountsMaster {
         } catch (IOException e) {
             return false;
         }
-    }
-
-
-    public User fetchAccount(String usernameOrEmail) {
-        for (Seller seller : sellerArrayList) {
-            if (seller.getUsername().equalsIgnoreCase(usernameOrEmail) ||
-                    seller.getEmail().equalsIgnoreCase(usernameOrEmail)) {
-                return seller;
-            }
-        }
-        for (Customer customer : customerArrayList) {
-            if (customer.getUsername().equalsIgnoreCase(usernameOrEmail) ||
-                    customer.getEmail().equalsIgnoreCase(usernameOrEmail)) {
-                return customer;
-            }
-        }
-        return null;
-    }
-
-    public User createAccount(String username, String email, String password, String role) {
-        try (PrintWriter pw = new PrintWriter(new FileWriter(passwordFile, true))) {
-            if (role.equalsIgnoreCase("SELLER")) {
-                Seller newSeller = new Seller(username, email, password);
-                sellerArrayList.add(newSeller);
-                pw.println(newSeller.detailedToString());
-                return newSeller;
-            } else {
-                Customer newCustomer = new Customer(username, email, password);
-                customerArrayList.add(newCustomer);
-                pw.println(newCustomer.detailedToString());
-                return newCustomer;
-            }
-        } catch (Exception e) {
-            System.out.println("We hit an error! :|");
-            return null;
-        }
-    }
-
-    public void deleteAccount(User deletedUser) {
-        try (PrintWriter pw = new PrintWriter(new FileWriter(passwordFile, false))) {
-            if (deletedUser instanceof Seller) {
-                sellerArrayList.remove(deletedUser);
-            } else if (deletedUser instanceof Customer) {
-                customerArrayList.remove(deletedUser);
-            }
-
-            for (Seller seller : sellerArrayList) {
-                pw.println(seller.detailedToString());
-            }
-            for (Customer customer : customerArrayList) {
-                pw.println(customer.detailedToString());
-            }
-        } catch (Exception e) {
-            System.out.println("We hit an error! :|");
-        }
-    }
-
-    public int numUnreadConversations(User user) {
-        int numUnreadConversations = 0;
-        ArrayList<Conversation> userConversations = listConversations(user);
-
-        for (Conversation conversation : userConversations) {
-            if (user instanceof Seller && conversation.isSellerUnread()) {
-                numUnreadConversations++;
-            } else if (user instanceof Customer && conversation.isCustomerUnread()) {
-                numUnreadConversations++;
-            }
-        }
-        return numUnreadConversations;
-    }
-
-    public ArrayList<Conversation> listConversations(User user) {
-        ArrayList<Conversation> conversations = new ArrayList<>();
-        if (user instanceof Seller) {
-            for (Conversation conversation : conversationArrayList) {
-                if (conversation.getSeller().equals(user) &&
-                        !conversation.getCustomer().getBlockedUsers().contains(user)) {
-                    if (conversation.isSellerUnread()) {
-                        conversations.add(0, conversation);
-                    } else {
-                        conversations.add(conversation);
-                    }
-                }
-            }
-        } else {
-            for (Conversation conversation : conversationArrayList) {
-                if (conversation.getCustomer().equals(user) &&
-                        !conversation.getSeller().getBlockedUsers().contains(user)) {
-                    if (conversation.isCustomerUnread()) {
-                        conversations.add(0, conversation);
-                    } else {
-                        conversations.add(conversation);
-                    }
-                }
-            }
-        }
-        return conversations;
-    }
-
-
-    public Conversation fetchConversation(Customer customer, Seller seller) {
-        for (Conversation conversation : conversationArrayList) {
-            if (conversation.getCustomer().equals(customer) && conversation.getSeller().equals(seller)) {
-                return conversation;
-            }
-        }
-        return null;
-    }
-
-    public Conversation createConversation(Customer customer, Seller seller) {
-        try (PrintWriter pw = new PrintWriter(new FileWriter(conversationsFile, true))) {
-            String conversationID = customer.getUsername() + "TO" + seller.getUsername();
-            String conversationFilePath = customer.getEmail().replace(".", "") + "_" +
-                    seller.getEmail().replace(".", "") + ".txt";
-
-            Conversation conversation = new Conversation(conversationID, conversationFilePath, seller, customer);
-            AccountsMaster.conversationArrayList.add(conversation);
-            pw.println(conversation);
-            return conversation;
-        } catch (Exception e) {
-            System.out.println("We hit an error! :|");
-            return null;
-        }
-    }
-
-    public boolean convertConversationsToCSV(ArrayList<Conversation> exportingConversations, String destinationPath) throws IOException {
-        //TODO Implement Censoring
-
-        File dest = new File(destinationPath);
-        dest.getParentFile().mkdirs();
-
-        for (Conversation conv : exportingConversations) {
-            File c = new File(dest, String.format("%s.txt", conv.getConversationID()));
-            c.createNewFile();
-            File act = new File(dest, String.format("%s.csv", conv.getConversationID()));
-
-            PrintWriter bw = new PrintWriter(new FileWriter(c, true));
-
-            ArrayList<Message> temp = conv.readFile();
-
-            for (Message msg : temp) {
-                bw.println(msg.csvToString());
-            }
-            bw.close();
-
-            c.renameTo(act);
-        }
-
-        return true;
-    }
-
-    public ArrayList<Customer> listCustomers(Seller seller) {
-        ArrayList<Customer> customers = new ArrayList<>();
-        for (Customer customer: customerArrayList) {
-            if (!customer.getInvisibleUsers().contains(seller)) {
-                customers.add(customer);
-            }
-        }
-        return customers;
-    }
-
-    public ArrayList<Store> listStores(Customer customer) {
-        ArrayList<Store> stores = new ArrayList<>();
-        for (Seller seller: sellerArrayList) {
-            if (!seller.getInvisibleUsers().contains(customer)) {
-                stores.addAll(seller.getStores());
-            }
-        }
-        return stores;
-    }
-
-    public ArrayList<Customer> fetchCustomers(String searchKeyword, Seller seller) {
-        ArrayList<Customer> visibleCustomers = listCustomers(seller);
-        ArrayList<Customer> searchResult = new ArrayList<>();
-        for (Customer customer : visibleCustomers) {
-            if (customer.getUsername().contains(searchKeyword) || customer.getEmail().contains(searchKeyword)) {
-                searchResult.add(customer);
-            }
-        }
-        return searchResult;
-    }
-
-    public ArrayList<Seller> fetchSellers(String searchKeyword, Customer customer) {
-        ArrayList<Seller> searchResult = new ArrayList<>();
-        for (Seller seller: sellerArrayList) {
-            if (!seller.getInvisibleUsers().contains(customer) && (seller.getUsername().contains(searchKeyword) ||
-                    seller.getEmail().contains(searchKeyword))) {
-                searchResult.add(seller);
-            }
-        }
-        return searchResult;
     }
 }

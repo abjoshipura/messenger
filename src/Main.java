@@ -1,564 +1,150 @@
 import java.util.ArrayList;
-import java.util.NoSuchElementException;
+import java.util.Map;
 import java.util.Scanner;
 
 public class Main {
-    public static final String passwordFilePath = "passwords.txt";
-    public static final String conversationsFilePath = "conversations.txt";
+    private static final String passwordFilePath = "passwords.txt";
+    private static final String conversationsFilePath = "conversations.txt";
 
     private static void printMainMenu(User user) {
-        System.out.println("--------");
-        System.out.println("1. View Conversations");
-        System.out.printf("2. View All %ss\n", (user instanceof Seller) ? "Customer" : "Store");
-        System.out.printf("3. Search %ss\n", (user instanceof Seller) ? "Customer" : "Seller");
-        if (user instanceof Seller) {
-            System.out.printf("4. Manage Stores\n");
-        }
-        System.out.printf("%d. Edit Account\n", (user instanceof Seller) ? 5 : 4);
-        System.out.printf("%d. Log Out\n", (user instanceof Seller) ? 6 : 5);
-    }
-
-    private static void printUserActionMenu(User user) {
-        String keyword = (user instanceof Seller) ? "Customer" : "Seller";
-        System.out.println("--------");
-        System.out.printf("1. Message %s\n", keyword);
-        System.out.printf("2. Block %s\n", keyword);
-        System.out.printf("3. Become Invisible to %s\n", keyword);
-        System.out.println("4. Back to Main Menu");
+        System.out.println("1. View Dashboard");
+        System.out.println("2. View Conversations");
+        System.out.printf("3. View All %ss\n", (user instanceof Seller) ? "Customer" : "Store");
+        System.out.printf("4. Search %ss\n", (user instanceof Seller) ? "Customer" : "Seller");
+        System.out.println("5. Edit Account");
+        System.out.println("6. Log Out");
     }
 
     private static void runMainMenu(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser) {
+        boolean deleteUser = false;
         while (true) {
             printMainMenu(loggedOnUser);
-            int selectedOption;
-            while (true) {
-                try {
-                    selectedOption = Integer.parseInt(scan.nextLine());
-                    break;
-                } catch (NumberFormatException e) {
-                    System.out.println("Invalid Option");
-                }
-            }
+            int selectedOption = Integer.parseInt(scan.nextLine());
 
             if (selectedOption == 1) {
-                runConversationsMenu(scan, accountsMaster, loggedOnUser);
+                //TODO Dashboard
+                return;
             } else if (selectedOption == 2) {
-                runListMenu(scan, accountsMaster, loggedOnUser);
+                System.out.println("--------");
+                ArrayList<Conversation> conversations = accountsMaster.listConversations(loggedOnUser);
+
+                if (conversations.size() > 0) {
+                    while (true) {
+                        System.out.println("**To Open, Enter Conversation No.**");
+                        for (int i = 0; i < conversations.size(); i++) {
+                            System.out.printf("%d. %s\n", i + 1, conversations.get(i).getConversationID());
+                        }
+                        System.out.printf("%d. Export Conversations\n", conversations.size());
+                        System.out.printf("%d. Back to Main Menu\n", conversations.size() + 1);
+                        int conversationNumber = Integer.parseInt(scan.nextLine());
+
+                        if (conversationNumber == conversations.size() + 1) {
+                            break;
+                        } else if (conversationNumber == conversations.size()) {
+                            System.out.println("Enter Conversations to Export Separated by Commas (eg. 1,3,4):");
+                            String exportingIndexes = scan.nextLine();
+
+                            ArrayList<Conversation> exportingConversations = new ArrayList<>();
+                            for (String index : exportingIndexes.split(",")) {
+                                exportingConversations.add(conversations.get(Integer.parseInt(index)));
+                            }
+
+                            accountsMaster.convertConversationsToCSV(exportingConversations); //TODO implement censoring here as well
+                        } else {
+                            //TODO Shift to AccountsMaster to implement censoring AND removes all isDisappearing messages false
+                            ArrayList<Message> messages = conversations.get(conversationNumber - 1).readFile(loggedOnUser);
+                            int lowerLimit = Math.min(messages.size(), 20);
+                            for (int i = messages.size() - lowerLimit; i < messages.size(); i++) {
+
+                                System.out.printf("%s: %s", messages.get(i).getSender(), messages.get(i).getMessage());
+                            }
+
+                            System.out.println("1. Load More Messages");
+                            System.out.println("2. Send Message");
+                            System.out.println("3. Edit Message");
+                            System.out.println("4. Delete Message");
+                            System.out.println("5. Import .txt File");
+                            System.out.println("6. Back to Main Menu");
+                            int conversationAction = Integer.parseInt(scan.nextLine());
+
+                            //TODO Messaging
+//                            System.out.print("New Message: ");
+//                            String newMessage = scan.nextLine();
+//                            if (newMessage.equalsIgnoreCase("~exit~")) {
+//                                break;
+//                            } else {
+//                                loggedOnUser.sendMessageToConversation(newMessage, conversations.get(conversationNumber - 1), );
+                            if (loggedOnUser instanceof Seller) {
+                                conversations.get(conversationNumber - 1).setCustomerUnread(true);
+                            } else {
+                                conversations.get(conversationNumber - 1).setSellerUnread(true);
+                            }
+//                            }
+                        }
+                    }
+                } else {
+                    System.out.println("No Conversations Found!");
+                }
             } else if (selectedOption == 3) {
-                runSearchMenu(scan, accountsMaster, loggedOnUser);
-            } else if (selectedOption == 4 && loggedOnUser instanceof Seller) {
-                // Manage Stores
-                runStoresMenu(scan, accountsMaster, (Seller) loggedOnUser);
-            } else if ((selectedOption == 5 && loggedOnUser instanceof Seller) || (selectedOption == 4 && loggedOnUser instanceof Customer)) {
-                // Edit Account
+                if (loggedOnUser instanceof Seller) {
+                    accountsMaster.listCustomers(loggedOnUser);
+                    System.out.println("Choose one");
+                    System.out.println("All of them");
+                    System.out.println("exit");
+
+                    System.out.println("Message User");
+                    System.out.println("Block User");
+                    System.out.println("Become Invisible to User");
+//                        if chose one, create new conversation/open existing conversation
+                } else {
+                    accountsMaster.listStoresAndSellers(loggedOnUser); //returns a Map<Store, Seller>
+                    System.out.println("Choose one");
+                    System.out.println("All of them");
+                    System.out.println("exit");
+
+                    System.out.println("Message User");
+                    System.out.println("Block User");
+                    System.out.println("Become Invisible to User");
+//                        if chose one, create new conversation with Seller/open existing conversation with Seller
+                }
+            } else if (selectedOption == 4) {
+                System.out.println("Enter username");
+                String searchKeyword = scan.nextLine();
+                if (loggedOnUser instanceof Seller) {
+                    accountsMaster.fetchUsers(loggedOnUser); //uses .contains
+                    System.out.println("Choose one");
+                    System.out.println("All of them");
+                    System.out.println("exit");
+
+                    System.out.println("Message User");
+                    System.out.println("Block User");
+                    System.out.println("Become Invisible to User");
+//                        if chose one, create new conversation/open existing conversation
+                } else {
+                    accountsMaster.listStoresAndSellers((Customer) loggedOnUser); //returns a Map<Store, Seller>
+                    System.out.println("Choose one");
+                    System.out.println("All of them");
+                    System.out.println("exit");
+
+                    System.out.println("Message User");
+                    System.out.println("Block User");
+                    System.out.println("Become Invisible to User");
+//                        if chose one, create new conversation/open existing conversation
+                }
+            } else if (selectedOption == 5) {
                 if (runAccountMenu(scan, accountsMaster, loggedOnUser)) {
                     break;
                 }
-            } else if ((selectedOption == 6 && loggedOnUser instanceof Seller) || (selectedOption == 5 && loggedOnUser instanceof Customer)) {
-                System.out.println("Logging Out...");
+            } else if (selectedOption == 6) {
+                System.out.println("Logging Out... \nGoodbye!");
                 break;
             } else {
                 System.out.println("Invalid Option");
-            }
-        }
-    }
-
-    public static void runStoresMenu(Scanner scan, AccountsMaster accountsMaster, Seller loggedOnUser) {
-        ArrayList<Store> stores = loggedOnUser.getStores();
-        while (true) {
-            System.out.println("--------");
-            System.out.println("1. Create New Store");
-            System.out.println("2. View Existing Stores");
-            System.out.println("3. Back to Main Menu");
-            int selectedOption;
-            while (true) {
-                try {
-                    selectedOption = Integer.parseInt(scan.nextLine());
-                    break;
-                } catch (NumberFormatException e) {
-                    System.out.println("Invalid Option");
-                }
-            }
-            int numStores = stores.size();
-            if (selectedOption == 1) { // Create New Store
-                System.out.println("Enter Store Name");
-                String storeName = scan.nextLine();
-                if (stores.size() != 0) {
-                    for (int i = 0; i < stores.size(); i++) {
-                        if (stores.get(i).getStoreName().equals(storeName)) {
-                            System.out.println("Duplicate Stores Not Allowed!");
-                            i = stores.size();
-                        } else {
-                            if (i == stores.size() - 1) { // No duplicate stores found by last element
-                                // Store is added to list
-                                loggedOnUser.createStore(storeName, loggedOnUser);
-                                loggedOnUser.setStores(stores);
-                            }
-                        }
-                    }
-                } else {
-                    // Store is added to list
-                    loggedOnUser.createStore(storeName, loggedOnUser);
-                    loggedOnUser.setStores(stores);
-                }
-                if (stores.size() == numStores + 1) {
-                    System.out.printf("Store \"%s\" Successfully Created!\n", storeName);
-                }
-            } else if (selectedOption == 2) { // View List of Existing Stores
-                if (numStores == 0) {
-                    System.out.println("No Stores Found!");
-                } else {
-                    for (int i = 0; i < stores.size(); i++) { // Prints list of stores
-                        System.out.printf("%d. %s\n", (i + 1), stores.get(i).getStoreName());
-                    }
-                    if (stores.size() != 1) {
-                        System.out.printf("%d Stores Found!\n", numStores);
-                    } else {
-                        System.out.println("1 Store Found!");
-                    }
-                }
-            } else if (selectedOption == 3) {
-                break;
-            } else {
-                System.out.println("Invalid Option");
-            }
-        }
-    }
-
-    private static void runConversationsMenu(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser) {
-        ArrayList<Conversation> conversations = accountsMaster.listConversations(loggedOnUser);
-        if (conversations.size() > 0) {
-            while (true) {
-                System.out.println("--------");
-                System.out.println("**To Open, Enter Conversation No.**");
-                for (int i = 0; i < conversations.size(); i++) {
-                    System.out.printf("%d. %s\n", i + 1, conversations.get(i).getConversationID());
-                }
-                System.out.printf("%d. Export Conversations\n", conversations.size() + 1);
-                System.out.printf("%d. Back to Main Menu\n", conversations.size() + 2);
-                int conversationNumber;
-                while (true) {
-                    try {
-                        conversationNumber = Integer.parseInt(scan.nextLine());
-                        break;
-                    } catch (NumberFormatException e) {
-                        System.out.println("Invalid Option");
-                    }
-                }
-
-                if (conversationNumber == conversations.size() + 2) {
-                    break;
-                } else if (conversationNumber == conversations.size() + 1) {
-                    System.out.println("Enter Conversations to Export Separated by Commas (eg. 1,3,4):");
-                    String exportingIndexes = scan.nextLine();
-                    System.out.println("Enter .csv File Destination (eg. folder\\fileName.txt)"); //TODO Confirm this format works
-                    String CSVDestination = scan.nextLine();
-
-                    try {
-                        ArrayList<Conversation> exportingConversations = new ArrayList<>();
-                        for (String stringIndex : exportingIndexes.split(",")) {
-                            int index = Integer.parseInt(stringIndex) - 1;
-                            System.out.println(conversations.size());
-                            if (index >= 0 && index < conversations.size()) {
-                                exportingConversations.add(conversations.get(index));
-                            }
-                        }
-
-                        if (accountsMaster.convertConversationsToCSV(exportingConversations, CSVDestination)) {
-                            System.out.println("Successfully Converted to CSV!");
-                        } else {
-                            System.out.println("Conversion Failed");
-                        }
-                    } catch (NumberFormatException e) {
-                        System.out.println("Invalid Conversations");
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-
-                } else if (conversationNumber > 0 && conversationNumber <= conversations.size()) {
-                    Conversation conversation = conversations.get(conversationNumber - 1);
-                    if (loggedOnUser instanceof Seller) {
-                        conversation.setSellerUnread(false);
-                    } else {
-                        conversation.setCustomerUnread(false);
-                    }
-                    runConversationActions(scan, accountsMaster, loggedOnUser, conversation);
-                } else {
-                    System.out.println("Invalid Option");
-                }
-            }
-        } else {
-            System.out.println("No Conversations Found!");
-        }
-    }
-
-    private static void runConversationActions(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser,
-                                               Conversation conversation) {
-        System.out.println("--------");
-        System.out.println("1. Load All Messages");
-        System.out.println("2. Import .txt File");
-        System.out.println("3. Send Message");
-        System.out.println("4. Back to Conversation List");
-        System.out.println("---\n**To Execute the Below Actions, Enter MsgIndex.Action " +
-                "(eg. 3.5 to Edit Message 3)**\n---");
-        System.out.println("5. Edit Message");
-        System.out.println("6. Delete Message");
-
-        User recipient = (loggedOnUser instanceof Seller) ? conversation.getCustomer() :
-                conversation.getSeller();
-
-        ArrayList<Message> messages = conversation.readFileAsPerUser(loggedOnUser);
-        int lowerLimit = Math.min(messages.size(), 20);
-        for (int i = messages.size() - lowerLimit; i < messages.size(); i++) {
-            System.out.printf("[%d] %s: %s\n", i, messages.get(i).getSender().getUsername(),
-                    messages.get(i).getCensoredMessage(loggedOnUser));
-        }
-
-        while (true) {
-            String conversationAction = scan.nextLine();
-            if (conversationAction.contains(".")) {
-                String[] messageActions = conversationAction.split("\\.");
-
-                int messageID = 0;
-                int action = 0;
-                try {
-                    messageID = Integer.parseInt(messageActions[0]);
-                    action = Integer.parseInt(messageActions[1]);
-                    if (messageID > messages.size() - 1 || messageID < 0) {
-                        System.out.println("Invaid Input. No Such Conversation Exists");
-                        break;
-                    }
-                } catch (Exception e) {
-                    System.out.println("Invalid Input");
-                }
-
-                if (action == 5) {
-                    if (messages.get(messageID).getSender().equals(loggedOnUser)) {
-                        System.out.print("Updated Message: ");
-                        String updatedMessage = scan.nextLine();
-                        loggedOnUser.editMessage(messages.get(messageID), conversation, updatedMessage);
-                    } else {
-                        loggedOnUser.editMessage(messages.get(messageID), conversation, "");
-                    }
-                } else if (action == 6) {
-                    loggedOnUser.deleteMessage(messages.get(messageID), conversation);
-                    System.out.println("Deleted Message");
-                } else {
-                    System.out.println("Invalid Option");
-                }
-            } else {
-                int action = 0;
-                while (true) {
-                    try {
-                        action = Integer.parseInt(conversationAction);
-                        break;
-                    } catch (NumberFormatException e) {
-                        System.out.println("Invalid Option");
-                        conversationAction = scan.nextLine();
-                    }
-                }
-                
-                if (action == 1) {
-                    for (int i = 0; i < messages.size(); i++) {
-                        System.out.printf("[%d] %s: %s\n", i, messages.get(i).getSender().getUsername(),
-                                messages.get(i).getMessage());
-                    }
-                } else if (action == 2) {
-                    System.out.println("Enter path to .txt file:");
-                    String txtPath = scan.nextLine();
-                    if (conversation.importTXT(txtPath, loggedOnUser, recipient)) {
-                        System.out.println("Message Sent Successfully!");
-                    } else {
-                        System.out.println("Error: Could not send message");
-                    }
-                } else if (action == 3) {
-                    System.out.print("Your Message: ");
-                    String message = scan.nextLine();
-                    loggedOnUser.sendMessageToUser(message, recipient, accountsMaster);
-                    System.out.println("Sent!");
-                } else if (action == 4) {
-                    break;
-                } else {
-                    System.out.println("Invalid Option");
-                }
-            }
-        }
-    }
-
-    private static void runListMenu(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser) {
-        if (loggedOnUser instanceof Seller) {
-            while (true) {
-                ArrayList<Customer> customers = accountsMaster.listCustomers((Seller) loggedOnUser);
-                
-                int customerNumber = 0;
-                while (true) {
-                    try {
-                        System.out.println("--------");
-                        System.out.println("**To Select, Enter Customer No.**");
-                        for (int i = 0; i < customers.size(); i++) {
-                            System.out.printf("%d. %s | %s\n", i + 1, customers.get(i).getUsername(),
-                                    customers.get(i).getEmail());
-                        }
-                        System.out.printf("%d. Back to Main Menu\n", customers.size() + 1);
-                        customerNumber = Integer.parseInt(scan.nextLine());
-                        break;
-                    } catch (NumberFormatException e) {
-                        System.out.println("Invalid Option.");
-                    }
-                }
-
-                if (customerNumber == customers.size() + 1) {
-                    break;
-                } else if (customerNumber > 0 && customerNumber <= customers.size()) {
-                    Customer selectedCustomer = customers.get(customerNumber - 1);
-                    printUserActionMenu(loggedOnUser);
-                    int userChoice = 0;
-                    while (true) {
-                        try {
-                            userChoice = Integer.parseInt(scan.nextLine());
-                            break;
-                        } catch (NumberFormatException e) {
-                            System.out.println("Invalid Option");
-                        }
-                    }
-
-                    if (userChoice == 1) {
-                        if (!selectedCustomer.getBlockedUsers().contains(loggedOnUser)) {
-                            System.out.print("Your Message: ");
-                            String message = scan.nextLine();
-                            loggedOnUser.sendMessageToUser(message, selectedCustomer, accountsMaster);
-                            System.out.println("Sent!");
-                        } else {
-                            System.out.println("Sorry! You cannot message this user.");
-                        }
-                    } else if (userChoice == 2) {
-                        ArrayList<User> blockedUsers = loggedOnUser.getBlockedUsers();
-                        blockedUsers.add(selectedCustomer);
-                        loggedOnUser.setBlockedUsers(blockedUsers);
-                        System.out.println("Blocked Customer");
-                    } else if (userChoice == 3) {
-                        ArrayList<User> invisibleUsers = loggedOnUser.getInvisibleUsers();
-                        invisibleUsers.add(selectedCustomer);
-                        loggedOnUser.setInvisibleUsers(invisibleUsers);
-                        System.out.println("Now Invisible to Customer");
-                    } else if (userChoice == 4) {
-                        break;
-                    } else {
-                        System.out.println("Invalid Option");
-                    }
-                } else {
-                    System.out.println("Invalid Option");
-                }
-            }
-        } else {
-            while (true) {
-                ArrayList<Store> stores = accountsMaster.listStores((Customer) loggedOnUser);
-                System.out.println("**To Select, Enter Store No.**");
-                for (int i = 0; i < stores.size(); i++) {
-                    System.out.printf("%d. %s by %s\n", i + 1, stores.get(i).getStoreName(),
-                            stores.get(i).getSeller().getUsername());
-                }
-                System.out.printf("%d. Back to Main Menu\n", stores.size() + 1);
-                
-                int storeNumber = 0;
-                while (true) {
-                    try {
-                        storeNumber = Integer.parseInt(scan.nextLine());
-                        break;
-                    } catch (NumberFormatException e) {
-                        System.out.println("Invalid Option");
-                    }
-                }
-
-                if (storeNumber == stores.size() + 1) {
-                    break;
-                } else if (storeNumber > 0 && storeNumber <= stores.size()) {
-                    Seller selectedStoreSeller = stores.get(storeNumber - 1).getSeller();
-                    loggedOnUser.sendMessageToUser(loggedOnUser.getUsername() + "looked up you store: "
-                            + stores.get(storeNumber - 1).getStoreName(), selectedStoreSeller, accountsMaster);
-
-                    printUserActionMenu(loggedOnUser);
-                    int userChoice = 0;
-                    while (true) {
-                        try {
-                            userChoice = Integer.parseInt(scan.nextLine());
-                            break;
-                        } catch (NumberFormatException e) {
-                            System.out.println("Invalid Option");
-                        }
-                    }
-
-                    if (userChoice == 1) {
-                        if (!selectedStoreSeller.getBlockedUsers().contains(loggedOnUser)) {
-                            System.out.print("Your Message: ");
-                            String message = scan.nextLine();
-                            loggedOnUser.sendMessageToUser(message, selectedStoreSeller, accountsMaster);
-                            System.out.println("Sent!");
-                        } else {
-                            System.out.println("Sorry! You cannot message this user.");
-                        }
-                    } else if (userChoice == 2) {
-                        ArrayList<User> blockedUsers = loggedOnUser.getBlockedUsers();
-                        blockedUsers.add(selectedStoreSeller);
-                        loggedOnUser.setBlockedUsers(blockedUsers);
-                        System.out.println("Blocked Store Owner");
-                    } else if (userChoice == 3) {
-                        ArrayList<User> invisibleUsers = loggedOnUser.getInvisibleUsers();
-                        invisibleUsers.add(selectedStoreSeller);
-                        loggedOnUser.setInvisibleUsers(invisibleUsers);
-                        System.out.println("Now Invisible to Store Owner");
-                    } else if (userChoice == 4) {
-                        break;
-                    } else {
-                        System.out.println("Invalid Option");
-                    }
-                } else {
-                    System.out.println("Invalid Option");
-                }
-            }
-        }
-    }
-
-    private static void runSearchMenu(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser) {
-        System.out.println("Search by Username or Email (full or part):");
-        String searchKeyword = scan.nextLine();
-        if (loggedOnUser instanceof Seller) {
-            while (true) {
-                ArrayList<Customer> customers = accountsMaster.fetchCustomers(searchKeyword, (Seller) loggedOnUser);
-                System.out.println("**To Select, Enter Customer No.**");
-                for (int i = 0; i < customers.size(); i++) {
-                    System.out.printf("%d. %s | %s\n", i + 1, customers.get(i).getUsername(), customers.get(i).getEmail());
-                }
-                if (customers.size() == 0) {
-                    System.out.println("**No Customers Found**");
-                }
-                System.out.printf("%d. Back to Main Menu\n", customers.size() + 1);
-                int customerNumber = 0;
-                while (true) {
-                    try {
-                        customerNumber = Integer.parseInt(scan.nextLine());
-                        break;
-                    } catch (NumberFormatException e) {
-                        System.out.println("Invalid Option");
-                    }
-                }
-
-                if (customerNumber == customers.size() + 1) {
-                    break;
-                } else if (customerNumber > 0 && customerNumber <= customers.size()) {
-                    Customer selectedCustomer = customers.get(customerNumber - 1);
-                    printUserActionMenu(loggedOnUser);
-
-                    int userChoice = 0;
-                    while (true) {
-                        try {
-                            userChoice = Integer.parseInt(scan.nextLine());
-                            break;
-                        } catch (NumberFormatException e) {
-                            System.out.println("Invalid Option");
-                        }
-                    }
-
-                    if (userChoice == 1) {
-                        if (!selectedCustomer.getBlockedUsers().contains(loggedOnUser)) {
-                            System.out.print("Your Message: ");
-                            String message = scan.nextLine();
-                            loggedOnUser.sendMessageToUser(message, selectedCustomer, accountsMaster);
-                            System.out.println("Sent!");
-                        } else {
-                            System.out.println("Sorry! You cannot message this user.");
-                        }
-                    } else if (userChoice == 2) {
-                        ArrayList<User> blockedUsers = loggedOnUser.getBlockedUsers();
-                        blockedUsers.add(selectedCustomer);
-                        loggedOnUser.setBlockedUsers(blockedUsers);
-                        System.out.println("Blocked Customer");
-                    } else if (userChoice == 3) {
-                        ArrayList<User> invisibleUsers = loggedOnUser.getInvisibleUsers();
-                        invisibleUsers.add(selectedCustomer);
-                        loggedOnUser.setInvisibleUsers(invisibleUsers);
-                        System.out.println("Now Invisible to Customer");
-                    } else if (userChoice == 4) {
-                        break;
-                    } else {
-                        System.out.println("Invalid Option");
-                    }
-                } else {
-                    System.out.println("Invalid Option");
-                }
-            }
-        } else {
-            while (true) {
-                ArrayList<Seller> sellers = accountsMaster.fetchSellers(searchKeyword, (Customer) loggedOnUser);
-                System.out.println("--------");
-                System.out.println("**To Select, Enter Seller No.**");
-                for (int i = 0; i < sellers.size(); i++) {
-                    System.out.printf("%d. %s | %s\n", i + 1, sellers.get(i).getUsername(), sellers.get(i).getEmail());
-                }
-                if (sellers.size() == 0) {
-                    System.out.println("**No Sellers Found**");
-                }
-                System.out.printf("%d. Back to Main Menu\n", sellers.size() + 1);
-                
-                int sellerNumber = 0;
-                while (true) {
-                    try {
-                        sellerNumber = Integer.parseInt(scan.nextLine());
-                        break;
-                    } catch (NumberFormatException e) {
-                        System.out.println("Invalid Option");
-                    }
-                }
-
-                if (sellerNumber == sellers.size() + 1) {
-                    break;
-                } else if (sellerNumber > 0 && sellerNumber <= sellers.size()) {
-                    Seller selectedSeller = sellers.get(sellerNumber - 1);
-                    printUserActionMenu(loggedOnUser);
-                    
-                    int userChoice = 0;
-                    while (true) {
-                        try {
-                            userChoice = Integer.parseInt(scan.nextLine());
-                            break;
-                        } catch (NumberFormatException e) {
-                            System.out.println("Invalid Option");
-                        }
-                    }
-
-                    if (userChoice == 1) {
-                        if (!selectedSeller.getBlockedUsers().contains(loggedOnUser)) {
-                            System.out.print("Your Message: ");
-                            String message = scan.nextLine();
-                            loggedOnUser.sendMessageToUser(message, selectedSeller, accountsMaster);
-                            System.out.println("Sent!");
-                        } else {
-                            System.out.println("Sorry! You cannot message this user.");
-                        }
-                    } else if (userChoice == 2) {
-                        ArrayList<User> blockedUsers = loggedOnUser.getBlockedUsers();
-                        blockedUsers.add(selectedSeller);
-                        loggedOnUser.setBlockedUsers(blockedUsers);
-                        System.out.println("Blocked Seller");
-                    } else if (userChoice == 3) {
-                        ArrayList<User> invisibleUsers = loggedOnUser.getInvisibleUsers();
-                        invisibleUsers.add(selectedSeller);
-                        loggedOnUser.setInvisibleUsers(invisibleUsers);
-                        System.out.println("Now Invisible to Seller");
-                    } else if (userChoice == 4) {
-                        break;
-                    } else {
-                        System.out.println("Invalid Option");
-                    }
-                } else {
-                    System.out.println("Invalid Option");
-                }
             }
         }
     }
 
     private static void printEditAccountMenu() {
-        System.out.println("--------");
         System.out.println("1. Change Username");
         System.out.println("2. Edit Censoring");
         System.out.println("3. Delete Account");
@@ -566,24 +152,17 @@ public class Main {
     }
 
     private static void printCensoredWords(ArrayList<String> censoredWordPairs) {
-        for (int i = 1; i < censoredWordPairs.size(); i++) {
-            System.out.printf("%d. %s\n", i + 1, censoredWordPairs.get(i).replace(":", " >>> "));
+        for (int i = 0; i < censoredWordPairs.size(); i++) {
+            System.out.printf("%d. %s", i + 1, censoredWordPairs.get(i).replace(":", " >>> "));
         }
     }
 
     private static boolean runAccountMenu(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser) {
         boolean deleteUser = false;
+        System.out.println("--------");
         while (true) {
             printEditAccountMenu();
-            int accountOption = 0;
-            while (true) {
-                try {
-                    accountOption = Integer.parseInt(scan.nextLine());
-                    break;
-                } catch (NumberFormatException e) {
-                    System.out.println("Invalid Option");
-                }
-            }
+            int accountOption = Integer.parseInt(scan.nextLine());
 
             if (accountOption == 1) {
                 while (true) {
@@ -596,7 +175,7 @@ public class Main {
                             break;
                         }
                     } else {
-                        loggedOnUser.setUsername(username); //TODO Change in conversations and password handled in User
+                        loggedOnUser.setUsername(username); //TODO Change in conversations handled in User
                         break;
                     }
                 }
@@ -607,42 +186,30 @@ public class Main {
                     System.out.println("**To Remove, Enter Censor Pair No.**");
                     printCensoredWords(censoredWords);
                 }
-                System.out.printf("%d. Add Censor Pair\n", censoredWords.size());
-                System.out.printf("%d. Toggle Censoring (ON/OFF) | Currently: %s\n", censoredWords.size() + 1,
-                        (loggedOnUser.isRequestsCensorship()) ? "ON" : "OFF");
-                int censorOption = 0;
-                while (true) {
-                    try {
-                        censorOption = Integer.parseInt(scan.nextLine());
-                        break;
-                    } catch (NumberFormatException e) {
-                        System.out.println("Invalid Option");
-                    }
-                }
+                System.out.printf("%d. Add Censor Pair\n", censoredWords.size() + 1);
+                int censorOption = Integer.parseInt(scan.nextLine());
 
-                if (censorOption == censoredWords.size()) {
+                if (censorOption == censoredWords.size() + 1) {
                     System.out.println("Enter new pair as \"Word:Replacement\" or only \"Word\"");
                     String[] newCensor = scan.nextLine().split(":");
                     if (newCensor.length == 1) {
-                        censoredWords.add(newCensor[0] + ":" + "****"); //TODO Update Passwords.txt
+                        censoredWords.add(newCensor[0] + ":" + "****");
                     } else {
-                        censoredWords.add(newCensor[0] + ":" + newCensor[1]); //TODO Update Passwords.txt
+                        censoredWords.add(newCensor[0] + ":" + newCensor[1]);
                     }
-                } else if (censorOption == censoredWords.size() + 1) {
-                    loggedOnUser.setRequestsCensorship(!loggedOnUser.isRequestsCensorship()); //TODO Update Passwords.txt
-                } else if (censorOption > 0 && censorOption <= censoredWords.size()) {
-                    censoredWords.remove(censorOption - 1); //TODO Update Passwords.txt
                 } else {
-                    System.out.println("Invalid Option");
+                    //TODO Handle IndexOutOfBounds
+                    censoredWords.remove(censorOption - 1);
                 }
 
             } else if (accountOption == 3) {
                 System.out.println("Are you sure? (Y/N)");
                 deleteUser = scan.nextLine().equalsIgnoreCase("Y");
                 if (deleteUser) {
-                    accountsMaster.deleteAccount(loggedOnUser); //TODO update Conversations.txt
+                    accountsMaster.deleteAcc(loggedOnUser);
+                } else {
+                    break;
                 }
-                break;
             } else if (accountOption == 4) {
                 break;
             } else {
@@ -653,7 +220,6 @@ public class Main {
     }
 
     public static void main(String[] args) {
-
         User loggedOnUser = null;
         Scanner scan = new Scanner(System.in);
         AccountsMaster accountsMaster = new AccountsMaster(passwordFilePath, conversationsFilePath);
@@ -743,17 +309,19 @@ public class Main {
                 System.out.printf("Welcome back %s!\n", loggedOnUser.getUsername().toUpperCase());
                 int numUnreadConversations = accountsMaster.numUnreadConversations(loggedOnUser);
                 if (numUnreadConversations > 0) {
-                    System.out.printf("You have %d new unread conversation%s\n", numUnreadConversations,
-                            (numUnreadConversations != 1) ? "s" : "");
+                    System.out.printf("You have %d new unread conversations", numUnreadConversations);
                 }
             } else {
-                loggedOnUser = null;
                 System.out.println("Incorrect Password");
             }
         }
+
         if (loggedOnUser != null) {
+            //TODO Handle Invalid Input
             runMainMenu(scan, accountsMaster, loggedOnUser);
             System.out.println("Goodbye!");
+        } else {
+            System.out.println("Sorry! We could not log you in!");
         }
     }
 }

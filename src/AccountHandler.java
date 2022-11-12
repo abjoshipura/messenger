@@ -28,8 +28,82 @@ public class AccountHandler {
             e.printStackTrace();
         }
     }
-    //TODO Handle unique conversation
-    //TODO New Conversation
+	
+	// Handle unique conversation
+	public static boolean conversationExists(Customer customer, Seller seller) {
+		for (int i = 0; i < conversationList.size(); i++) {
+			String fileName = conversationList.get(i).getFileName();
+			String[] fileNameArr = fileName.split(",");
+			if (fileNameArr[1].equals(customer.getEmail()) && fileNameArr[2].equals(seller.getEmail())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public static User getConversationPartner(User user, int listNumber) { // Case: Searching
+	// Scanner for user input... Choosing which one
+	// conversationPartners are numbered from 1 to n --> listNumber
+	// int index = listNumber - 1
+		// Buyer (Customer):
+			// Search owner (seller) name --> (a) No results (b) One result (c) Multiple results, choose one
+				// ArrayList<Seller> sellerList = user.searchSeller(searchString, userArrayList);
+		// Seller:
+			// Search buyer (customer) name --> (a) No results (b) One result (c) Multiple results, choose one
+				// ArrayList<Customer> custList = user.searchCustomers(searchString, userArrayList);
+		// return null;
+	}
+
+	public static User getConversationPartner(User user, int listNumber) { // Case: Choosing from list
+		// Index to get conversationPartner from is (listNumber - 1)
+		// In case of invalid input? (e.g., -1) --> Prompt user again?
+		// Buyer: Choose from list of stores --> Use listStores()
+		// Seller: Choose from list of customers --> Use listCustomers()
+		// Unless list is empty? Cannot return null
+	}
+
+	// New Conversation
+	public static boolean createConversation(String email, User conversationPartner) {
+		// Is the user is already logged in? How to identify (currentUser)?
+		User user;
+		for (int i = 0; i < userArrayList.size(); i++) {
+			if (userArrayList.get(i).getEmail().equals(email)) {
+				user = userArrayList.get(i);
+			}
+		}
+
+		User conversationPartner;
+		ArrayList<User> tempList = getConversationPartner();
+		if (conversationPartner == null) {
+			System.out.println("Conversation partner must exist!");
+			return false;
+		}
+		
+		Conversation conversation;
+		String title;
+		String fileName;
+		if (user instanceof Customer) { // conversationPartner is Seller
+			if (!conversationExists(user, conversationPartner)) {
+				title = String.format( "Conversation between %s (Buyer) and %s (Seller)", user.getName(), conversationPartner.getName());
+				fileName = String.format("%s,%s,%s", title, user.getEmail(), conversationPartner.getEmail());
+				conversation = new Conversation(title, fileName, user, conversationPartner);
+			} else {
+				System.out.println("Conversation already exists!");
+				return false;
+			}
+		} else { // instanceof Seller, conversationPartner is Customer
+			if (!conversationExists(conversationPartner, user)) {
+				title = String.format("Conversation between %s (Seller) and %s (Buyer)", user.getName(), conversationPartner.getName());
+				fileName = String.format("%s,%s,%s", title, conversationPartner.getEmail(), user.getEmail());
+				conversation = new Conversation(title, fileName, conversationPartner, user);
+			} else {
+				System.out.println("Conversation already exists!");
+				return false;
+			}
+		}
+		return true;
+	}
+
     //TODO Handle un/blocking
     //TODO Handle in/visibility
     //TODO List Conversations
@@ -85,42 +159,31 @@ public class AccountHandler {
         if (passwordFile.contains(newEmail)) {
             System.out.println("E-mail already in use!");
         } else {
-            if (login(email, password)) { // User is logged in?
-                ArrayList<String> temp = new ArrayList<>(); // Stores file contents
-                
-                try (BufferedReader br = new BufferedReader(new FileReader(passwordFile));
-                     BufferedWriter bw = new BufferedWriter(new FileWriter(passwordFile, true)); // Append mode
-                     BufferedWriter del = new BufferedWriter(new FileWriter(passwordFile, false))) { // Overwrite mode
-                    int lineIndex = 0;
-                    String line;
-                    String userLine;
-                    while ((line = br.readLine()) != null) {
-                        String[] lineArray = line.split(",");
-                        if (!email.equalsIgnoreCase(lineArray[1])) { // Uniquely identifies user
-                            temp.add(line);
-                        } else { // Line corresponds to user
-                            userLine = lineArray[0] + "," + newEmail + "," + lineArray[2]; // Change e-mail
-                            temp.add(userLine);
-                            userArrayList.get(lineIndex).setEmail(newEmail);
-                        }
-                        lineIndex++;
+                    String[] lineArray = line.split(",");
+                    if (!email.equalsIgnoreCase(lineArray[1])) { // Uniquely identifies user
+                        temp.add(line);
+                    } else { // Line corresponds to user
+                        userLine = newName + "," + lineArray[1] + "," + lineArray[2]; // Change name
+                        temp.add(userLine);
+                        userArrayList.get(lineIndex).setName(newName);
                     }
-                    
-                    del.write(""); // Empty file contents
-                    for (int i = 0; i < temp.size(); i++) {
-                        bw.write(temp.get(i));
-                        if (i != temp.size() - 1) { // Keep file format consistent
-                            bw.newLine();
-                        }
-                    }
-                    return true;
-                } catch (FileNotFoundException e) {
-                    System.out.println("File not found!");
-                    return false;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                    return false;
+                    lineIndex++;
                 }
+                
+                del.write(""); // Empty file contents
+                for (int i = 0; i < temp.size(); i++) {
+                    bw.write(temp.get(i));
+                    if (i != temp.size() - 1) { // Keep file format consistent
+                        bw.newLine();
+                    }
+                }
+                return true;
+            } catch (FileNotFoundException e) {
+                System.out.println("File not found!");
+                return false;
+            } catch (Exception e) {
+                e.printStackTrace();
+                return false;
             }
         }
         return false;

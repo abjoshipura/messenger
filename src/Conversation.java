@@ -18,6 +18,17 @@ public class Conversation {
         this.sellerUnread = false;
         this.customerUnread = false;
     }
+    
+    public Conversation(String fileName) {
+        try (BufferedReader br = new BufferedReader(new FileReader(fileName))) {
+            String[] lineArray = br.readLine().split(",");
+            this.fileName = fileName;
+            this.customer = Seller.searchCustomers(lineArray[0], AccountHandler.getUserArrayList());
+            this.seller = Customer.searchSeller(lineArray[1], AccountHandler.getUserArrayList());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
 
     public String getConversationID() {
         return conversationID;

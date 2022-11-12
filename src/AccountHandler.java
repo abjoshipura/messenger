@@ -29,7 +29,7 @@ public class AccountHandler {
             e.printStackTrace();
         }
     }
-	
+
 	// Handle unique conversation
 	public static boolean conversationExists(Customer customer, Seller seller) {
 		for (int i = 0; i < conversationList.size(); i++) {
@@ -73,13 +73,12 @@ public class AccountHandler {
 			}
 		}
 
-		User conversationPartner;
 		ArrayList<User> tempList = getConversationPartner();
 		if (conversationPartner == null) {
 			System.out.println("Conversation partner must exist!");
 			return false;
 		}
-		
+
 		Conversation conversation;
 		String title;
 		String fileName;
@@ -136,7 +135,7 @@ public class AccountHandler {
                     }
                     lineIndex++;
                 }
-                
+
                 del.write(""); // Empty file contents
                 for (int i = 0; i < temp.size(); i++) {
                     bw.write(temp.get(i));
@@ -155,45 +154,59 @@ public class AccountHandler {
         }
         return false;
     }
-    
+
     public static boolean editEmail(String email, String password, String newEmail) throws IOException {
-        if (passwordFile.contains(newEmail)) {
-            System.out.println("E-mail already in use!");
-        } else {
-                    String[] lineArray = line.split(",");
-                    if (!email.equalsIgnoreCase(lineArray[1])) { // Uniquely identifies user
-                        temp.add(line);
-                    } else { // Line corresponds to user
-                        userLine = newName + "," + lineArray[1] + "," + lineArray[2]; // Change name
-                        temp.add(userLine);
-                        userArrayList.get(lineIndex).setName(newName);
+        if (login(email, password)) { // User is logged in?
+
+            if (passwordFile.contains(newEmail)) {
+                System.out.println("E-mail already in use!");
+            } else {
+
+                ArrayList<String> temp = new ArrayList<>(); // Stores file contents
+
+                try (BufferedReader br = new BufferedReader(new FileReader(passwordFile));
+                     BufferedWriter bw = new BufferedWriter(new FileWriter(passwordFile, true)); // Append mode
+                     BufferedWriter del = new BufferedWriter(new FileWriter(passwordFile, false))) { // Overwrite mode
+                    int lineIndex = 0;
+                    String line;
+                    String userLine;
+                    while ((line = br.readLine()) != null) {
+                        String[] lineArray = line.split(",");
+                        if (!email.equalsIgnoreCase(lineArray[1])) { // Uniquely identifies user
+                            temp.add(line);
+                        } else { // Line corresponds to user
+                            userLine = lineArray[0] + "," + newEmail + "," + lineArray[2]; // Change password
+                            temp.add(userLine);
+
+                            userArrayList.get(lineIndex).setPassword(newEmail);
+                        }
+                        lineIndex++;
                     }
-                    lineIndex++;
-                }
-                
-                del.write(""); // Empty file contents
-                for (int i = 0; i < temp.size(); i++) {
-                    bw.write(temp.get(i));
-                    if (i != temp.size() - 1) { // Keep file format consistent
-                        bw.newLine();
+
+                    del.write(""); // Empty file contents
+                    for (int i = 0; i < temp.size(); i++) {
+                        bw.write(temp.get(i));
+                        if (i != temp.size() - 1) { // Keep file format consistent
+                            bw.newLine();
+                        }
                     }
+                    return true;
+                } catch (FileNotFoundException e) {
+                    System.out.println("File not found!");
+                    return false;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    return false;
                 }
-                return true;
-            } catch (FileNotFoundException e) {
-                System.out.println("File not found!");
-                return false;
-            } catch (Exception e) {
-                e.printStackTrace();
-                return false;
             }
         }
         return false;
     }
-    
+
     public static boolean editPassword(String email, String password, String newPassword) throws IOException {
         if (login(email, password)) { // User is logged in?
             ArrayList<String> temp = new ArrayList<>(); // Stores file contents
-                
+
             try (BufferedReader br = new BufferedReader(new FileReader(passwordFile));
                  BufferedWriter bw = new BufferedWriter(new FileWriter(passwordFile, true)); // Append mode
                  BufferedWriter del = new BufferedWriter(new FileWriter(passwordFile, false))) { // Overwrite mode
@@ -212,7 +225,7 @@ public class AccountHandler {
                     }
                     lineIndex++;
                 }
-                
+
                 del.write(""); // Empty file contents
                 for (int i = 0; i < temp.size(); i++) {
                     bw.write(temp.get(i));
@@ -231,7 +244,7 @@ public class AccountHandler {
         }
         return false;
     }
-    
+
     //TODO SignIn Accounts
     public static boolean login(String email, String password) throws IOException {
         BufferedReader br = new BufferedReader(new FileReader(passwordFile));
@@ -250,6 +263,7 @@ public class AccountHandler {
         br.close();
         return false;
     }
+
     //TODO New Accounts
     public static boolean makeNewAcc(String name, String email, String password, boolean isSeller) {
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(passwordFile, true))) {
@@ -352,7 +366,7 @@ public class AccountHandler {
     public static ArrayList<Conversation> getConversationList() {
         return conversationList;
     }
-    
+
     public static ArrayList<User> getUserArrayList() {
         return userArrayList;
     }

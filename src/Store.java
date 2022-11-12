@@ -39,4 +39,12 @@ public class Store {
         numTimesContacted.add(1);
         return false;
     }
+
+    public ArrayList<Integer> getNumTimesContacted() {
+        return numTimesContacted;
+    }
+
+    public ArrayList<Customer> getContacts() {
+        return contacts;
+    }
 }

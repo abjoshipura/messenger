@@ -1,3 +1,7 @@
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -45,9 +49,63 @@ public class Customer extends User {
                 store.alreadyContacted(this);
                 return true;
             }
-
         }
         return false;
+    }
+
+    public ArrayList<Store> sortStores(SortOrder sortingStyle) {
+        ArrayList<Store> sortStores = new ArrayList<Store>();
+        ArrayList<Integer> numMessages = new ArrayList<Integer>();
+        for(int i = 0; i < AccountHandler.getStoreArrayList().size(); i++) {
+            Store storeSearch = AccountHandler.getStoreArrayList().get(i);
+            ArrayList<Integer> numTimesContacted = storeSearch.getNumTimesContacted();
+            for(int contact = 0; contact < storeSearch.getContacts().size(); contact++) {
+                Customer messenger = storeSearch.getContacts().get(contact);
+                if(this.getEmail().equals(messenger.getEmail())) {
+                    sortStores.add(storeSearch);
+                    numMessages.add(numTimesContacted.get(i));
+                }
+            }
+        }
+
+        switch(sortingStyle) {
+            case ASCENDING:
+                for(int i = 0; i < numMessages.size(); i++) {
+                    for(int j = numMessages.size() - 1; j > i; j--) {
+                        if(numMessages.get(i) < numMessages.get(i)) {
+                            int tempInt = numMessages.get(i);
+                            Store tempStore = sortStores.get(i);
+
+                            numMessages.set(i, numMessages.get(j));
+                            sortStores.set(i, sortStores.get(j));
+
+                            numMessages.set(j, tempInt);
+                            sortStores.set(j, tempStore);
+                        }
+                    }
+                }
+                return sortStores;
+
+            case DESCENDING:
+                for(int i = 0; i < numMessages.size(); i++) {
+                    for(int j = numMessages.size() - 1; j > i; j--) {
+                        if(numMessages.get(i) > numMessages.get(i)) {
+                            int tempInt = numMessages.get(i);
+                            Store tempStore = sortStores.get(i);
+
+                            numMessages.set(i, numMessages.get(j));
+                            sortStores.set(i, sortStores.get(j));
+
+                            numMessages.set(j, tempInt);
+                            sortStores.set(j, tempStore);
+                        }
+                    }
+                }
+                return sortStores;
+
+            default:
+                return null;
+        }
     }
 
 }

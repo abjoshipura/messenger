@@ -1,3 +1,4 @@
+import javax.swing.*;
 import java.io.*;
 import java.util.*;
 
@@ -261,6 +262,22 @@ public class AccountHandler {
             String[] lineArray = line.split(",");
             if (email.equalsIgnoreCase(lineArray[1])) {
                 return true;
+            }
+            line = br.readLine();
+        }
+
+        br.close();
+        return false;
+    }
+
+    public static boolean userType(String email) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(passwordFile));
+
+        String line = br.readLine();
+        while (line != null) {
+            String[] lineArray = line.split(",");
+            if (email.equalsIgnoreCase(lineArray[1])) {
+                return Boolean.parseBoolean(lineArray[3]);
             }
             line = br.readLine();
         }

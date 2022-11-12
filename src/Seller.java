@@ -1,3 +1,7 @@
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -40,6 +44,78 @@ public class Seller extends User {
             }
         }
         return null;
+    }
+
+    public ArrayList<Customer> sortCustomer(SortOrder sortingStyle) {
+        ArrayList<Customer> sortCustomer = new ArrayList<Customer>();
+        ArrayList<Integer> numMessages = new ArrayList<Integer>();
+        for(int i = 0; i < AccountHandler.getConversationList().size(); i++) {
+            Conversation conversation = AccountHandler.getConversationList().get(i);
+            int numLines = 0;
+            if(conversation.isParticipant(this)) {
+                try {
+                    BufferedReader reader = new BufferedReader(new FileReader(conversation.getFileName()));
+                    String line = reader.readLine();
+                    while(line != null) {
+                        Message msg = new Message(line);
+                        if(msg.getSender().getEmail().equals(conversation.getCustomer().getEmail())) {
+                            numLines++;
+                        }
+                        line = reader.readLine();
+                    }
+                    sortCustomer.add(conversation.getCustomer());
+                    numMessages.add(numLines);
+                } catch (FileNotFoundException e) {
+                    e.printStackTrace();
+                    System.out.println("File not found");
+                    return null;
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return null;
+                }
+
+            }
+        }
+
+        switch(sortingStyle) {
+            case ASCENDING:
+                for(int i = 0; i < numMessages.size(); i++) {
+                    for(int j = numMessages.size() - 1; j > i; j--) {
+                        if(numMessages.get(i) < numMessages.get(i)) {
+                            int tempInt = numMessages.get(i);
+                            Customer tempCustomer = sortCustomer.get(i);
+
+                            numMessages.set(i, numMessages.get(j));
+                            sortCustomer.set(i, sortCustomer.get(j));
+
+                            numMessages.set(j, tempInt);
+                            sortCustomer.set(j, tempCustomer);
+                        }
+                    }
+                }
+                return sortCustomer;
+
+            case DESCENDING:
+                for(int i = 0; i < numMessages.size(); i++) {
+                    for(int j = numMessages.size() - 1; j > i; j--) {
+                        if(numMessages.get(i) > numMessages.get(i)) {
+                            int tempInt = numMessages.get(i);
+                            Customer tempCustomer = sortCustomer.get(i);
+
+                            numMessages.set(i, numMessages.get(j));
+                            sortCustomer.set(i, sortCustomer.get(j));
+
+                            numMessages.set(j, tempInt);
+                            sortCustomer.set(j, tempCustomer);
+                        }
+                    }
+                }
+                return sortCustomer;
+
+            default:
+                System.out.println("No sorting method provided");
+                return null;
+        }
     }
 
     public void addStore(Store store) {

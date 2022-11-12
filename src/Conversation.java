@@ -92,4 +92,12 @@ public class Conversation {
     public String getTitle(){
         return title;
     }
+
+    public Seller getSeller() {
+        return seller;
+    }
+
+    public Customer getCustomer() {
+        return customer;
+    }
 }

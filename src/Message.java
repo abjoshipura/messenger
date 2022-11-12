@@ -51,4 +51,8 @@ public class Message {
     public String toString() {
         return id + ";" + sender.getName() + ";" + message;
     }
+
+    public User getSender() {
+        return sender;
+    }
 }

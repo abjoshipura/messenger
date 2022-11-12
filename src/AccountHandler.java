@@ -31,14 +31,14 @@ public class AccountHandler {
     }
 
 	// Handle unique conversation
-	public static boolean conversationExists(Customer customer, Seller seller) {
-		for (int i = 0; i < conversationList.size(); i++) {
-			String fileName = conversationList.get(i).getFileName();
-			String[] fileNameArr = fileName.split(",");
-			if (fileNameArr[1].equals(customer.getEmail()) && fileNameArr[2].equals(seller.getEmail())) {
-				return true;
-			}
-		}
+	public static boolean conversationExists(User customer, User seller) {
+        for (Conversation conversation : conversationList) {
+            String fileName = conversation.getFileName();
+            String[] fileNameArr = fileName.split(",");
+            if (fileNameArr[1].equals(customer.getEmail()) && fileNameArr[2].equals(seller.getEmail())) {
+                return true;
+            }
+        }
 		return false;
 	}
 
@@ -66,7 +66,7 @@ public class AccountHandler {
 	// New Conversation
 	public static boolean createConversation(String email, User conversationPartner) {
 		// Is the user is already logged in? How to identify (currentUser)?
-		User user;
+		User user = null;
 		for (int i = 0; i < userArrayList.size(); i++) {
 			if (userArrayList.get(i).getEmail().equals(email)) {
 				user = userArrayList.get(i);
@@ -86,7 +86,7 @@ public class AccountHandler {
 			if (!conversationExists(user, conversationPartner)) {
 				title = String.format( "Conversation between %s (Buyer) and %s (Seller)", user.getName(), conversationPartner.getName());
 				fileName = String.format("%s,%s,%s", title, user.getEmail(), conversationPartner.getEmail());
-				conversation = new Conversation(title, fileName, user, conversationPartner);
+				conversation = new Conversation(title, fileName, (Customer) user, (Seller) conversationPartner);
 			} else {
 				System.out.println("Conversation already exists!");
 				return false;
@@ -95,7 +95,7 @@ public class AccountHandler {
 			if (!conversationExists(conversationPartner, user)) {
 				title = String.format("Conversation between %s (Seller) and %s (Buyer)", user.getName(), conversationPartner.getName());
 				fileName = String.format("%s,%s,%s", title, conversationPartner.getEmail(), user.getEmail());
-				conversation = new Conversation(title, fileName, conversationPartner, user);
+				conversation = new Conversation(title, fileName, (Customer) conversationPartner, (Seller) user);
 			} else {
 				System.out.println("Conversation already exists!");
 				return false;

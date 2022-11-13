@@ -10,7 +10,7 @@ public class AccountsMaster {
     //TODO Update for new Strings, reload conversationList just as userArrayList
     public AccountsMaster(String passwordFile, String conversationDirectory) {
         this.passwordFile = passwordFile;
-        this.conversationsFile = conversationsFile;
+        this.conversationDirectory = conversationDirectory;
 
         try (BufferedReader bfr = new BufferedReader(new FileReader(passwordFile))) {
             String userString = bfr.readLine();

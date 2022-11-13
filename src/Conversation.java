@@ -53,7 +53,7 @@ public class Conversation {
     }
 
     public void setConversationID(String conversationID) {
-        for (Conversation conversation : AccountsMaster.conversationArrayList) {
+        for (Conversation conversation : AccountsMaster.conversationList) {
             if (conversation.equals(this)) {
                 conversation.setConversationID(conversationID);
             }

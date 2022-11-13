@@ -199,27 +199,9 @@ public class AccountsMaster {
         }
     }
 
-    public boolean convertConversationsToCSV(ArrayList<Conversation> exportingConversations, String destinationPath, User user) {
+    public boolean convertConversationsToCSV(ArrayList<Conversation> exportingConversations, String destinationPath) {
         //TODO Implement Censoring
-        try {
-            File exportDir = new File(String.format(destinationPath));
-            exportDir.mkdirs();
-            for (Conversation conv : exportingConversations) {
-                ArrayList<Message> temp = conv.readFile(user);
-                File convFile = new File(exportDir, String.format("%s.csv", conv.getConversationID()));
-                convFile.createNewFile();
-
-                BufferedWriter bw = new BufferedWriter(new FileWriter(convFile, true));
-                for (Message msg : temp) {
-                    bw.write(msg.csvToString());
-                }
-                bw.close();
-            }
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+        return true;
     }
 
     public ArrayList<Customer> listCustomers(Seller seller) {

@@ -1,4 +1,5 @@
 import java.io.*;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 public class Conversation {
@@ -53,34 +54,6 @@ public class Conversation {
     }
 
     public void setConversationID(String conversationID) {
-        for (Conversation conversation : AccountsMaster.conversationArrayList) {
-            if (conversation.equals(this)) {
-                conversation.setConversationID(conversationID);
-            }
-        }
-
-        ArrayList<String> conversationStrings = new ArrayList<>();
-        try (BufferedReader bfr = new BufferedReader(new FileReader("conversations.txt"))) {
-            String conversationString = bfr.readLine();
-            while (conversationString != null) {
-                if (conversationString.equals(this.toString())) {
-                    this.conversationID = conversationID;
-                    conversationString = this.toString();
-                }
-                conversationStrings.add(conversationString);
-                conversationString = bfr.readLine();
-            }
-        } catch (Exception e) {
-            System.out.println("Could Not Update Conversation ID");
-        }
-
-        try (PrintWriter pw = new PrintWriter(new FileWriter("conversations.txt", true))) {
-            for (String conversationString : conversationStrings) {
-                pw.println(conversationString);
-            }
-        } catch (Exception e) {
-            System.out.println("Could Not Update Conversation ID");
-        }
     }
 
     public boolean isCustomerUnread() {
@@ -89,6 +62,7 @@ public class Conversation {
 
     public void setCustomerUnread(boolean customerUnread) {
         this.customerUnread = customerUnread;
+        updateConversationFields();
     }
 
     public boolean isSellerUnread() {
@@ -97,6 +71,35 @@ public class Conversation {
 
     public void setSellerUnread(boolean sellerUnread) {
         this.sellerUnread = sellerUnread;
+        updateConversationFields();
+    }
+
+    public void updateConversationFields() {
+        ArrayList<String> conversationStrings = new ArrayList<>();
+        try (BufferedReader bfr = new BufferedReader(new FileReader(Main.conversationsFilePath))) {
+            String conversationString = bfr.readLine();
+            while (conversationString != null) {
+                String tempString = conversationString.substring(conversationString.indexOf("<") + 1,
+                        conversationString.lastIndexOf(">"));
+                String[] splitTempString = tempString.split(", ");
+                if (this.fileName.equals(splitTempString[1])) {
+                    conversationString = this.toString();
+                }
+                conversationStrings.add(conversationString);
+                conversationString = bfr.readLine();
+            }
+
+        } catch (Exception e) {
+            System.out.println("Could not update Conversation");
+        }
+
+        try (PrintWriter pw = new PrintWriter(new FileOutputStream(Main.conversationsFilePath, false))) {
+            for (String conversationString : conversationStrings) {
+                pw.println(conversationString);
+            }
+        } catch (Exception e) {
+            System.out.println("Could not update User");
+        }
     }
 
     public boolean importTXT(String filePath, User sender, User recipient) {
@@ -134,7 +137,7 @@ public class Conversation {
         return customer;
     }
 
-    public ArrayList<Message> readFile(User user) {
+    public ArrayList<Message> readFileAsPerUser(User user) {
         ArrayList<Message> readMessages = new ArrayList<>();
         try (BufferedReader bfr = new BufferedReader(new FileReader(this.fileName))) {
             Message message = null;
@@ -155,6 +158,33 @@ public class Conversation {
                     message = null;
                 }
             }
+            return readMessages;
+        } catch (IOException e) {
+            return readMessages;
+        }
+    }
+
+    public ArrayList<Message> readFile() {
+        ArrayList<Message> readMessages = new ArrayList<>();
+        try (BufferedReader bfr = new BufferedReader(new FileReader(this.fileName))) {
+            Message message = null;
+            String messageLine = bfr.readLine();
+            if (messageLine != null) {
+                message = new Message(messageLine);
+            }
+
+            while (message != null) {
+                if ((message.isSenderVisibility()) || message.isRecipientVisibility()) {
+                    readMessages.add(message);
+                }
+                messageLine = bfr.readLine();
+                if (messageLine != null) {
+                    message = new Message(messageLine);
+                } else {
+                    message = null;
+                }
+            }
+
             return readMessages;
         } catch (IOException e) {
             return readMessages;

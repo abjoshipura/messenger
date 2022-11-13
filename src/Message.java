@@ -1,7 +1,9 @@
 import java.util.*;
+import java.time.Instant;
+import java.sql.Timestamp;
 
 public class Message {
-    private String timeStamp;
+    private final String timeStamp;
     private final UUID id;
     private String message;
     private final User sender;
@@ -19,18 +21,19 @@ public class Message {
 
         int elementsInUserString = 3;
         int indexOfNextElem = 2;
+        //TODO Update for Customer and Seller
         StringBuilder senderString = new StringBuilder();
         for (int i = indexOfNextElem; i < indexOfNextElem + elementsInUserString; i++) {
             senderString.append(messageDetails[i]).append(", ");
         }
-        this.sender = new User(senderString.toString());
+        this.sender = new User(senderString.toString(), false);
         indexOfNextElem = indexOfNextElem + elementsInUserString;
 
         StringBuilder recipientString = new StringBuilder();
         for (int i = indexOfNextElem; i < indexOfNextElem + elementsInUserString; i++) {
             recipientString.append(messageDetails[i]).append(", ");
         }
-        this.recipient = new User(recipientString.toString());
+        this.recipient = new User(recipientString.toString(), false);
         indexOfNextElem = indexOfNextElem + elementsInUserString;
 
         this.message = messageDetails[indexOfNextElem++];
@@ -38,8 +41,10 @@ public class Message {
         this.recipientVisibility = Boolean.parseBoolean(messageDetails[indexOfNextElem]);
     }
 
-    public Message(String timeStamp, String message, User sender, User recipient, boolean isDisappearing) {
-        this.timeStamp = timeStamp;
+    public Message(String message, User sender, User recipient) {
+        Timestamp instant = Timestamp.from(Instant.now());
+        this.timeStamp = instant.toString();
+
         this.id = UUID.randomUUID();
         this.sender = sender;
         this.recipient = recipient;
@@ -50,8 +55,8 @@ public class Message {
     }
 
     public String toString() {
-        return String.format("Message<%s, %s, %s, %s, %s, %b, %b>", this.timeStamp, this.id, this.sender, this.recipient, this.message,
-                this.senderVisibility, this.recipientVisibility);
+        return String.format("Message<%s, %s, %s, %s, %s, %b, %b>", this.timeStamp, this.id,
+                this.sender.toString(), this.recipient.toString(), this.message, this.senderVisibility, this.recipientVisibility);
     }
 
     @Override

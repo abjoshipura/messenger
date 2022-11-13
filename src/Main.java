@@ -112,9 +112,8 @@ public class Main {
         ArrayList<Message> messages = conversation.readFile(loggedOnUser);
         int lowerLimit = Math.min(messages.size(), 20);
         for (int i = messages.size() - lowerLimit; i < messages.size(); i++) {
-            //TODO Implement censoring
             System.out.printf("[%d] %s: %s\n", i, messages.get(i).getSender().getUsername(),
-                    messages.get(i).getMessage());
+                    messages.get(i).getCensoredMessage(loggedOnUser));
         }
 
         //TODO Handle Invalid Input
@@ -144,11 +143,11 @@ public class Main {
                 } else if (action == 2) {
                     System.out.println("Enter path to .txt file:");
                     String txtPath = scan.nextLine();
-//                                    if (conversation.importTXT(txtPath)) {
-//                                        System.out.println("Message Sent Successfully!");
-//                                    } else {
-//                                        System.out.println("Error: Could not send message");
-//                                    } //TODO Implement
+                    if (conversation.importTXT(txtPath, loggedOnUser, recipient)) {
+                        System.out.println("Message Sent Successfully!");
+                    } else {
+                        System.out.println("Error: Could not send message");
+                    } //TODO Implement
                 } else if (action == 3) {
                     System.out.print("Your Message: ");
                     String message = scan.nextLine();

@@ -280,6 +280,7 @@ public class Main {
                 System.out.printf("%d. Back to Main Menu\n", stores.size() + 1);
                 int storeNumber = 0;
                 while(true) {
+
                     try{
                         storeNumber = Integer.parseInt(scan.nextLine());
                         break;

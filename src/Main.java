@@ -2,8 +2,8 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Main {
-    private static final String passwordFilePath = "passwords.txt";
-    private static final String conversationsFilePath = "conversations.txt";
+    public static final String passwordFilePath = "passwords.txt";
+    public static final String conversationsFilePath = "conversations.txt";
 
     private static void printMainMenu(User user) {
         System.out.println("--------");
@@ -26,13 +26,13 @@ public class Main {
     private static void runMainMenu(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser) {
         while (true) {
             printMainMenu(loggedOnUser);
-            int selectedOption = 0;
-            while(true) {
+            int selectedOption;
+            while (true) {
                 try {
                     selectedOption = Integer.parseInt(scan.nextLine());
                     break;
                 } catch (NumberFormatException e) {
-                    System.out.println("Invalid Input");
+                    System.out.println("Invalid Option");
                 }
             }
 
@@ -59,7 +59,6 @@ public class Main {
         ArrayList<Conversation> conversations = accountsMaster.listConversations(loggedOnUser);
         if (conversations.size() > 0) {
             while (true) {
-
                 System.out.println("--------");
                 System.out.println("**To Open, Enter Conversation No.**");
                 for (int i = 0; i < conversations.size(); i++) {
@@ -67,9 +66,8 @@ public class Main {
                 }
                 System.out.printf("%d. Export Conversations\n", conversations.size() + 1);
                 System.out.printf("%d. Back to Main Menu\n", conversations.size() + 2);
-                int conversationNumber = 0;
-
-                while(true) {
+                int conversationNumber;
+                while (true) {
                     try {
                         conversationNumber = Integer.parseInt(scan.nextLine());
                         break;
@@ -85,6 +83,7 @@ public class Main {
                     String exportingIndexes = scan.nextLine();
                     System.out.println("Enter .csv File Destination (eg. folder\\fileName.txt)"); //TODO Confirm this format works
                     String CSVDestination = scan.nextLine();
+
                     try {
                         ArrayList<Conversation> exportingConversations = new ArrayList<>();
                         for (String stringIndex : exportingIndexes.split(",")) {
@@ -106,6 +105,11 @@ public class Main {
 
                 } else if (conversationNumber > 0 && conversationNumber <= conversations.size()) {
                     Conversation conversation = conversations.get(conversationNumber - 1);
+                    if (loggedOnUser instanceof Seller) {
+                        conversation.setSellerUnread(false);
+                    } else {
+                        conversation.setCustomerUnread(false);
+                    }
                     runConversationActions(scan, accountsMaster, loggedOnUser, conversation);
                 } else {
                     System.out.println("Invalid Option");
@@ -138,42 +142,50 @@ public class Main {
                     messages.get(i).getCensoredMessage(loggedOnUser));
         }
 
-        //TODO Handle Invalid Input
         while (true) {
             String conversationAction = scan.nextLine();
             if (conversationAction.contains(".")) {
                 String[] messageActions = conversationAction.split("\\.");
-                int messageID = Integer.parseInt(messageActions[0]);
-                int action = Integer.parseInt(messageActions[1]);
 
-                if(messageID > messages.size() - 1 || messageID < 0) {
-                    System.out.println("Invalid Input. No Such Conversation Exists");
-                    break;
+                int messageID = 0;
+                int action = 0;
+                try {
+                    messageID = Integer.parseInt(messageActions[0]);
+                    action = Integer.parseInt(messageActions[1]);
+                    if (messageID > messages.size() - 1 || messageID < 0) {
+                        System.out.println("Invaid Input. No Such Conversation Exists");
+                        break;
+                    }
+                } catch (Exception e) {
+                    System.out.println("Invalid Input");
                 }
 
                 if (action == 5) {
-                    System.out.print("Updated Message: ");
-                    String updatedMessage = scan.nextLine();
-                    loggedOnUser.editMessage(messages.get(messageID), conversation, updatedMessage);
-
+                    if (messages.get(messageID).getSender().equals(loggedOnUser)) {
+                        System.out.print("Updated Message: ");
+                        String updatedMessage = scan.nextLine();
+                        loggedOnUser.editMessage(messages.get(messageID), conversation, updatedMessage);
+                    } else {
+                        loggedOnUser.editMessage(messages.get(messageID), conversation, "");
+                    }
                 } else if (action == 6) {
-                    loggedOnUser.deleteMessage(messages.get(messageID), conversation); //TODO Toggles Even other user!!
+                    loggedOnUser.deleteMessage(messages.get(messageID), conversation);
                     System.out.println("Deleted Message");
                 } else {
-                    System.out.println("Invalid Input");
+                    System.out.println("Invalid Option");
                 }
             } else {
                 int action = 0;
-                while (true){
+                while (true) {
                     try {
                         action = Integer.parseInt(conversationAction);
                         break;
                     } catch (NumberFormatException e) {
-                        System.out.println("Invalid Input");
+                        System.out.println("Invalid Option");
                         conversationAction = scan.nextLine();
                     }
                 }
-
+                
                 if (action == 1) {
                     for (int i = 0; i < messages.size(); i++) {
                         System.out.printf("[%d] %s: %s\n", i, messages.get(i).getSender().getUsername(),
@@ -186,23 +198,16 @@ public class Main {
                         System.out.println("Message Sent Successfully!");
                     } else {
                         System.out.println("Error: Could not send message");
-                    } //TODO Implement
+                    }
                 } else if (action == 3) {
                     System.out.print("Your Message: ");
                     String message = scan.nextLine();
                     loggedOnUser.sendMessageToUser(message, recipient, accountsMaster);
                     System.out.println("Sent!");
-//                                    if (loggedOnUser instanceof Seller) {
-//                                        loggedOnUser.sendMessageToUser(newMessage, conversation.getCustomer(), accountsMaster);
-//                                        conversation.setCustomerUnread(true);  //TODO Update Conversations.txt
-//                                    } else {
-//                                        loggedOnUser.sendMessageToUser(newMessage, conversation.getSeller(), accountsMaster);
-//                                        conversation.setSellerUnread(true); //TODO Update Conversations.txt (in sendMessage method)
-//                                    }
                 } else if (action == 4) {
                     break;
                 } else {
-                    System.out.println("Invalid Input");
+                    System.out.println("Invalid Option");
                 }
             }
         }
@@ -212,9 +217,9 @@ public class Main {
         if (loggedOnUser instanceof Seller) {
             while (true) {
                 ArrayList<Customer> customers = accountsMaster.listCustomers((Seller) loggedOnUser);
-
+                
                 int customerNumber = 0;
-                while(true) {
+                while (true) {
                     try {
                         System.out.println("--------");
                         System.out.println("**To Select, Enter Customer No.**");
@@ -236,10 +241,10 @@ public class Main {
                     Customer selectedCustomer = customers.get(customerNumber - 1);
                     printUserActionMenu(loggedOnUser);
                     int userChoice = 0;
-                    while(true) {
+                    while (true) {
                         try {
-                             userChoice = Integer.parseInt(scan.nextLine());
-                             break;
+                            userChoice = Integer.parseInt(scan.nextLine());
+                            break;
                         } catch (NumberFormatException e) {
                             System.out.println("Invalid Option");
                         }
@@ -255,11 +260,15 @@ public class Main {
                             System.out.println("Sorry! You cannot message this user.");
                         }
                     } else if (userChoice == 2) {
-                        loggedOnUser.getBlockedUsers().add(selectedCustomer);
-                        System.out.println("Blocked Customer"); //TODO Update Passwords.txt
+                        ArrayList<User> blockedUsers = loggedOnUser.getBlockedUsers();
+                        blockedUsers.add(selectedCustomer);
+                        loggedOnUser.setBlockedUsers(blockedUsers);
+                        System.out.println("Blocked Customer");
                     } else if (userChoice == 3) {
-                        loggedOnUser.getInvisibleUsers().add(selectedCustomer);
-                        System.out.println("Now Invisible to Customer"); //TODO Update Passwords.txt
+                        ArrayList<User> invisibleUsers = loggedOnUser.getInvisibleUsers();
+                        invisibleUsers.add(selectedCustomer);
+                        loggedOnUser.setInvisibleUsers(invisibleUsers);
+                        System.out.println("Now Invisible to Customer");
                     } else if (userChoice == 4) {
                         break;
                     } else {
@@ -278,14 +287,14 @@ public class Main {
                             stores.get(i).getSeller().getUsername());
                 }
                 System.out.printf("%d. Back to Main Menu\n", stores.size() + 1);
+                
                 int storeNumber = 0;
-                while(true) {
-
-                    try{
+                while (true) {
+                    try {
                         storeNumber = Integer.parseInt(scan.nextLine());
                         break;
                     } catch (NumberFormatException e) {
-                        System.out.println("Invalid Input");
+                        System.out.println("Invalid Option");
                     }
                 }
 
@@ -297,7 +306,15 @@ public class Main {
                             + stores.get(storeNumber - 1).getStoreName(), selectedStoreSeller, accountsMaster);
 
                     printUserActionMenu(loggedOnUser);
-                    int userChoice = Integer.parseInt(scan.nextLine());
+                    int userChoice = 0;
+                    while (true) {
+                        try {
+                            userChoice = Integer.parseInt(scan.nextLine());
+                            break;
+                        } catch (NumberFormatException e) {
+                            System.out.println("Invalid Option");
+                        }
+                    }
 
                     if (userChoice == 1) {
                         if (!selectedStoreSeller.getBlockedUsers().contains(loggedOnUser)) {
@@ -309,11 +326,15 @@ public class Main {
                             System.out.println("Sorry! You cannot message this user.");
                         }
                     } else if (userChoice == 2) {
-                        loggedOnUser.getBlockedUsers().add(selectedStoreSeller);
-                        System.out.println("Blocked Store Owner"); //TODO Update Passwords.txt
+                        ArrayList<User> blockedUsers = loggedOnUser.getBlockedUsers();
+                        blockedUsers.add(selectedStoreSeller);
+                        loggedOnUser.setBlockedUsers(blockedUsers);
+                        System.out.println("Blocked Store Owner");
                     } else if (userChoice == 3) {
-                        loggedOnUser.getInvisibleUsers().add(selectedStoreSeller);
-                        System.out.println("Now Invisible to Store Owner"); //TODO Update Passwords.txt
+                        ArrayList<User> invisibleUsers = loggedOnUser.getInvisibleUsers();
+                        invisibleUsers.add(selectedStoreSeller);
+                        loggedOnUser.setInvisibleUsers(invisibleUsers);
+                        System.out.println("Now Invisible to Store Owner");
                     } else if (userChoice == 4) {
                         break;
                     } else {
@@ -341,12 +362,12 @@ public class Main {
                 }
                 System.out.printf("%d. Back to Main Menu\n", customers.size() + 1);
                 int customerNumber = 0;
-                while(true) {
+                while (true) {
                     try {
                         customerNumber = Integer.parseInt(scan.nextLine());
                         break;
-                    } catch(NumberFormatException e) {
-                        System.out.println("Invalid Input");
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid Option");
                     }
                 }
 
@@ -357,16 +378,14 @@ public class Main {
                     printUserActionMenu(loggedOnUser);
 
                     int userChoice = 0;
-                    while(true) {
+                    while (true) {
                         try {
                             userChoice = Integer.parseInt(scan.nextLine());
                             break;
                         } catch (NumberFormatException e) {
-                            System.out.println("Invalid Input");
+                            System.out.println("Invalid Option");
                         }
                     }
-
-
 
                     if (userChoice == 1) {
                         if (!selectedCustomer.getBlockedUsers().contains(loggedOnUser)) {
@@ -378,11 +397,15 @@ public class Main {
                             System.out.println("Sorry! You cannot message this user.");
                         }
                     } else if (userChoice == 2) {
-                        loggedOnUser.getBlockedUsers().add(selectedCustomer);
-                        System.out.println("Blocked Customer"); //TODO Update Passwords.txt
+                        ArrayList<User> blockedUsers = loggedOnUser.getBlockedUsers();
+                        blockedUsers.add(selectedCustomer);
+                        loggedOnUser.setBlockedUsers(blockedUsers);
+                        System.out.println("Blocked Customer");
                     } else if (userChoice == 3) {
-                        loggedOnUser.getInvisibleUsers().add(selectedCustomer);
-                        System.out.println("Now Invisible to Customer"); //TODO Update Passwords.txt
+                        ArrayList<User> invisibleUsers = loggedOnUser.getInvisibleUsers();
+                        invisibleUsers.add(selectedCustomer);
+                        loggedOnUser.setInvisibleUsers(invisibleUsers);
+                        System.out.println("Now Invisible to Customer");
                     } else if (userChoice == 4) {
                         break;
                     } else {
@@ -404,14 +427,32 @@ public class Main {
                     System.out.println("**No Sellers Found**");
                 }
                 System.out.printf("%d. Back to Main Menu\n", sellers.size() + 1);
-                int sellerNumber = Integer.parseInt(scan.nextLine());
+                
+                int sellerNumber = 0;
+                while (true) {
+                    try {
+                        sellerNumber = Integer.parseInt(scan.nextLine());
+                        break;
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid Option");
+                    }
+                }
 
                 if (sellerNumber == sellers.size() + 1) {
                     break;
                 } else if (sellerNumber > 0 && sellerNumber <= sellers.size()) {
                     Seller selectedSeller = sellers.get(sellerNumber - 1);
                     printUserActionMenu(loggedOnUser);
-                    int userChoice = Integer.parseInt(scan.nextLine());
+                    
+                    int userChoice = 0;
+                    while (true) {
+                        try {
+                            userChoice = Integer.parseInt(scan.nextLine());
+                            break;
+                        } catch (NumberFormatException e) {
+                            System.out.println("Invalid Option");
+                        }
+                    }
 
                     if (userChoice == 1) {
                         if (!selectedSeller.getBlockedUsers().contains(loggedOnUser)) {
@@ -423,11 +464,15 @@ public class Main {
                             System.out.println("Sorry! You cannot message this user.");
                         }
                     } else if (userChoice == 2) {
-                        loggedOnUser.getBlockedUsers().add(selectedSeller);
-                        System.out.println("Blocked Seller");//TODO Update Passwords.txt
+                        ArrayList<User> blockedUsers = loggedOnUser.getBlockedUsers();
+                        blockedUsers.add(selectedSeller);
+                        loggedOnUser.setBlockedUsers(blockedUsers);
+                        System.out.println("Blocked Seller");
                     } else if (userChoice == 3) {
-                        loggedOnUser.getInvisibleUsers().add(selectedSeller);
-                        System.out.println("Now Invisible to Seller");; //TODO Update Passwords.txt
+                        ArrayList<User> invisibleUsers = loggedOnUser.getInvisibleUsers();
+                        invisibleUsers.add(selectedSeller);
+                        loggedOnUser.setInvisibleUsers(invisibleUsers);
+                        System.out.println("Now Invisible to Seller");
                     } else if (userChoice == 4) {
                         break;
                     } else {
@@ -459,12 +504,12 @@ public class Main {
         while (true) {
             printEditAccountMenu();
             int accountOption = 0;
-            while(true) {
+            while (true) {
                 try {
                     accountOption = Integer.parseInt(scan.nextLine());
                     break;
                 } catch (NumberFormatException e) {
-                    System.out.println("Invalid Input");
+                    System.out.println("Invalid Option");
                 }
             }
 
@@ -494,12 +539,12 @@ public class Main {
                 System.out.printf("%d. Toggle Censoring (ON/OFF) | Currently: %s\n", censoredWords.size() + 1,
                         (loggedOnUser.isRequestsCensorship()) ? "ON" : "OFF");
                 int censorOption = 0;
-                while(true) {
+                while (true) {
                     try {
                         censorOption = Integer.parseInt(scan.nextLine());
                         break;
                     } catch (NumberFormatException e) {
-                        System.out.println("Invalid Input");
+                        System.out.println("Invalid Option");
                     }
                 }
 
@@ -625,7 +670,8 @@ public class Main {
                 System.out.printf("Welcome back %s!\n", loggedOnUser.getUsername().toUpperCase());
                 int numUnreadConversations = accountsMaster.numUnreadConversations(loggedOnUser);
                 if (numUnreadConversations > 0) {
-                    System.out.printf("You have %d new unread conversations", numUnreadConversations);
+                    System.out.printf("You have %d new unread conversation%s\n", numUnreadConversations,
+                            (numUnreadConversations != 1) ? "s" : "");
                 }
             } else {
                 loggedOnUser = null;
@@ -633,7 +679,6 @@ public class Main {
             }
         }
         if (loggedOnUser != null) {
-//            TODO Handle Invalid Input
             runMainMenu(scan, accountsMaster, loggedOnUser);
             System.out.println("Goodbye!");
         }

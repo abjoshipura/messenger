@@ -208,17 +208,18 @@ public class AccountsMaster {
         for (Conversation conv : exportingConversations) {
             File c = new File(dest, String.format("%s.txt", conv.getConversationID()));
             c.createNewFile();
+            File act = new File(dest, String.format("%s.csv", conv.getConversationID()));
 
-            BufferedWriter bw = new BufferedWriter(new FileWriter(c, true));
+            PrintWriter bw = new PrintWriter(new FileWriter(c, true));
 
             ArrayList<Message> temp = conv.readFile();
 
             for (Message msg : temp) {
-                bw.write(msg.csvToString());
+                bw.println(msg.csvToString());
             }
             bw.close();
 
-            c.renameTo(new File(dest, String.format("%s.txt", conv.getConversationID())));
+            c.renameTo(act);
         }
 
         return true;

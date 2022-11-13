@@ -60,7 +60,7 @@ public class Message {
 
     public String csvToString() {
         return String.format("%s, %s, %s, %s, %s, %b, %b", this.timeStamp, this.id,
-                this.sender.toString(), this.recipient.toString(), this.message, this.senderVisibility, this.recipientVisibility);
+                this.sender.csvToString(), this.recipient.csvToString(), this.message, this.senderVisibility, this.recipientVisibility);
     }
 
     @Override

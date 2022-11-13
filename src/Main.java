@@ -101,6 +101,8 @@ public class Main {
                         }
                     } catch (NumberFormatException e) {
                         System.out.println("Invalid Conversations");
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
 
                 } else if (conversationNumber > 0 && conversationNumber <= conversations.size()) {

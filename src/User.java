@@ -78,6 +78,9 @@ public class User {
         return String.format("User<%s, %s, %s>", this.username, this.email, this.password);
     }
 
+    public String csvToString() {
+        return String.format("%s, %s, %s", this.username, this.email, this.password);
+    }
 
     public boolean isParticipantOf(Conversation conversation) {
         return this.equals(conversation.getSeller()) || this.equals(conversation.getCustomer());

@@ -1,76 +1,114 @@
 import java.util.ArrayList;
-import java.io.*;
+import java.util.Arrays;
 
 public class User {
     private String username;
-    private String email;
-    private String password;
-    private ArrayList<User> blockedUsers;
-    private ArrayList<User> invisibleUsers;
+    private final String email;
+    private final String password;
     private boolean requestsCensorship;
+    private ArrayList<User> blockedUsers; //TODO: WHENEVER ADDED TO, MAKE SURE YOU ADD AS USER NOT CUSTOMER OR SELLER
+    private ArrayList<User> invisibleUsers; //TODO: WHENEVER ADDED TO, MAKE SURE YOU ADD AS USER NOT CUSTOMER OR SELLER
     private ArrayList<String> censoredWords;
-    private boolean censorWords;
-    private int numUnreadMessages;
 
-    public User(String userString) {
-        String strippedMessage = userString.substring(userString.indexOf("<") + 1, userString.lastIndexOf(">"));
-        String[] userDetails = strippedMessage.split(", ");
-        this.username = userDetails[0];
-        this.email = userDetails[1];
-        this.password = userDetails[2];
+    public User(String userString, boolean hasDetails) {
+        userString = userString.substring(userString.indexOf("<") + 1, userString.lastIndexOf(">"));
+        String[] splitTest = userString.split(", ");
+        this.username = splitTest[0];
+        this.email = splitTest[1];
+        this.password = splitTest[2];
+
+        if (hasDetails) {
+            this.requestsCensorship = Boolean.parseBoolean(splitTest[3]);
+
+            this.blockedUsers = new ArrayList<>();
+            String[] blockedUsersStringArray = userString.substring(userString.indexOf("[") + 1,
+                    userString.indexOf("]")).split(", ");
+            if (blockedUsersStringArray.length > 1) {
+                for (String blockedUserString : blockedUsersStringArray) {
+                    this.blockedUsers.add(new User(blockedUserString, false));
+                }
+            }
+
+            userString = userString.substring(userString.indexOf("]") + 3);
+            this.invisibleUsers = new ArrayList<>();
+            String[] invisibleUsersStringArray = userString.substring(userString.indexOf("[") + 1,
+                    userString.indexOf("]")).split(", ");
+            if (invisibleUsersStringArray.length > 1) {
+                for (String invisibleUserString : invisibleUsersStringArray) {
+                    this.blockedUsers.add(new User(invisibleUserString, false));
+                }
+            }
+
+            userString = userString.substring(userString.indexOf("]") + 3);
+            String censoredWordPairs = userString.substring(userString.indexOf("[") + 1, userString.indexOf("]"));
+            this.censoredWords = new ArrayList<>(Arrays.asList(censoredWordPairs.split(", ")));
+        } else {
+            this.blockedUsers = new ArrayList<>();
+            this.invisibleUsers = new ArrayList<>();
+            this.censoredWords = new ArrayList<>();
+            this.requestsCensorship = false;
+        }
     }
+
 
     public User(String username, String email, String password) {
         this.username = username;
         this.email = email;
         this.password = password;
+
+        this.blockedUsers = new ArrayList<>();
+        this.invisibleUsers = new ArrayList<>();
+        this.censoredWords = new ArrayList<>();
+        this.requestsCensorship = false;
     }
 
     public String toString() {
         return String.format("User<%s, %s, %s>", this.username, this.email, this.password);
     }
 
+
     public boolean isParticipantOf(Conversation conversation) {
         return this.equals(conversation.getSeller()) || this.equals(conversation.getCustomer());
     }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof User user)) return false;
+        if (!(o instanceof User)) return false;
+        User user = (User) o;
         return username.equals(user.username) && email.equals(user.email) && password.equals(user.password);
     }
+    public void sendMessageToUser(String message, User user, AccountsMaster accountsMaster) {
+        Conversation conversation;
+        if (this instanceof Customer && user instanceof Seller) {
+            conversation = accountsMaster.fetchConversation((Customer) this, (Seller) user);
+            if (conversation == null) {
+                conversation = accountsMaster.createConversation((Customer) this, (Seller) user);
+            }
 
-    //TODO Shift to Customer and Seller add Time Stamp
-//    public boolean sendMessageToUser(String message, User user, boolean isDisappearing) {
-    //TODO Handle unique conversation
-    //TODO Store conversation in file | use accountMaster
+            try {
+                conversation.appendToFile(message, this, user);
+            } catch (Exception e) {
+                System.out.println("Could Not Send Message");
+            }
 
-//        String uniqueConversationID = this.getEmail().remove(".") + "_" + user.getEmail(); //TODO Customer first, buyer next
-//        Conversation conversation = new Conversation(uniqueConversationID, uniqueConversationID + ".txt",
-//                this, user);
-//        AccountsMaster.conversationList.add(conversation);
-//        try {
-//            return conversation.appendToFile(message, this, user, isDisappearing);
-//        } catch (Exception e) {
-//            return false;
-//        }
-//    }
+        } else if (this instanceof Seller && user instanceof Customer) {
+            conversation = accountsMaster.fetchConversation((Customer) user, (Seller) this);
+            if (conversation == null) {
+                conversation = accountsMaster.createConversation((Customer) user, (Seller) this);
+            }
 
-    public boolean sendMessageToConversation(String message, Conversation conversation, boolean isDisappearing) {
-
-        try {
-            FileWriter fileWriter = new FileWriter(conversation.getFileName(), true);
-            PrintWriter printWriter = new PrintWriter(fileWriter);
-            printWriter.println(message);
-            printWriter.close();
-            return true;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return false;
+            try {
+                conversation.appendToFile(message, this, user);
+            } catch (Exception e) {
+                System.out.println("Could Not Send Message");
+            }
+        } else {
+            System.out.printf("Cannot Talk to other %ss\n", (this instanceof Seller) ? "Seller" : "Customer");
         }
     }
 
-    public boolean editMessage(Message message, Conversation conversation, String newMessage) {
+    public void editMessage(Message message, Conversation conversation, String newMessage) {
         try {
             if (message.getSender().equals(this)) {
                 ArrayList<Message> readMessages = conversation.readFile(this);
@@ -79,13 +117,16 @@ public class User {
                         readMessage.setMessage(newMessage);
                     }
                 }
-                conversation.writeFile(readMessages);
+                if (conversation.writeFile(readMessages)) {
+                    System.out.println("Edited Message to: " + newMessage);
+                } else {
+                    System.out.println("Error: Could not edit message!");
+                }
+            } else {
+                System.out.println("You Cannot Edit this Message");
             }
-            return true;
         } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("You cannot edit this message!");
-            return false;
+            System.out.println("Error: Could not edit message!");
         }
     }
 
@@ -110,19 +151,12 @@ public class User {
         }
     }
 
-    public void blockUser(User user) {
-        blockedUsers.add(user);
-    }
-
-    public void becomeInvisibleToUser(User user) {
-        invisibleUsers.add(user);
-    }
-
     public String getUsername() {
         return username;
     }
 
     public void setUsername(String username) {
+        //Use Conversation.setConversationID()
         this.username = username;
     }
 
@@ -130,32 +164,20 @@ public class User {
         return email;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
     public String getPassword() {
         return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
     }
 
     public ArrayList<User> getBlockedUsers() {
         return blockedUsers;
     }
 
-    public void setBlockedUsers(ArrayList<User> blockedUsers) {
-        this.blockedUsers = blockedUsers;
-    }
-
     public ArrayList<User> getInvisibleUsers() {
         return invisibleUsers;
     }
 
-    public void setInvisibleUsers(ArrayList<User> invisibleUsers) {
-        this.invisibleUsers = invisibleUsers;
+    public ArrayList<String> getCensoredWords() {
+        return censoredWords;
     }
 
     public boolean isRequestsCensorship() {
@@ -164,13 +186,5 @@ public class User {
 
     public void setRequestsCensorship(boolean requestsCensorship) {
         this.requestsCensorship = requestsCensorship;
-    }
-
-    public ArrayList<String> getCensoredWords() {
-        return censoredWords;
-    }
-
-    public void setCensoredWords(ArrayList<String> censoredWords) {
-        this.censoredWords = censoredWords;
     }
 }

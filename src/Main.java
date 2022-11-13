@@ -26,7 +26,15 @@ public class Main {
     private static void runMainMenu(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser) {
         while (true) {
             printMainMenu(loggedOnUser);
-            int selectedOption = Integer.parseInt(scan.nextLine());
+            int selectedOption = 0;
+            while(true) {
+                try {
+                    selectedOption = Integer.parseInt(scan.nextLine());
+                    break;
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid Input");
+                }
+            }
 
             if (selectedOption == 1) {
                 runConversationsMenu(scan, accountsMaster, loggedOnUser);
@@ -51,6 +59,7 @@ public class Main {
         ArrayList<Conversation> conversations = accountsMaster.listConversations(loggedOnUser);
         if (conversations.size() > 0) {
             while (true) {
+
                 System.out.println("--------");
                 System.out.println("**To Open, Enter Conversation No.**");
                 for (int i = 0; i < conversations.size(); i++) {
@@ -58,7 +67,16 @@ public class Main {
                 }
                 System.out.printf("%d. Export Conversations\n", conversations.size() + 1);
                 System.out.printf("%d. Back to Main Menu\n", conversations.size() + 2);
-                int conversationNumber = Integer.parseInt(scan.nextLine());
+                int conversationNumber = 0;
+
+                while(true) {
+                    try {
+                        conversationNumber = Integer.parseInt(scan.nextLine());
+                        break;
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid Option");
+                    }
+                }
 
                 if (conversationNumber == conversations.size() + 2) {
                     break;
@@ -67,19 +85,23 @@ public class Main {
                     String exportingIndexes = scan.nextLine();
                     System.out.println("Enter .csv File Destination (eg. folder\\fileName.txt)"); //TODO Confirm this format works
                     String CSVDestination = scan.nextLine();
-
-                    ArrayList<Conversation> exportingConversations = new ArrayList<>();
-                    for (String stringIndex : exportingIndexes.split(",")) {
-                        int index = Integer.parseInt(stringIndex) - 1;
-                        if (index >= 0 && index < conversations.size()) {
-                            exportingConversations.add(conversations.get(index));
+                    try {
+                        ArrayList<Conversation> exportingConversations = new ArrayList<>();
+                        for (String stringIndex : exportingIndexes.split(",")) {
+                            int index = Integer.parseInt(stringIndex) - 1;
+                            System.out.println(conversations.size());
+                            if (index >= 0 && index < conversations.size()) {
+                                exportingConversations.add(conversations.get(index));
+                            }
                         }
-                    }
 
-                    if (accountsMaster.convertConversationsToCSV(exportingConversations, CSVDestination, loggedOnUser)) {
-                        System.out.println("Successfully Converted to CSV!");
-                    } else {
-                        System.out.println("Conversion Failed");
+                        if (accountsMaster.convertConversationsToCSV(exportingConversations, CSVDestination)) {
+                            System.out.println("Successfully Converted to CSV!");
+                        } else {
+                            System.out.println("Conversion Failed");
+                        }
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid Conversations");
                     }
 
                 } else if (conversationNumber > 0 && conversationNumber <= conversations.size()) {
@@ -109,7 +131,7 @@ public class Main {
         User recipient = (loggedOnUser instanceof Seller) ? conversation.getCustomer() :
                 conversation.getSeller();
 
-        ArrayList<Message> messages = conversation.readFile(loggedOnUser);
+        ArrayList<Message> messages = conversation.readFileAsPerUser(loggedOnUser);
         int lowerLimit = Math.min(messages.size(), 20);
         for (int i = messages.size() - lowerLimit; i < messages.size(); i++) {
             System.out.printf("[%d] %s: %s\n", i, messages.get(i).getSender().getUsername(),
@@ -123,10 +145,17 @@ public class Main {
                 String[] messageActions = conversationAction.split("\\.");
                 int messageID = Integer.parseInt(messageActions[0]);
                 int action = Integer.parseInt(messageActions[1]);
+
+                if(messageID > messages.size() - 1 || messageID < 0) {
+                    System.out.println("Invalid Input. No Such Conversation Exists");
+                    break;
+                }
+
                 if (action == 5) {
                     System.out.print("Updated Message: ");
                     String updatedMessage = scan.nextLine();
                     loggedOnUser.editMessage(messages.get(messageID), conversation, updatedMessage);
+
                 } else if (action == 6) {
                     loggedOnUser.deleteMessage(messages.get(messageID), conversation); //TODO Toggles Even other user!!
                     System.out.println("Deleted Message");
@@ -134,7 +163,17 @@ public class Main {
                     System.out.println("Invalid Input");
                 }
             } else {
-                int action = Integer.parseInt(conversationAction);
+                int action = 0;
+                while (true){
+                    try {
+                        action = Integer.parseInt(conversationAction);
+                        break;
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid Input");
+                        conversationAction = scan.nextLine();
+                    }
+                }
+
                 if (action == 1) {
                     for (int i = 0; i < messages.size(); i++) {
                         System.out.printf("[%d] %s: %s\n", i, messages.get(i).getSender().getUsername(),
@@ -173,21 +212,38 @@ public class Main {
         if (loggedOnUser instanceof Seller) {
             while (true) {
                 ArrayList<Customer> customers = accountsMaster.listCustomers((Seller) loggedOnUser);
-                System.out.println("--------");
-                System.out.println("**To Select, Enter Customer No.**");
-                for (int i = 0; i < customers.size(); i++) {
-                    System.out.printf("%d. %s | %s\n", i + 1, customers.get(i).getUsername(),
-                            customers.get(i).getEmail());
+
+                int customerNumber = 0;
+                while(true) {
+                    try {
+                        System.out.println("--------");
+                        System.out.println("**To Select, Enter Customer No.**");
+                        for (int i = 0; i < customers.size(); i++) {
+                            System.out.printf("%d. %s | %s\n", i + 1, customers.get(i).getUsername(),
+                                    customers.get(i).getEmail());
+                        }
+                        System.out.printf("%d. Back to Main Menu\n", customers.size() + 1);
+                        customerNumber = Integer.parseInt(scan.nextLine());
+                        break;
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid Option.");
+                    }
                 }
-                System.out.printf("%d. Back to Main Menu\n", customers.size() + 1);
-                int customerNumber = Integer.parseInt(scan.nextLine());
 
                 if (customerNumber == customers.size() + 1) {
                     break;
                 } else if (customerNumber > 0 && customerNumber <= customers.size()) {
                     Customer selectedCustomer = customers.get(customerNumber - 1);
                     printUserActionMenu(loggedOnUser);
-                    int userChoice = Integer.parseInt(scan.nextLine());
+                    int userChoice = 0;
+                    while(true) {
+                        try {
+                             userChoice = Integer.parseInt(scan.nextLine());
+                             break;
+                        } catch (NumberFormatException e) {
+                            System.out.println("Invalid Option");
+                        }
+                    }
 
                     if (userChoice == 1) {
                         if (!selectedCustomer.getBlockedUsers().contains(loggedOnUser)) {
@@ -222,7 +278,16 @@ public class Main {
                             stores.get(i).getSeller().getUsername());
                 }
                 System.out.printf("%d. Back to Main Menu\n", stores.size() + 1);
-                int storeNumber = Integer.parseInt(scan.nextLine());
+                int storeNumber = 0;
+                while(true) {
+
+                    try{
+                        storeNumber = Integer.parseInt(scan.nextLine());
+                        break;
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid Input");
+                    }
+                }
 
                 if (storeNumber == stores.size() + 1) {
                     break;
@@ -275,14 +340,33 @@ public class Main {
                     System.out.println("**No Customers Found**");
                 }
                 System.out.printf("%d. Back to Main Menu\n", customers.size() + 1);
-                int customerNumber = Integer.parseInt(scan.nextLine());
+                int customerNumber = 0;
+                while(true) {
+                    try {
+                        customerNumber = Integer.parseInt(scan.nextLine());
+                        break;
+                    } catch(NumberFormatException e) {
+                        System.out.println("Invalid Input");
+                    }
+                }
 
                 if (customerNumber == customers.size() + 1) {
                     break;
                 } else if (customerNumber > 0 && customerNumber <= customers.size()) {
                     Customer selectedCustomer = customers.get(customerNumber - 1);
                     printUserActionMenu(loggedOnUser);
-                    int userChoice = Integer.parseInt(scan.nextLine());
+
+                    int userChoice = 0;
+                    while(true) {
+                        try {
+                            userChoice = Integer.parseInt(scan.nextLine());
+                            break;
+                        } catch (NumberFormatException e) {
+                            System.out.println("Invalid Input");
+                        }
+                    }
+
+
 
                     if (userChoice == 1) {
                         if (!selectedCustomer.getBlockedUsers().contains(loggedOnUser)) {
@@ -312,7 +396,7 @@ public class Main {
             while (true) {
                 ArrayList<Seller> sellers = accountsMaster.fetchSellers(searchKeyword, (Customer) loggedOnUser);
                 System.out.println("--------");
-                System.out.println("**To Select, Enter Store No.**");
+                System.out.println("**To Select, Enter Seller No.**");
                 for (int i = 0; i < sellers.size(); i++) {
                     System.out.printf("%d. %s | %s\n", i + 1, sellers.get(i).getUsername(), sellers.get(i).getEmail());
                 }
@@ -374,7 +458,15 @@ public class Main {
         boolean deleteUser = false;
         while (true) {
             printEditAccountMenu();
-            int accountOption = Integer.parseInt(scan.nextLine());
+            int accountOption = 0;
+            while(true) {
+                try {
+                    accountOption = Integer.parseInt(scan.nextLine());
+                    break;
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid Input");
+                }
+            }
 
             if (accountOption == 1) {
                 while (true) {
@@ -401,7 +493,15 @@ public class Main {
                 System.out.printf("%d. Add Censor Pair\n", censoredWords.size());
                 System.out.printf("%d. Toggle Censoring (ON/OFF) | Currently: %s\n", censoredWords.size() + 1,
                         (loggedOnUser.isRequestsCensorship()) ? "ON" : "OFF");
-                int censorOption = Integer.parseInt(scan.nextLine());
+                int censorOption = 0;
+                while(true) {
+                    try {
+                        censorOption = Integer.parseInt(scan.nextLine());
+                        break;
+                    } catch (NumberFormatException e) {
+                        System.out.println("Invalid Input");
+                    }
+                }
 
                 if (censorOption == censoredWords.size()) {
                     System.out.println("Enter new pair as \"Word:Replacement\" or only \"Word\"");

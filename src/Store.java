@@ -1,15 +1,25 @@
-import java.util.ArrayList;
-
 public class Store {
-    private String name;
+    private String storeName;
     private Seller seller;
-    private ArrayList<Customer> contacts;
-    private ArrayList<Integer> numTimesContacted;
-    public Store (String name, Seller seller) {
+
+    public Store(String storeString) {
+        storeString = storeString.substring(storeString.indexOf("<") + 1, storeString.lastIndexOf(">"));
+        String[] splitTest = storeString.split(", ");
+        this.storeName = splitTest[0];
+        this.seller = new Seller(splitTest[1], false);
+    }
+
+    public Store(String storeName, Seller seller) {
+        this.storeName = storeName;
         this.seller = seller;
-        this.name = name;
-        seller.addStore(this);
-        AccountHandler.addStore(this);
+    }
+
+    public String getStoreName() {
+        return this.storeName;
+    }
+
+    public void setStoreName(String storeName) {
+        this.storeName = storeName;
     }
 
     public Seller getSeller() {
@@ -20,31 +30,7 @@ public class Store {
         this.seller = seller;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public void addContact(Customer customer) {
-        contacts.add(customer);
-    }
-
-    public boolean alreadyContacted(Customer customer) {
-        for(int i = 0; i < contacts.size(); i++) {
-            if(customer.getEmail().equals(contacts.get(i).getEmail())) {
-                numTimesContacted.set(i, numTimesContacted.get(i) + 1);
-                return true;
-            }
-        }
-        contacts.add(customer);
-        numTimesContacted.add(1);
-        return false;
-    }
-
-    public ArrayList<Integer> getNumTimesContacted() {
-        return numTimesContacted;
-    }
-
-    public ArrayList<Customer> getContacts() {
-        return contacts;
+    public String toString() {
+        return String.format("Store<%s, %s>", this.storeName, this.seller);
     }
 }

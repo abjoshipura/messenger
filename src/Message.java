@@ -21,7 +21,6 @@ public class Message {
 
         int elementsInUserString = 3;
         int indexOfNextElem = 2;
-        //TODO Update for Customer and Seller
         StringBuilder senderString = new StringBuilder();
         for (int i = indexOfNextElem; i < indexOfNextElem + elementsInUserString; i++) {
             senderString.append(messageDetails[i]).append(", ");
@@ -56,11 +55,6 @@ public class Message {
 
     public String toString() {
         return String.format("Message<%s, %s, %s, %s, %s, %b, %b>", this.timeStamp, this.id,
-                this.sender.toString(), this.recipient.toString(), this.message, this.senderVisibility, this.recipientVisibility);
-    }
-
-    public String csvToString() {
-        return String.format("%s, %s, %s, %s, %s, %b, %b", this.timeStamp, this.id,
                 this.sender.toString(), this.recipient.toString(), this.message, this.senderVisibility, this.recipientVisibility);
     }
 

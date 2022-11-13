@@ -93,7 +93,7 @@ public class User {
 
     public void sendMessageToUser(String message, User user, AccountsMaster accountsMaster) {
         Conversation conversation;
-        if (this instanceof Customer && user instanceof Seller) {
+        if (this instanceof Customer && user instanceof Seller && !user.getBlockedUsers().contains(this)) {
             conversation = accountsMaster.fetchConversation((Customer) this, (Seller) user);
             if (conversation == null) {
                 conversation = accountsMaster.createConversation((Customer) this, (Seller) user);

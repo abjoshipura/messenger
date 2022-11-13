@@ -59,6 +59,11 @@ public class Message {
                 this.sender.toString(), this.recipient.toString(), this.message, this.senderVisibility, this.recipientVisibility);
     }
 
+    public String csvToString() {
+        return String.format("%s, %s, %s, %s, %s, %b, %b", this.timeStamp, this.id,
+                this.sender.toString(), this.recipient.toString(), this.message, this.senderVisibility, this.recipientVisibility);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;

@@ -76,7 +76,7 @@ public class Main {
                         }
                     }
 
-                    if (accountsMaster.convertConversationsToCSV(exportingConversations, CSVDestination)) {
+                    if (accountsMaster.convertConversationsToCSV(exportingConversations, CSVDestination, loggedOnUser)) {
                         System.out.println("Successfully Converted to CSV!");
                     } else {
                         System.out.println("Conversion Failed");

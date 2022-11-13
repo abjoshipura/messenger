@@ -89,6 +89,17 @@ public class Message {
         return message;
     }
 
+    public String getCensoredMessage(User user) {
+        String tempMessage = this.message;
+        ArrayList<String> censoredWords = user.getCensoredWords();
+        for (int i = 1; i < censoredWords.size(); i++) {
+            tempMessage = tempMessage.replaceAll("(?i)" + censoredWords.get(i).substring(0,
+                            censoredWords.get(i).indexOf(":")), censoredWords.get(i).substring(
+                                    censoredWords.get(i).indexOf(":") + 1));
+        }
+        return tempMessage;
+    }
+
     public void setMessage(String message) {
         this.message = message;
     }

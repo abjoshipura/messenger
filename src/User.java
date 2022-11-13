@@ -1,3 +1,7 @@
+import java.io.BufferedReader;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -6,8 +10,8 @@ public class User {
     private final String email;
     private final String password;
     private boolean requestsCensorship;
-    private ArrayList<User> blockedUsers; //TODO: WHENEVER ADDED TO, MAKE SURE YOU ADD AS USER NOT CUSTOMER OR SELLER
-    private ArrayList<User> invisibleUsers; //TODO: WHENEVER ADDED TO, MAKE SURE YOU ADD AS USER NOT CUSTOMER OR SELLER
+    private ArrayList<User> blockedUsers;
+    private ArrayList<User> invisibleUsers;
     private ArrayList<String> censoredWords;
 
     public User(String userString, boolean hasDetails) {
@@ -21,21 +25,29 @@ public class User {
             this.requestsCensorship = Boolean.parseBoolean(splitTest[3]);
 
             this.blockedUsers = new ArrayList<>();
-            String[] blockedUsersStringArray = userString.substring(userString.indexOf("[") + 1,
-                    userString.indexOf("]")).split(", ");
-            if (blockedUsersStringArray.length > 1) {
-                for (String blockedUserString : blockedUsersStringArray) {
-                    this.blockedUsers.add(new User(blockedUserString, false));
+            String blockedUsersString = userString.substring(userString.indexOf("[") + 1,
+                    userString.indexOf("]"));
+            if (blockedUsersString.length() > 0) {
+                while (!blockedUsersString.isEmpty()) {
+                    String singularUser = blockedUsersString.substring(0, blockedUsersString.indexOf(">") + 1);
+                    int nextIndex = Math.min(blockedUsersString.indexOf(">") + 3, blockedUsersString.length());
+                    blockedUsersString = blockedUsersString.substring(nextIndex);
+
+                    this.blockedUsers.add(new User(singularUser, false));
                 }
             }
 
             userString = userString.substring(userString.indexOf("]") + 3);
             this.invisibleUsers = new ArrayList<>();
-            String[] invisibleUsersStringArray = userString.substring(userString.indexOf("[") + 1,
-                    userString.indexOf("]")).split(", ");
-            if (invisibleUsersStringArray.length > 1) {
-                for (String invisibleUserString : invisibleUsersStringArray) {
-                    this.blockedUsers.add(new User(invisibleUserString, false));
+            String invisibleUsersString = userString.substring(userString.indexOf("[") + 1,
+                    userString.indexOf("]"));
+            if (invisibleUsersString.length() > 0) {
+                while (!invisibleUsersString.isEmpty()) {
+                    String singularUser = invisibleUsersString.substring(0, invisibleUsersString.indexOf(">") + 1);
+                    int nextIndex = Math.min(invisibleUsersString.indexOf(">") + 3, invisibleUsersString.length());
+                    invisibleUsersString = invisibleUsersString.substring(nextIndex);
+
+                    this.invisibleUsers.add(new User(singularUser, false));
                 }
             }
 
@@ -78,6 +90,7 @@ public class User {
         User user = (User) o;
         return username.equals(user.username) && email.equals(user.email) && password.equals(user.password);
     }
+
     public void sendMessageToUser(String message, User user, AccountsMaster accountsMaster) {
         Conversation conversation;
         if (this instanceof Customer && user instanceof Seller) {
@@ -85,24 +98,23 @@ public class User {
             if (conversation == null) {
                 conversation = accountsMaster.createConversation((Customer) this, (Seller) user);
             }
-
             try {
                 conversation.appendToFile(message, this, user);
             } catch (Exception e) {
                 System.out.println("Could Not Send Message");
             }
-
+            conversation.setSellerUnread(true);
         } else if (this instanceof Seller && user instanceof Customer) {
             conversation = accountsMaster.fetchConversation((Customer) user, (Seller) this);
             if (conversation == null) {
                 conversation = accountsMaster.createConversation((Customer) user, (Seller) this);
             }
-
             try {
                 conversation.appendToFile(message, this, user);
             } catch (Exception e) {
                 System.out.println("Could Not Send Message");
             }
+            conversation.setCustomerUnread(true);
         } else {
             System.out.printf("Cannot Talk to other %ss\n", (this instanceof Seller) ? "Seller" : "Customer");
         }
@@ -111,7 +123,7 @@ public class User {
     public void editMessage(Message message, Conversation conversation, String newMessage) {
         try {
             if (message.getSender().equals(this)) {
-                ArrayList<Message> readMessages = conversation.readFile(this);
+                ArrayList<Message> readMessages = conversation.readFile();
                 for (Message readMessage : readMessages) {
                     if (message.equals(readMessage)) {
                         readMessage.setMessage(newMessage);
@@ -130,24 +142,21 @@ public class User {
         }
     }
 
-    public boolean deleteMessage(Message message, Conversation conversation) {
+    public void deleteMessage(Message message, Conversation conversation) {
         try {
             if (this.isParticipantOf(conversation)) {
-                ArrayList<Message> readMessages = conversation.readFile(this);
+                ArrayList<Message> readMessages = conversation.readFile();
                 for (Message readMessage : readMessages) {
                     if (message.equals(readMessage) && message.getSender().equals(this)) {
                         readMessage.setSenderVisibility(false);
-                    } else {
+                    } else if (message.equals(readMessage) && message.getRecipient().equals(this)) {
                         readMessage.setRecipientVisibility(false);
                     }
                 }
                 conversation.writeFile(readMessages);
             }
-            return true;
         } catch (Exception e) {
-            e.printStackTrace();
             System.out.println("You cannot delete this message!");
-            return false;
         }
     }
 
@@ -156,8 +165,41 @@ public class User {
     }
 
     public void setUsername(String username) {
-        //Use Conversation.setConversationID()
         this.username = username;
+    }
+
+    public void updateUserFields() {
+        ArrayList<String> detailedUserStrings = new ArrayList<>();
+        try (BufferedReader bfr = new BufferedReader(new FileReader(Main.passwordFilePath))) {
+            String detailedUserString = bfr.readLine();
+
+            while (detailedUserString != null) {
+                String tempString = detailedUserString.substring(detailedUserString.indexOf("<") + 1,
+                        detailedUserString.lastIndexOf(">"));
+                String[] splitTempString = tempString.split(", ");
+                if (this.email.equals(splitTempString[1])) {
+                    if (this instanceof Seller) {
+                        detailedUserString = ((Seller) this).detailedToString();
+                    } else {
+                        detailedUserString = ((Customer) this).detailedToString();
+                    }
+                }
+                detailedUserStrings.add(detailedUserString);
+                detailedUserString = bfr.readLine();
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            System.out.println("Could not update User");
+        }
+
+        try (PrintWriter pw = new PrintWriter(new FileOutputStream(Main.passwordFilePath, false))) {
+            for (String detailedUserString : detailedUserStrings) {
+                pw.println(detailedUserString);
+            }
+        } catch (Exception e) {
+            System.out.println("Could not update User");
+        }
     }
 
     public String getEmail() {
@@ -170,6 +212,21 @@ public class User {
 
     public ArrayList<User> getBlockedUsers() {
         return blockedUsers;
+    }
+
+    public void setBlockedUsers(ArrayList<User> blockedUsers) {
+        this.blockedUsers = blockedUsers;
+        updateUserFields();
+    }
+
+    public void setInvisibleUsers(ArrayList<User> invisibleUsers) {
+        this.invisibleUsers = invisibleUsers;
+        updateUserFields();
+    }
+
+    public void setCensoredWords(ArrayList<String> censoredWords) {
+        this.censoredWords = censoredWords;
+        updateUserFields();
     }
 
     public ArrayList<User> getInvisibleUsers() {

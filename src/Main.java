@@ -182,6 +182,8 @@ public class Main {
                         }
                     } catch (NumberFormatException e) {
                         System.out.println("Invalid Conversations");
+                    } catch(IOException e) {
+                        System.out.println("Conversion Failed");
                     }
 
                 } else if (conversationNumber <= conversations.size()) {

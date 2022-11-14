@@ -1,12 +1,15 @@
+import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 import org.junit.runner.notification.Failure;
+import org.junit.runners.MethodSorters;
+
 import java.io.*;
 import static org.junit.Assert.*;
-
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class LoginTest {
     public static void main(String[] args) {
         Result result = JUnitCore.runClasses(LoginTest.TestCase.class);
@@ -58,7 +61,7 @@ public class LoginTest {
 
 
         @Test(timeout = 1000)
-        public void testExpectedOne() {
+        public void A() {
             // Set the input
             String input = "Jesse\n" +
                     "Y\n" +
@@ -137,7 +140,7 @@ public class LoginTest {
         }
 
         @Test(timeout = 1000)
-        public void testExpectedTwo() {
+        public void B() {
             // Set the input
             String input = "new account\n" +
                     "Y\n" +
@@ -147,7 +150,7 @@ public class LoginTest {
                     "pass\n" +
                     "6\n";
             // Pair the input with the expected result
-            String expected ="Conversations File Not Found!\n" +
+            String expected = "Conversations File Not Found!\n" +
                     "Welcome to Messenger (not Facebook)!\n" +
                     "Log in (or Sign Up) with Username or Email:\n" +
 
@@ -188,6 +191,111 @@ public class LoginTest {
             assertEquals("Account Creation Assertion Error",
                     expected.trim(), output.trim());
         }
+
+        @Test(timeout = 1000)
+        public void C() {
+            // Set the input
+            String input = "i\n" +
+                    "Y\n" +
+                    "Gus Fring\n" +
+                    "lospolloshermanos@gmail.com\n" +
+                    "Seller\n" +
+                    "crystal\n" +
+                    "6\n";
+            // Pair the input with the expected result
+            String expected = "Conversations File Not Found!\n" +
+                    "Welcome to Messenger (not Facebook)!\n" +
+                    "Log in (or Sign Up) with Username or Email:\n" +
+
+                    "Seems like you don't have an account yet!\n" +
+                    "Would you like to make an account? (Y/N)\n" +
+
+                    "Great! Let's get you set up!\n" +
+                    "Create your new username:\n" +
+
+                    "Register with your email ID:\n" +
+
+                    "Enter your role (SELLER/CUSTOMER):\n" +
+
+                    "Create a password:\n" +
+
+                    "You're all set!\n" +
+                    "--------\n" +
+                    "1. View Conversations\n" +
+                    "2. View All Customers\n" +
+                    "3. Search Customers\n" +
+                    "4. Manage Stores\n" +
+                    "5. Edit Account\n" +
+                    "6. Log Out\n" +
+
+                    "Logging Out...\n" +
+                    "Goodbye!";
+            // Runs the program with the input values
+            receiveInput(input);
+            Main.main(new String[0]);
+
+            // Retrieves the output from the program
+            String output = getOutput();
+
+            // Trims the output and verifies it is correct.
+            expected = expected.replaceAll("\r\n","\n");
+            output = output.replaceAll("\r\n","\n");
+            assertEquals("Account Creation Assertion Error",
+                    expected.trim(), output.trim());
+        }
+
+        @Test(timeout = 1000)
+        public void D() {
+            // Set the input
+            String input ="sign up\n" +
+                    "Y\n" +
+                    "Raymond\n" +
+                    "wang5448@purdue.edu\n" +
+                    "Customer\n" +
+                    "lkjhgf\n" +
+                    "5\n";
+            // Pair the input with the expected result
+            String expected = "Conversations File Not Found!\n" +
+                    "Welcome to Messenger (not Facebook)!\n" +
+                    "Log in (or Sign Up) with Username or Email:\n" +
+
+                    "Seems like you don't have an account yet!\n" +
+                    "Would you like to make an account? (Y/N)\n" +
+
+                    "Great! Let's get you set up!\n" +
+                    "Create your new username:\n" +
+
+                    "Register with your email ID:\n" +
+
+                    "Enter your role (SELLER/CUSTOMER):\n" +
+
+                    "Create a password:\n" +
+
+                    "You're all set!\n" +
+                    "--------\n" +
+                    "1. View Conversations\n" +
+                    "2. View All Stores\n" +
+                    "3. Search Sellers\n" +
+                    "4. Edit Account\n" +
+                    "5. Log Out\n" +
+
+                    "Logging Out...\n" +
+                    "Goodbye!";
+            // Runs the program with the input values
+            receiveInput(input);
+            Main.main(new String[0]);
+
+            // Retrieves the output from the program
+            String output = getOutput();
+
+            // Trims the output and verifies it is correct.
+            expected = expected.replaceAll("\r\n","\n");
+            output = output.replaceAll("\r\n","\n");
+            assertEquals("Account Creation Assertion Error",
+                    expected.trim(), output.trim());
+        }
+
+
 
     }
 

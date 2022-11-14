@@ -91,34 +91,65 @@ public class User {
         this.censoredWords = new ArrayList<>();
     }
 
+    /**
+     * public String getUsername()
+     * Returns the username.
+     */
     public String getUsername() {
         return username;
     }
 
+    /**
+     * public String getEmail()
+     * Returns the user's email.
+     */
     public String getEmail() {
         return email;
     }
 
+    /**
+     * public String getPassword()
+     * Returns the user's password.
+     */
     public String getPassword() {
         return password;
     }
 
+    /**
+     * public ArrayList<User> getBlockedUsers()
+     * Returns the ArrayList of users blocked by the user.
+     */
     public ArrayList<User> getBlockedUsers() {
         return blockedUsers;
     }
-
+    
+    /**
+     * public ArrayList<User> getInvisibleUsers()
+     * Returns the list of invisible users to the user.
+     */
     public ArrayList<User> getInvisibleUsers() {
         return invisibleUsers;
     }
 
+    /**
+     * public ArrayList<String> getCensoredWords()
+     * Returns the ArrayList of words censored by the user.
+     */
     public ArrayList<String> getCensoredWords() {
         return censoredWords;
     }
 
+    /**
+     * Returns whether or not the user requests censorship.
+     */
     public boolean isRequestsCensorship() {
         return requestsCensorship;
     }
 
+    /**
+     * public void setUsername(String username)
+     * Sets the user's username to a new username, so long as it is unique.
+     */
     public void setUsername(String username) {
         username = username.replaceAll("[,<>]", "_");
 
@@ -141,6 +172,10 @@ public class User {
         this.username = username;
     }
 
+    /**
+     * public void setPassword(String password)
+     * Sets the user's password according to the String passed in.
+     */
     public void setPassword(String password) {
         String oldUserID = this.username + ", " + this.email + ", " + this.password;
         String newUserID = this.username + ", " + this.email + ", " + password;
@@ -156,6 +191,10 @@ public class User {
         this.password = password;
     }
 
+    /**
+     * public void setRequestsCensorship(boolean requestsCensorship)
+     * Sets the setting of whether or not the user requests censorship in messages.
+     */
     public void setRequestsCensorship(boolean requestsCensorship) {
         String oldUserString;
         String newUserString;
@@ -172,6 +211,10 @@ public class User {
         AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
     }
 
+    /**
+     * public void addBlockedUser(User blockedUser)
+     * Adds blockedUser to the ArrayList of users blocked by the user.
+     */
     public void addBlockedUser(User blockedUser) {
         String oldUserString;
         String newUserString;
@@ -189,6 +232,10 @@ public class User {
         AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
     }
 
+    /**
+     * public void removeBlockedUser(User blockedUser)
+     * Unblocks blockedUser and removes them from the user's list of blocked users.
+     */
     public void removeBlockedUser(User blockedUser) {
         String oldUserString;
         String newUserString;
@@ -206,6 +253,10 @@ public class User {
         AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
     }
 
+    /**
+     * public void addInvisibleUser(User invisibleUser)
+     * Adds  invisibleUser to the list of invisible users.
+     */
     public void addInvisibleUser(User invisibleUser) {
         String oldUserString;
         String newUserString;
@@ -223,6 +274,10 @@ public class User {
         AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
     }
 
+    /**
+     * public void removeInvisibleUser(User invisibleUser)
+     * Removes invisibleUser from the list of invisible users.
+     */
     public void removeInvisibleUser(User invisibleUser) {
         String oldUserString;
         String newUserString;
@@ -240,6 +295,10 @@ public class User {
         AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
     }
 
+    /**
+     * public void addCensoredWord(String censoredWord)
+     * Adds a word to be censored for the user.
+     */
     public void addCensoredWord(String censoredWord) {
         String oldUserString;
         String newUserString;
@@ -257,6 +316,10 @@ public class User {
         AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
     }
 
+    /**
+     * public void removeCensoredWord(int index)
+     * At given index, removes a word from censorship for the user from the ArrayList.
+     */
     public void removeCensoredWord(int index) {
         String oldUserString;
         String newUserString;
@@ -273,6 +336,7 @@ public class User {
         AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
         AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
     }
+    
 /*
  * public boolean sendMessageToUser(String message, User user, AccountsMaster accountsMaster)
  * Method to send a message to User ONLY IF User has not blocked this User.
@@ -309,6 +373,7 @@ public class User {
             return false;
         }
     }
+    
 /*
  * public void editMessage(Message message, Conversation conversation, String newMessage)
  * Method to edit a message in a Conversation ONLY IF this User is the sender of the Message.
@@ -334,6 +399,7 @@ public class User {
             System.out.println("Error: Could not Edit Message");
         }
     }
+    
 /*
  public void deleteMessage(Message message, Conversation conversation)
  * Method to delete a message in a Conversation. Sets the Message's corresponding
@@ -359,10 +425,19 @@ public class User {
         }
     }
 
+    /**
+     * public boolean isParticipantOf(Conversation conversation)
+     * Returns whether or not the user is a participant of the conversation passed in. 
+     */
     public boolean isParticipantOf(Conversation conversation) {
         return this.equals(conversation.getSeller()) || this.equals(conversation.getCustomer());
     }
 
+    /**
+     * public boolean equals(Object o)
+     * Checks if two users are the same.
+     * Based on the email as a unique identifier.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -370,11 +445,19 @@ public class User {
         return email.equals(user.email);
     }
 
+    /**
+     * public String toString()
+     * Returns the formatted String representing the user's account details.
+     */
     @Override
     public String toString() {
         return String.format("User<%s, %s, %s>", this.username, this.email, this.password);
     }
     
+    /**
+     * public String csvToString()
+     * Returns the formatted String for the user's email in CSV.
+     */
     public String csvToString() {
         return String.format("%s",this.email);
     }

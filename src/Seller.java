@@ -1,46 +1,77 @@
 import java.util.ArrayList;
-import java.util.Map;
 
 public class Seller extends User {
     private ArrayList<Store> stores;
-    private Map<Customer, ArrayList<Message>> customerDetails;
-    private SortOrder sortOrder;
+
+    public Seller(String sellerString, boolean hasDetails, boolean hasStores) {
+        super(sellerString, hasDetails);
+        if (hasStores) {
+            for (int i = 0; i < 3; i++) {
+                sellerString = sellerString.substring(sellerString.indexOf("]") + 3);
+            }
+            this.stores = new ArrayList<>();
+            String storesString = sellerString.substring(sellerString.indexOf("[") + 1,
+                    sellerString.lastIndexOf("]"));
+            if (storesString.length() > 0) {
+                while (!storesString.isEmpty()) {
+                    String singularStore = storesString.substring(0, storesString.indexOf("]>>") + 3);
+                    int nextIndex = Math.min(storesString.indexOf("]>>") + 5, storesString.length());
+                    storesString = storesString.substring(nextIndex);
+
+                    this.stores.add(new Store(singularStore));
+                }
+            }
+        } else {
+            this.stores = new ArrayList<>();
+        }
+    }
 
     public Seller(String name, String email, String password) {
         super(name, email, password);
-        //TODO implement
+        this.stores = new ArrayList<>();
     }
 
-    public ArrayList<Customer> listCustomers(ArrayList<User> userList) {
-        ArrayList<Customer> customerList = new ArrayList<Customer>();
-        for (int i = 0; i < userList.size(); i++) {
-            if (userList.get(i) instanceof Customer) {
-                customerList.add((Customer) userList.get(i));
-            }
-        }
-        return customerList;
+    public ArrayList<Store> getStores() {
+        return this.stores;
     }
 
-    public Customer searchCustomers(String searchString, ArrayList<User> userList) {
-        for (int i = 0; i < userList.size(); i++) {
-            boolean unblocked = true;
-            User user = userList.get(i);
-            if (user instanceof Customer && (user.getUsername().equalsIgnoreCase(searchString)
-                    || user.getEmail().equalsIgnoreCase(searchString))) {
-                ArrayList<User> invisible = user.getInvisibleUsers();
-                for (int bl = 0; bl < invisible.size(); bl++) {
-                    if (user.equals(invisible.get(bl))) {
-                        unblocked = false;
-                        break;
-                    }
-                }
-                if (unblocked) {
-                    return (Customer) user;
-                }
-            }
-        }
-        return null;
+    public void addStore(Store store) {
+        String oldUserString;
+        String newUserString;
+
+        oldUserString = this.detailedToString();
+        this.stores.add(store);
+        newUserString = this.detailedToString();
+
+        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
+        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
     }
 
+    public void removeStore(Store store) {
+        String oldUserString;
+        String newUserString;
 
+        oldUserString = this.detailedToString();
+        this.stores.remove(store);
+        newUserString = this.detailedToString();
+
+        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
+        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
+    }
+
+    public String detailedToString() {
+        return String.format("Seller<%s, %s, %s, %b, %s, %s, %s, %s>", this.getUsername(), this.getEmail(),
+                this.getPassword(), this.isRequestsCensorship(), this.getBlockedUsers(), this.getInvisibleUsers(),
+                this.getCensoredWords(), this.stores);
+    }
+
+    public String detailedToStringWithoutStores() {
+        return String.format("Seller<%s, %s, %s, %b, %s, %s, %s>", this.getUsername(), this.getEmail(),
+                this.getPassword(), this.isRequestsCensorship(), this.getBlockedUsers(), this.getInvisibleUsers(),
+                this.getCensoredWords());
+    }
+
+    public String toString() {
+        return super.toString();
+    }
 }

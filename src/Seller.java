@@ -1,125 +1,80 @@
-import java.io.BufferedReader;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Map;
 
 public class Seller extends User {
+    // List of all stores that the Seller owns
     private ArrayList<Store> stores;
-    private Map<Customer, ArrayList<Message>> customerDetails;
-    private SortOrder sortOrder;
 
+    // Creates a preexisting seller based on a formatted String.
+    public Seller(String sellerString, boolean hasDetails, boolean hasStores) {
+        super(sellerString, hasDetails);
+        if (hasStores) {
+            for (int i = 0; i < 3; i++) {
+                sellerString = sellerString.substring(sellerString.indexOf("]") + 3);
+            }
+            this.stores = new ArrayList<>();
+            String storesString = sellerString.substring(sellerString.indexOf("[") + 1,
+                    sellerString.lastIndexOf("]"));
+            if (storesString.length() > 0) {
+                while (!storesString.isEmpty()) {
+                    String singularStore = storesString.substring(0, storesString.indexOf("]>>") + 3);
+                    int nextIndex = Math.min(storesString.indexOf("]>>") + 5, storesString.length());
+                    storesString = storesString.substring(nextIndex);
+
+                    this.stores.add(new Store(singularStore));
+                }
+            }
+        } else {
+            this.stores = new ArrayList<>();
+        }
+    }
+
+    // Creates a new Seller object
     public Seller(String name, String email, String password) {
         super(name, email, password);
-        //TODO implement
+        this.stores = new ArrayList<>();
     }
 
-    public ArrayList<Customer> listCustomers(ArrayList<User> userList) {
-        ArrayList<Customer> customerList = new ArrayList<Customer>();
-        for(int i = 0; i < userList.size(); i++) {
-            if(userList.get(i) instanceof Customer) {
-                customerList.add((Customer) userList.get(i));
-            }
-        }
-        return customerList;
-    }
-
-    public static Customer searchCustomers(String searchString, ArrayList<User> userList) {
-        for (int i = 0 ; i < userList.size(); i++) {
-            boolean unblocked = true;
-            User user = userList.get(i);
-            if(user instanceof Customer && (user.getName().equalsIgnoreCase(searchString)
-                    || user.getEmail().equalsIgnoreCase(searchString))) {
-                ArrayList<User> invisible = user.getInvisibleUsers();
-                for(int bl = 0; bl < invisible.size(); bl++) {
-                    if(user.equals(invisible.get(bl))) {
-                        unblocked = false;
-                        break;
-                    }
-                }
-                if(unblocked) {
-                    return (Customer) user;
-                }
-            }
-        }
-        return null;
-    }
-
-    public ArrayList<Customer> sortCustomer(SortOrder sortingStyle) {
-        ArrayList<Customer> sortCustomer = new ArrayList<Customer>();
-        ArrayList<Integer> numMessages = new ArrayList<Integer>();
-        for(int i = 0; i < AccountHandler.getConversationList().size(); i++) {
-            Conversation conversation = AccountHandler.getConversationList().get(i);
-            int numLines = 0;
-            if(conversation.isParticipant(this)) {
-                try {
-                    BufferedReader reader = new BufferedReader(new FileReader(conversation.getFileName()));
-                    String line = reader.readLine();
-                    while(line != null) {
-                        Message msg = new Message(line);
-                        if(msg.getSender().getEmail().equals(conversation.getCustomer().getEmail())) {
-                            numLines++;
-                        }
-                        line = reader.readLine();
-                    }
-                    sortCustomer.add(conversation.getCustomer());
-                    numMessages.add(numLines);
-                } catch (FileNotFoundException e) {
-                    e.printStackTrace();
-                    System.out.println("File not found");
-                    return null;
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    return null;
-                }
-
-            }
-        }
-
-        switch(sortingStyle) {
-            case ASCENDING:
-                for(int i = 0; i < numMessages.size(); i++) {
-                    for(int j = numMessages.size() - 1; j > i; j--) {
-                        if(numMessages.get(i) < numMessages.get(i)) {
-                            int tempInt = numMessages.get(i);
-                            Customer tempCustomer = sortCustomer.get(i);
-
-                            numMessages.set(i, numMessages.get(j));
-                            sortCustomer.set(i, sortCustomer.get(j));
-
-                            numMessages.set(j, tempInt);
-                            sortCustomer.set(j, tempCustomer);
-                        }
-                    }
-                }
-                return sortCustomer;
-
-            case DESCENDING:
-                for(int i = 0; i < numMessages.size(); i++) {
-                    for(int j = numMessages.size() - 1; j > i; j--) {
-                        if(numMessages.get(i) > numMessages.get(i)) {
-                            int tempInt = numMessages.get(i);
-                            Customer tempCustomer = sortCustomer.get(i);
-
-                            numMessages.set(i, numMessages.get(j));
-                            sortCustomer.set(i, sortCustomer.get(j));
-
-                            numMessages.set(j, tempInt);
-                            sortCustomer.set(j, tempCustomer);
-                        }
-                    }
-                }
-                return sortCustomer;
-
-            default:
-                System.out.println("No sorting method provided");
-                return null;
-        }
+    public ArrayList<Store> getStores() {
+        return this.stores;
     }
 
     public void addStore(Store store) {
-        stores.add(store);
+        String oldUserString;
+        String newUserString;
+
+        oldUserString = this.detailedToString();
+        this.stores.add(store);
+        newUserString = this.detailedToString();
+
+        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
+        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
     }
 
+    public void removeStore(Store store) {
+        String oldUserString;
+        String newUserString;
+
+        oldUserString = this.detailedToString();
+        this.stores.remove(store);
+        newUserString = this.detailedToString();
+
+        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
+        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
+    }
+
+    public String detailedToString() {
+        return String.format("Seller<%s, %s, %s, %b, %s, %s, %s, %s>", this.getUsername(), this.getEmail(),
+                this.getPassword(), this.isRequestsCensorship(), this.getBlockedUsers(), this.getInvisibleUsers(),
+                this.getCensoredWords(), this.stores);
+    }
+
+    public String detailedToStringWithoutStores() {
+        return String.format("Seller<%s, %s, %s, %b, %s, %s, %s>", this.getUsername(), this.getEmail(),
+                this.getPassword(), this.isRequestsCensorship(), this.getBlockedUsers(), this.getInvisibleUsers(),
+                this.getCensoredWords());
+    }
+
+    public String toString() {
+        return super.toString();
+    }
 }

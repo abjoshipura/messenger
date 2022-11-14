@@ -1,15 +1,34 @@
-import java.util.ArrayList;
+import java.util.Objects;
 
 public class Store {
-    private String name;
+    private String storeName;
     private Seller seller;
-    private ArrayList<Customer> contacts;
-    private ArrayList<Integer> numTimesContacted;
-    public Store (String name, Seller seller) {
+
+    // Creates a Store from an existing store formatted in a String and adds it to a seller's store list
+    public Store(String storeString) {
+        storeString = storeString.substring(storeString.indexOf("<") + 1, storeString.lastIndexOf(">"));
+        String[] splitStoreString = storeString.split(", ");
+        this.storeName = splitStoreString[0];
+
+        StringBuilder sellerString = new StringBuilder();
+        for (int i = 1; i < splitStoreString.length; i++) {
+            sellerString.append(splitStoreString[i]).append(", ");
+        }
+        this.seller = new Seller(sellerString.toString(), true, false);
+    }
+
+    // Creates a new store and adds it to the seller's store list.
+    public Store(String storeName, Seller seller) {
+        this.storeName = storeName;
         this.seller = seller;
-        this.name = name;
-        seller.addStore(this);
-        AccountHandler.addStore(this);
+    }
+
+    public String getStoreName() {
+        return this.storeName;
+    }
+
+    public void setStoreName(String storeName) {
+        this.storeName = storeName;
     }
 
     public Seller getSeller() {
@@ -20,31 +39,14 @@ public class Store {
         this.seller = seller;
     }
 
-    public String getName() {
-        return name;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Store store = (Store) o;
+        return Objects.equals(storeName, store.storeName) && Objects.equals(seller, store.seller);
     }
 
-    public void addContact(Customer customer) {
-        contacts.add(customer);
-    }
-
-    public boolean alreadyContacted(Customer customer) {
-        for(int i = 0; i < contacts.size(); i++) {
-            if(customer.getEmail().equals(contacts.get(i).getEmail())) {
-                numTimesContacted.set(i, numTimesContacted.get(i) + 1);
-                return true;
-            }
-        }
-        contacts.add(customer);
-        numTimesContacted.add(1);
-        return false;
-    }
-
-    public ArrayList<Integer> getNumTimesContacted() {
-        return numTimesContacted;
-    }
-
-    public ArrayList<Customer> getContacts() {
-        return contacts;
+    public String toString() {
+        return String.format("Store<%s, %s>", this.storeName, this.seller.detailedToStringWithoutStores());
     }
 }

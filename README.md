@@ -16,7 +16,7 @@ To run the messenger, follow these steps:
 > Kevin Tang - Submitted Report on Brightspace
 
 ### 3.  The Classes
-#### 3.1.`Main`
+#### 3.1 `Main`
 The `Main` class possess the `public static void main(String[] args)` method that runs the Messenger.
 
 #### 3.2 `AccountsMaster`

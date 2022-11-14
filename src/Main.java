@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.io.*;
 
 public class Main {
     public static final String passwordFilePath = "passwords.txt";
@@ -163,7 +164,7 @@ public class Main {
                 } else if (conversationNumber == conversations.size() + 1) {
                     System.out.println("Enter Conversations to Export Separated by Commas (eg. 1,3,4):");
                     String exportingIndexes = scan.nextLine();
-                    System.out.println("Enter .csv File Destination (eg. folder\\fileName.txt)"); //TODO Confirm this format works
+                    System.out.println("Enter .csv Destination (eg. folder/subfolder)");
                     String CSVDestination = scan.nextLine();
 
                     try {

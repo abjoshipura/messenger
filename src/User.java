@@ -344,6 +344,6 @@ public class User {
     }
     
     public String csvToString() {
-        return String.format("%s, %s, %s", this.username, this.email, this.password);
+        return String.format("%s",this.email);
     }
 }

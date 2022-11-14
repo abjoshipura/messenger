@@ -182,6 +182,8 @@ public class Main {
                         }
                     } catch (NumberFormatException e) {
                         System.out.println("Invalid Conversations");
+                    } catch (NullPointerException e) {
+                        System.out.println("Conversion Failed. No File Destination Inputted");
                     } catch(IOException e) {
                         System.out.println("Conversion Failed");
                     }

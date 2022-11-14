@@ -15,7 +15,11 @@ import java.io.*;
 public class Main {
     public static final String passwordFilePath = "passwords.txt";
     public static final String conversationsFilePath = "conversations.txt";
-
+       
+    /*
+     *private static void printMainMenu(User user)
+     *Prints options avalailable from main menu
+     */
     private static void printMainMenu(User user) {
         System.out.println("----Main----");
         if (user instanceof Seller) {
@@ -27,7 +31,10 @@ public class Main {
         System.out.println("4. Edit Account");
         System.out.println("5. Log Out");
     }
-
+    /*
+     * private static void printUserActionMenu(User user, User selectedUser)
+     * Prints options available after selecting a user
+     */
     private static void printUserActionMenu(User user, User selectedUser) {
         String keyword = (user instanceof Seller) ? "Customer" : "Seller";
         System.out.printf("----Selected: %s----\n", selectedUser.getUsername());
@@ -38,7 +45,11 @@ public class Main {
                 "Visible" : "Invisible", keyword);
         System.out.printf("4. Back to %s List\n", keyword);
     }
-
+    /*
+     * private static void runMainMenu(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser)
+     * Method that presents the menu from which a user may select
+     * what they wish to do.
+     */
     private static void runMainMenu(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser) {
         while (true) {
             printMainMenu(loggedOnUser);
@@ -139,7 +150,11 @@ public class Main {
             }
         }
     }
-
+    /*
+     * private static void runConversationsMenu(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser)
+     * Presents menu after selecting a conversation and gives options to view messages
+     * or export conversation as a csv File.
+     */
     private static void runConversationsMenu(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser) {
         ArrayList<Conversation> conversations = accountsMaster.listConversations(loggedOnUser);
         if (conversations.size() > 0) {
@@ -216,6 +231,12 @@ public class Main {
             scan.nextLine();
         }
     }
+    
+    /* private static void runConversationActions(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser
+     * Conversation conversation)
+     * Prints out messages in conversation, then prompts user with options with messages.
+     * Allows user to load messages, send a text file as message, send, edit, or delete messages
+     */
 
     private static void runConversationActions(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser,
                                                Conversation conversation) {
@@ -346,6 +367,11 @@ public class Main {
         }
     }
 
+    /*
+     * private static void runListMenu(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser)
+     * Presents all customers listed in Account Master. Allows a user to 
+     * send message, block, or become invisible to another user.
+     */
     private static void runListMenu(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser) {
         if (loggedOnUser instanceof Seller) {
             while (true) {
@@ -562,7 +588,12 @@ public class Main {
             }
         }
     }
-
+    
+    /*
+     * private static void runSearchMenu(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser) 
+     * Method that lets user search for a username or email 
+     * and lists corresponding users of the opposite role.
+     */
     private static void runSearchMenu(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser) {
         System.out.println("Search by Username or Email (full or part):");
         String searchKeyword = scan.nextLine();
@@ -775,6 +806,11 @@ public class Main {
         }
     }
 
+    /*
+     * private static void printEditAccountMenu()
+     * Lists the options available to a user when
+     * choosing the account menu option
+     */
     private static void printEditAccountMenu() {
         System.out.println("--------");
         System.out.println("1. Change Username");
@@ -786,12 +822,24 @@ public class Main {
         System.out.println("7. Back to Main Menu");
     }
 
+    /*
+     * private static void printCensoredWords(ArrayList<String> censoredWordPairs)
+     * Prints out the censored words and the paired censorship.
+     * Automatically replaces all ':' with '>>>'.
+     */
+     
     private static void printCensoredWords(ArrayList<String> censoredWordPairs) {
         for (int i = 0; i < censoredWordPairs.size(); i++) {
             System.out.printf("%d. %s\n", i + 1, censoredWordPairs.get(i).replace(":", " >>> "));
         }
     }
-
+    
+    /*
+     * private static boolean runAccountMenu(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser)
+     * Method that enacts that options users are given with their accounts.
+     * Lets users delete account, edit features like name and email, 
+     * and manage blocked and invisible users.
+     */
     private static boolean runAccountMenu(Scanner scan, AccountsMaster accountsMaster, User loggedOnUser) {
         boolean deleteUser = false;
         while (true) {
@@ -981,6 +1029,15 @@ public class Main {
         return deleteUser;
     }
 
+    /*
+     *public static void main(String[] args)
+     * Main method that intially logs in the user.
+     * Users are unable to progress if they cannot 
+     * enter correct log in information or if they
+     * refuse to sign up.
+     * Sends user to main menu.
+     */
+     
     public static void main(String[] args) {
         User loggedOnUser = null;
         Scanner scan = new Scanner(System.in);

@@ -16,6 +16,7 @@ import java.util.ArrayList;
  */
 public class Seller extends User {
     private ArrayList<Store> stores;
+    
 /*
  * public Seller(String sellerString, boolean hasDetails,
  * boolean hasStores) Constructor that inherently calls
@@ -48,6 +49,7 @@ public class Seller extends User {
             this.stores = new ArrayList<>();
         }
     }
+    
 /*
  * public Seller(String name, String email, String password)
  * Constructor that inherently calls super(String name,
@@ -58,10 +60,19 @@ public class Seller extends User {
         this.stores = new ArrayList<>();
     }
 
+    /**
+     * public ArrayList<Store> getStores()
+     * Returns an ArrayList of Store objects.
+     */
     public ArrayList<Store> getStores() {
         return this.stores;
     }
 
+    /**
+     * public void addStore(Store store)
+     * Adds the Store object passed in to the list of already existing stores for the user.
+     * Writes the updated result to the files for later retrieval.
+     */
     public void addStore(Store store) {
         String oldUserString;
         String newUserString;
@@ -74,6 +85,11 @@ public class Seller extends User {
         AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
     }
 
+    /**
+     * public void removeStore(Store store)
+     * Removes the Store object passed in from the list of existing stores for the user.
+     * Writes the updated result to the files for later retrieval.
+     */
     public void removeStore(Store store) {
         String oldUserString;
         String newUserString;
@@ -85,6 +101,7 @@ public class Seller extends User {
         AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
         AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
     }
+    
 /*
  * public String detailedToString() Method that returns
  * a String containing: username, email, password, requestsCensorship,
@@ -99,6 +116,7 @@ public class Seller extends User {
                 this.getPassword(), this.isRequestsCensorship(), this.getBlockedUsers(), this.getInvisibleUsers(),
                 this.getCensoredWords(), this.stores);
     }
+    
 /*
  * public String detailedToStringWithoutStores() Method
  * that returns a String containing ONLY: username,
@@ -113,6 +131,10 @@ public class Seller extends User {
                 this.getCensoredWords());
     }
 
+    /**
+     * public String toString()
+     * Returns the formatted String.
+     */
     public String toString() {
         return super.toString();
     }

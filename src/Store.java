@@ -23,6 +23,8 @@ public class Store {
  * object String into a Store object.
  * This is used while reading Users and
  * Conversations from memory.
+ *
+ * @param storeString the String to be converted into a Store object.
  */
     public Store(String storeString) {
         storeString = storeString.substring(storeString.indexOf("<") + 1, storeString.lastIndexOf(">"));
@@ -42,6 +44,9 @@ public class Store {
  * based on input. This is used while creating
  * new Stores before adding to Seller strings
  * in passwords.txt and conversations.txt.
+ * 
+ * @param storeName the name of the Store object to be created
+ * @param seller the user owning the store
  */
     public Store(String storeName, Seller seller) {
         this.storeName = storeName;
@@ -51,6 +56,8 @@ public class Store {
     /**
      * public String getStoreName()
      * Getter for the store name.
+     *
+     * @return storeName
      */
     public String getStoreName() {
         return this.storeName;
@@ -59,6 +66,8 @@ public class Store {
     /**
      * public void setStoreName(String storeName)
      * Sets the store name with the passed in String.
+     *
+     * @param storeName the String for the store's new name
      */
     public void setStoreName(String storeName) {
         this.storeName = storeName;
@@ -67,6 +76,8 @@ public class Store {
     /**
      * public Seller getSeller()
      * Returns the seller.
+     *
+     * @return seller
      */
     public Seller getSeller() {
         return seller;
@@ -75,6 +86,8 @@ public class Store {
     /**
      * public void setSeller(Seller seller)
      * Sets seller as the Seller object passed in.
+     *
+     * @param seller the new seller
      */
     public void setSeller(Seller seller) {
         this.seller = seller;
@@ -83,6 +96,9 @@ public class Store {
     /**
      * public boolean equals(Object o)
      * Checks whether or not two sellers are equal based on the seller and their store names.
+     *
+     * @param o the object to be compared for equality
+     * @return whether or not the two objects are equal
      */
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -95,6 +111,8 @@ public class Store {
      * public String toString()
      * Returns the formatted String representing the store.
      * Includes its name and the owner, the seller.
+     *
+     * @return the formatted String containing store name and seller information
      */
     public String toString() {
         return String.format("Store<%s, %s>", this.storeName, this.seller.detailedToStringWithoutStores());

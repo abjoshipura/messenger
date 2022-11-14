@@ -19,10 +19,12 @@ public class Conversation {
     private final Customer customer;
     private boolean sellerUnread;
     private boolean customerUnread;
-    /*
-    * public Conversation(String conversationString) Constructor that converts a
-    * Conversation object String into a Conversation object.
-    * This is used while reading Conversations from memory.
+    /**
+     * public Conversation(String conversationString) Constructor that converts a
+     * Conversation object String into a Conversation object.
+     * This is used while reading Conversations from memory.
+     *
+     * @param conversationString the string to be read
      */
     public Conversation(String conversationString) {
         String strippedMessage = conversationString.substring(conversationString.indexOf("<") + 1,
@@ -44,11 +46,15 @@ public class Conversation {
         this.customerUnread = Boolean.parseBoolean(conversationDetails[conversationDetails.length - 1]);
     }
 
-    /*
+    /**
      * public Conversation(String conversationID,
      * String fileName, Seller seller, Customer customer)
      * Constructor that creates a new Conversation object based on indirect input.
      * This is used when creating a new Conversation before appending or writing to conversations.txt.
+     * @param conversationID the conversation unique id
+     * @param fileName the filename
+     * @param seller the seller
+     * @param customer the customer
      */
     public Conversation(String conversationID, String fileName, Seller seller, Customer customer) {
         this.conversationID = conversationID;
@@ -60,29 +66,65 @@ public class Conversation {
         this.customerUnread = false;
     }
 
+    /**
+     * returns filename
+     *
+     * @return filename of conv
+     */
     public String getFileName() {
         return fileName;
     }
 
+    /**
+     * returns seller
+     *
+     * @return seller
+     */
     public Seller getSeller() {
         return seller;
     }
 
+    /**
+     * returns customer
+     *
+     * @return customer
+     */
     public Customer getCustomer() {
         return customer;
     }
 
+    /**
+     * returns conv id
+     *
+     * @return id
+     */
     public String getConversationID() {
         return conversationID;
     }
 
+    /**
+     * checks if conv is unread for customer
+     *
+     * @return boolean
+     */
     public boolean isCustomerUnread() {
         return customerUnread;
     }
+
+    /**
+     * checks if conv is unread for seller
+     *
+     * @return boolean
+     */
     public boolean isSellerUnread() {
         return sellerUnread;
     }
 
+    /**
+     * sets conv id
+     * @param conversationID id
+     *
+     */
     public void setConversationID(String conversationID) {
         String oldString = this.toString();
         this.conversationID = conversationID;
@@ -91,6 +133,12 @@ public class Conversation {
         AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldString, newString);
     }
 
+    /**
+     * sets unread to true or false for customer
+     *
+     * @param customerUnread boolean
+     *
+     */
     public void setCustomerUnread(boolean customerUnread) {
         String oldString = this.toString();
         this.customerUnread = customerUnread;
@@ -99,6 +147,11 @@ public class Conversation {
         AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldString, newString);
     }
 
+    /**
+     * set seller unread
+     *
+     * @param sellerUnread boolean
+     */
     public void setSellerUnread(boolean sellerUnread) {
         String oldString = this.toString();
         this.sellerUnread = sellerUnread;
@@ -107,6 +160,10 @@ public class Conversation {
         AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldString, newString);
     }
 
+    /**
+     * updates conv fields
+     *
+     */
     public void updateConversationFields() {
         ArrayList<String> conversationStrings = new ArrayList<>();
         try (BufferedReader bfr = new BufferedReader(new FileReader(Main.conversationsFilePath))) {
@@ -135,6 +192,11 @@ public class Conversation {
         }
     }
 
+    /**
+     * read file returns arraylist of messages
+     * @param user user
+     * @return an arraylist of messages from user perspective
+     */
     public ArrayList<Message> readFileAsPerUser(User user) {
         ArrayList<Message> readMessages = new ArrayList<>();
         try (BufferedReader bfr = new BufferedReader(new FileReader(this.fileName))) {
@@ -162,6 +224,11 @@ public class Conversation {
         }
     }
 
+    /**
+     * reads a file objectively
+     *
+     * @return arraylist of objective messages
+     */
     public ArrayList<Message> readFile() {
         ArrayList<Message> readMessages = new ArrayList<>();
         try (BufferedReader bfr = new BufferedReader(new FileReader(this.fileName))) {
@@ -187,6 +254,11 @@ public class Conversation {
         }
     }
 
+    /**
+     * writes messages to a file (overwrites)
+     * @param messages the arraylist of messages
+     * @return true if works
+     */
     public boolean writeFile(ArrayList<Message> messages) {
         try (PrintWriter pw = new PrintWriter(new FileOutputStream(this.fileName, false))) {
             for (Message message : messages) {
@@ -200,6 +272,12 @@ public class Conversation {
         }
     }
 
+    /**
+     * appends messages to file
+     * @param stringMessage the msg
+     * @param sender sender
+     * @param recipient the recipient
+     */
     public void appendToFile(String stringMessage, User sender, User recipient) {
         try (PrintWriter pw = new PrintWriter(new FileOutputStream(this.fileName, true))) {
             Message message = new Message(stringMessage, sender, recipient);
@@ -209,6 +287,13 @@ public class Conversation {
         }
     }
 
+    /**
+     * imports a txt file into a message
+     * @param filePath the file
+     * @param sender sender
+     * @param recipient recipient
+     * @return true if works
+     */
     public boolean importTXT(String filePath, User sender, User recipient) {
         StringBuilder readContents = new StringBuilder();
         try (BufferedReader bfr = new BufferedReader(new FileReader(filePath))) {
@@ -224,6 +309,11 @@ public class Conversation {
         }
     }
 
+    /**
+     * equals
+     * @param o the object to be compared
+     * @return true if same
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -233,6 +323,11 @@ public class Conversation {
                 seller.equals(that.seller) && customer.equals(that.customer);
     }
 
+    /**
+     * to-string converting conversation to string format
+     *
+     * @return string of conv values
+     */
     @Override
     public String toString() {
         return String.format("Conversation<%s, %s, %s, %s, %b, %b>", this.conversationID, this.fileName,

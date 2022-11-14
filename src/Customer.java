@@ -62,6 +62,7 @@ public class Customer extends User {
 
     /**
      * public String toString()
+     * Returns a formatted String for the customer.
      *
      * @return the formatted String object
      */

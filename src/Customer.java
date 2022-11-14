@@ -20,6 +20,9 @@ public class Customer extends User {
      * instantiate Customer fields to their values.
      * It parses the deepToString() or super.toString()
      * version of the class written in memory according to hasDetails.
+     *
+     * @param customerString string for customer
+     * @param hasDetails whether or not there should be details
      */
     public Customer(String customerString, boolean hasDetails) {
         super(customerString, hasDetails);
@@ -30,8 +33,11 @@ public class Customer extends User {
      * Constructor that inherently calls
      * super(String name, String email, String password)
      * to create a new Customer.
+     *
+     * @param name
+     * @param email
+     * @param password
      */
-
     public Customer(String name, String email, String password) {
         super(name, email, password);
     }
@@ -45,6 +51,8 @@ public class Customer extends User {
      * store censoring toggle, blocked users,
      * invisible to users, and censored word
      * pairs for the next log-in.
+     *
+     * @return the detailed string
      */
     public String detailedToString() {
         return String.format("Customer<%s, %s, %s, %b, %s, %s, %s>", this.getUsername(), this.getEmail(),
@@ -52,6 +60,11 @@ public class Customer extends User {
                 this.getCensoredWords());
     }
 
+    /**
+     * public String toString()
+     *
+     * @return the formatted String object
+     */
     @Override
     public String toString() {
         return super.toString();

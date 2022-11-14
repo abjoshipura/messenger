@@ -1,5 +1,4 @@
 import java.io.*;
-import java.lang.reflect.Array;
 import java.util.ArrayList;
 
 public class Conversation {
@@ -18,25 +17,16 @@ public class Conversation {
         this.conversationID = conversationDetails[0];
         this.fileName = conversationDetails[1];
 
-        int elementsInUserString = 3;
-        int indexOfNextElem = 2;
-        //TODO Update for Customer and Seller
-        StringBuilder sellerString = new StringBuilder();
-        for (int i = indexOfNextElem; i < indexOfNextElem + elementsInUserString; i++) {
-            sellerString.append(conversationDetails[i]).append(", ");
-        }
-        this.seller = new Seller(sellerString.toString(), false);
-        indexOfNextElem = indexOfNextElem + elementsInUserString;
+        String sellerString = strippedMessage.substring(strippedMessage.indexOf("Seller<"),
+                strippedMessage.indexOf("]>") + 2);
+        String customerString = strippedMessage.substring(strippedMessage.indexOf("Customer<"),
+                strippedMessage.lastIndexOf("]>") + 2);
 
-        StringBuilder customerString = new StringBuilder();
-        for (int i = indexOfNextElem; i < indexOfNextElem + elementsInUserString; i++) {
-            customerString.append(conversationDetails[i]).append(", ");
-        }
-        this.customer = new Customer(customerString.toString(), false);
-        indexOfNextElem = indexOfNextElem + elementsInUserString;
+        this.seller = new Seller(sellerString, true, false);
+        this.customer = new Customer(customerString, true);
 
-        this.sellerUnread = Boolean.parseBoolean(conversationDetails[indexOfNextElem++]);
-        this.customerUnread = Boolean.parseBoolean(conversationDetails[indexOfNextElem]);
+        this.sellerUnread = Boolean.parseBoolean(conversationDetails[conversationDetails.length - 2]);
+        this.customerUnread = Boolean.parseBoolean(conversationDetails[conversationDetails.length - 1]);
     }
 
     public Conversation(String conversationID, String fileName, Seller seller, Customer customer) {
@@ -49,29 +39,51 @@ public class Conversation {
         this.customerUnread = false;
     }
 
-    public String getConversationID() {
-        return conversationID;
+    public String getFileName() {
+        return fileName;
     }
 
-    public void setConversationID(String conversationID) {
+    public Seller getSeller() {
+        return seller;
+    }
+
+    public Customer getCustomer() {
+        return customer;
+    }
+
+    public String getConversationID() {
+        return conversationID;
     }
 
     public boolean isCustomerUnread() {
         return customerUnread;
     }
-
-    public void setCustomerUnread(boolean customerUnread) {
-        this.customerUnread = customerUnread;
-        updateConversationFields();
-    }
-
     public boolean isSellerUnread() {
         return sellerUnread;
     }
 
+    public void setConversationID(String conversationID) {
+        String oldString = this.toString();
+        this.conversationID = conversationID;
+        String newString = this.toString();
+
+        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldString, newString);
+    }
+
+    public void setCustomerUnread(boolean customerUnread) {
+        String oldString = this.toString();
+        this.customerUnread = customerUnread;
+        String newString = this.toString();
+
+        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldString, newString);
+    }
+
     public void setSellerUnread(boolean sellerUnread) {
+        String oldString = this.toString();
         this.sellerUnread = sellerUnread;
-        updateConversationFields();
+        String newString = this.toString();
+
+        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldString, newString);
     }
 
     public void updateConversationFields() {
@@ -98,43 +110,8 @@ public class Conversation {
                 pw.println(conversationString);
             }
         } catch (Exception e) {
-            System.out.println("Could not update User");
+            System.out.println("Could not update Conversation");
         }
-    }
-
-    public boolean importTXT(String filePath, User sender, User recipient) {
-        StringBuilder readContents = new StringBuilder();
-        try (BufferedReader bfr = new BufferedReader(new FileReader(filePath))) {
-            String readLine = bfr.readLine();
-            while (readLine != null) {
-                readContents.append(readLine).append("\n");
-                readLine = bfr.readLine();
-            }
-            appendToFile(readContents.toString(), sender, recipient);
-            return true;
-        } catch (Exception e) {
-            return false;
-        }
-    }
-
-    public String censorFile() {
-        return null;
-    }
-
-    public void removeParticipant(User user) {
-        //TODO Handle deleted user
-    }
-
-    public String getFileName() {
-        return fileName;
-    }
-
-    public User getSeller() {
-        return seller;
-    }
-
-    public User getCustomer() {
-        return customer;
     }
 
     public ArrayList<Message> readFileAsPerUser(User user) {
@@ -172,7 +149,6 @@ public class Conversation {
             if (messageLine != null) {
                 message = new Message(messageLine);
             }
-
             while (message != null) {
                 if ((message.isSenderVisibility()) || message.isRecipientVisibility()) {
                     readMessages.add(message);
@@ -184,7 +160,6 @@ public class Conversation {
                     message = null;
                 }
             }
-
             return readMessages;
         } catch (IOException e) {
             return readMessages;
@@ -204,16 +179,31 @@ public class Conversation {
         }
     }
 
-    public boolean appendToFile(String stringMessage, User sender, User recipient) {
+    public void appendToFile(String stringMessage, User sender, User recipient) {
         try (PrintWriter pw = new PrintWriter(new FileOutputStream(this.fileName, true))) {
             Message message = new Message(stringMessage, sender, recipient);
             pw.println(message);
-            return true;
         } catch (IOException e) {
+            System.out.println("Error: Could not Send Message");
+        }
+    }
+
+    public boolean importTXT(String filePath, User sender, User recipient) {
+        StringBuilder readContents = new StringBuilder();
+        try (BufferedReader bfr = new BufferedReader(new FileReader(filePath))) {
+            String readLine = bfr.readLine();
+            while (readLine != null) {
+                readContents.append(readLine).append(" ");
+                readLine = bfr.readLine();
+            }
+            appendToFile(readContents.toString(), sender, recipient);
+            return true;
+        } catch (Exception e) {
             return false;
         }
     }
 
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -222,8 +212,10 @@ public class Conversation {
                 seller.equals(that.seller) && customer.equals(that.customer);
     }
 
+    @Override
     public String toString() {
         return String.format("Conversation<%s, %s, %s, %s, %b, %b>", this.conversationID, this.fileName,
-                this.seller, this.customer, this.sellerUnread, this.customerUnread);
+                this.seller.detailedToStringWithoutStores(), this.customer.detailedToString(), this.sellerUnread,
+                this.customerUnread);
     }
 }

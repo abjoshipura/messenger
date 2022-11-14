@@ -53,30 +53,6 @@ public class Message {
         this.recipientVisibility = true;
     }
 
-    public String toString() {
-        return String.format("Message<%s, %s, %s, %s, %s, %b, %b>", this.timeStamp, this.id,
-                this.sender.toString(), this.recipient.toString(), this.message, this.senderVisibility, this.recipientVisibility);
-    }
-
-    public String csvToString() {
-        return String.format("%s, %s, %s, %s, %s, %b, %b", this.timeStamp, this.id,
-                this.sender.csvToString(), this.recipient.csvToString(), this.message, this.senderVisibility, this.recipientVisibility);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof Message message1)) return false;
-        return senderVisibility == message1.senderVisibility && recipientVisibility == message1.recipientVisibility
-                && id.equals(message1.id) && message.equals(message1.message) && timeStamp.equals(message1.timeStamp)
-                && sender.equals(message1.sender) && recipient.equals(message1.recipient);
-    }
-
-    @Override
-    public int hashCode() {
-        return 0;
-    }
-
     public UUID getID() {
         return this.id;
     }
@@ -96,10 +72,10 @@ public class Message {
     public String getCensoredMessage(User user) {
         String tempMessage = this.message;
         ArrayList<String> censoredWords = user.getCensoredWords();
-        for (int i = 1; i < censoredWords.size(); i++) {
-            tempMessage = tempMessage.replaceAll("(?i)" + censoredWords.get(i).substring(0,
-                            censoredWords.get(i).indexOf(":")), censoredWords.get(i).substring(
-                                    censoredWords.get(i).indexOf(":") + 1));
+        for (String censoredWord : censoredWords) {
+            tempMessage = tempMessage.replaceAll("(?i)\\b" + censoredWord.substring(0,
+                    censoredWord.indexOf(":")) + "\\b", censoredWord.substring(
+                    censoredWord.indexOf(":") + 1));
         }
         return tempMessage;
     }
@@ -122,5 +98,20 @@ public class Message {
 
     public void setRecipientVisibility(boolean recipientVisibility) {
         this.recipientVisibility = recipientVisibility;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Message message1)) return false;
+        return senderVisibility == message1.senderVisibility && recipientVisibility == message1.recipientVisibility
+                && id.equals(message1.id) && message.equals(message1.message) && timeStamp.equals(message1.timeStamp)
+                && sender.equals(message1.sender) && recipient.equals(message1.recipient);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("Message<%s, %s, %s, %s, %s, %b, %b>", this.timeStamp, this.id,
+                this.sender.toString(), this.recipient.toString(), this.message, this.senderVisibility, this.recipientVisibility);
     }
 }

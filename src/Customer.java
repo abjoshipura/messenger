@@ -13,6 +13,7 @@ public class Customer extends User {
                 this.getCensoredWords());
     }
 
+    @Override
     public String toString() {
         return super.toString();
     }

@@ -1,14 +1,10 @@
-import java.io.BufferedReader;
-import java.io.FileOutputStream;
-import java.io.FileReader;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 
 public class User {
     private String username;
     private final String email;
-    private final String password;
+    private String password;
     private boolean requestsCensorship;
     private ArrayList<User> blockedUsers;
     private ArrayList<User> invisibleUsers;
@@ -16,17 +12,16 @@ public class User {
 
     public User(String userString, boolean hasDetails) {
         userString = userString.substring(userString.indexOf("<") + 1, userString.lastIndexOf(">"));
-        String[] splitTest = userString.split(", ");
-        this.username = splitTest[0];
-        this.email = splitTest[1];
-        this.password = splitTest[2];
+        String[] splitUserString = userString.split(", ");
+        this.username = splitUserString[0];
+        this.email = splitUserString[1];
+        this.password = splitUserString[2];
 
         if (hasDetails) {
-            this.requestsCensorship = Boolean.parseBoolean(splitTest[3]);
+            this.requestsCensorship = Boolean.parseBoolean(splitUserString[3]);
 
             this.blockedUsers = new ArrayList<>();
-            String blockedUsersString = userString.substring(userString.indexOf("[") + 1,
-                    userString.indexOf("]"));
+            String blockedUsersString = userString.substring(userString.indexOf("[") + 1, userString.indexOf("]"));
             if (blockedUsersString.length() > 0) {
                 while (!blockedUsersString.isEmpty()) {
                     String singularUser = blockedUsersString.substring(0, blockedUsersString.indexOf(">") + 1);
@@ -39,8 +34,7 @@ public class User {
 
             userString = userString.substring(userString.indexOf("]") + 3);
             this.invisibleUsers = new ArrayList<>();
-            String invisibleUsersString = userString.substring(userString.indexOf("[") + 1,
-                    userString.indexOf("]"));
+            String invisibleUsersString = userString.substring(userString.indexOf("[") + 1, userString.indexOf("]"));
             if (invisibleUsersString.length() > 0) {
                 while (!invisibleUsersString.isEmpty()) {
                     String singularUser = invisibleUsersString.substring(0, invisibleUsersString.indexOf(">") + 1);
@@ -52,13 +46,16 @@ public class User {
             }
 
             userString = userString.substring(userString.indexOf("]") + 3);
+            this.censoredWords = new ArrayList<>();
             String censoredWordPairs = userString.substring(userString.indexOf("[") + 1, userString.indexOf("]"));
-            this.censoredWords = new ArrayList<>(Arrays.asList(censoredWordPairs.split(", ")));
+            if (censoredWordPairs.length() > 0) {
+                this.censoredWords = new ArrayList<>(Arrays.asList(censoredWordPairs.split(", ")));
+            }
         } else {
+            this.requestsCensorship = false;
             this.blockedUsers = new ArrayList<>();
             this.invisibleUsers = new ArrayList<>();
             this.censoredWords = new ArrayList<>();
-            this.requestsCensorship = false;
         }
     }
 
@@ -68,33 +65,196 @@ public class User {
         this.email = email;
         this.password = password;
 
+        this.requestsCensorship = false;
         this.blockedUsers = new ArrayList<>();
         this.invisibleUsers = new ArrayList<>();
         this.censoredWords = new ArrayList<>();
-        this.requestsCensorship = false;
     }
 
-    public String toString() {
-        return String.format("User<%s, %s, %s>", this.username, this.email, this.password);
+    public String getUsername() {
+        return username;
     }
 
-    public String csvToString() {
-        return String.format("%s, %s, %s", this.username, this.email, this.password);
+    public String getEmail() {
+        return email;
     }
 
-    public boolean isParticipantOf(Conversation conversation) {
-        return this.equals(conversation.getSeller()) || this.equals(conversation.getCustomer());
+    public String getPassword() {
+        return password;
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof User)) return false;
-        User user = (User) o;
-        return username.equals(user.username) && email.equals(user.email) && password.equals(user.password);
+    public ArrayList<User> getBlockedUsers() {
+        return blockedUsers;
     }
 
-    public void sendMessageToUser(String message, User user, AccountsMaster accountsMaster) {
+    public ArrayList<User> getInvisibleUsers() {
+        return invisibleUsers;
+    }
+
+    public ArrayList<String> getCensoredWords() {
+        return censoredWords;
+    }
+
+    public boolean isRequestsCensorship() {
+        return requestsCensorship;
+    }
+
+    public void setUsername(String username) {
+        username = username.replaceAll("[,<>]", "_");
+
+        String oldUserID = this.username + ", " + this.email + ", " + this.password;
+        String newUserID = username + ", " + this.email + ", " + this.password;
+        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserID, newUserID);
+        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserID, newUserID);
+
+        for (Conversation conversation : AccountsMaster.conversationArrayList) {
+            if (this instanceof Seller && conversation.getSeller().equals(this)) {
+                String newConversationID = conversation.getCustomer().getUsername() + "TO" + username;
+                conversation.setConversationID(newConversationID);
+            } else if (this instanceof Customer && conversation.getCustomer().equals(this)) {
+                String newConversationID = username + "TO" + conversation.getSeller().getUsername();
+                conversation.setConversationID(newConversationID);
+            }
+            AccountsMaster.replaceStringInFile(conversation.getFileName(), oldUserID, newUserID);
+        }
+
+        this.username = username;
+    }
+
+    public void setPassword(String password) {
+        String oldUserID = this.username + ", " + this.email + ", " + this.password;
+        String newUserID = this.username + ", " + this.email + ", " + password;
+        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserID, newUserID);
+        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserID, newUserID);
+
+        for (Conversation conversation : AccountsMaster.conversationArrayList) {
+            if (this.isParticipantOf(conversation)) {
+                AccountsMaster.replaceStringInFile(conversation.getFileName(), oldUserID, newUserID);
+            }
+        }
+
+        this.password = password;
+    }
+
+    public void setRequestsCensorship(boolean requestsCensorship) {
+        String oldUserString;
+        String newUserString;
+        if (this instanceof Seller) {
+            oldUserString = ((Seller) this).detailedToString();
+            this.requestsCensorship = requestsCensorship;
+            newUserString = ((Seller) this).detailedToString();
+        } else {
+            oldUserString = ((Customer) this).detailedToString();
+            this.requestsCensorship = requestsCensorship;
+            newUserString = ((Customer) this).detailedToString();
+        }
+        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
+        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
+    }
+
+    public void addBlockedUser(User blockedUser) {
+        String oldUserString;
+        String newUserString;
+        if (this instanceof Seller) {
+            oldUserString = ((Seller) this).detailedToString();
+            this.blockedUsers.add(blockedUser);
+            newUserString = ((Seller) this).detailedToString();
+        } else {
+            oldUserString = ((Customer) this).detailedToString();
+            this.blockedUsers.add(blockedUser);
+            newUserString = ((Customer) this).detailedToString();
+        }
+
+        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
+        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
+    }
+
+    public void removeBlockedUser(User blockedUser) {
+        String oldUserString;
+        String newUserString;
+        if (this instanceof Seller) {
+            oldUserString = ((Seller) this).detailedToString();
+            this.blockedUsers.remove(blockedUser);
+            newUserString = ((Seller) this).detailedToString();
+        } else {
+            oldUserString = ((Customer) this).detailedToString();
+            this.blockedUsers.remove(blockedUser);
+            newUserString = ((Customer) this).detailedToString();
+        }
+
+        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
+        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
+    }
+
+    public void addInvisibleUser(User invisibleUser) {
+        String oldUserString;
+        String newUserString;
+        if (this instanceof Seller) {
+            oldUserString = ((Seller) this).detailedToString();
+            this.invisibleUsers.add(invisibleUser);
+            newUserString = ((Seller) this).detailedToString();
+        } else {
+            oldUserString = ((Customer) this).detailedToString();
+            this.invisibleUsers.add(invisibleUser);
+            newUserString = ((Customer) this).detailedToString();
+        }
+
+        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
+        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
+    }
+
+    public void removeInvisibleUser(User invisibleUser) {
+        String oldUserString;
+        String newUserString;
+        if (this instanceof Seller) {
+            oldUserString = ((Seller) this).detailedToString();
+            this.invisibleUsers.remove(invisibleUser);
+            newUserString = ((Seller) this).detailedToString();
+        } else {
+            oldUserString = ((Customer) this).detailedToString();
+            this.invisibleUsers.remove(invisibleUser);
+            newUserString = ((Customer) this).detailedToString();
+        }
+
+        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
+        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
+    }
+
+    public void addCensoredWord(String censoredWord) {
+        String oldUserString;
+        String newUserString;
+        if (this instanceof Seller) {
+            oldUserString = ((Seller) this).detailedToString();
+            this.censoredWords.add(censoredWord);
+            newUserString = ((Seller) this).detailedToString();
+        } else {
+            oldUserString = ((Customer) this).detailedToString();
+            this.censoredWords.add(censoredWord);
+            newUserString = ((Customer) this).detailedToString();
+        }
+
+        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
+        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
+    }
+
+    public void removeCensoredWord(int index) {
+        String oldUserString;
+        String newUserString;
+        if (this instanceof Seller) {
+            oldUserString = ((Seller) this).detailedToString();
+            this.censoredWords.remove(index);
+            newUserString = ((Seller) this).detailedToString();
+        } else {
+            oldUserString = ((Customer) this).detailedToString();
+            this.censoredWords.remove(index);
+            newUserString = ((Customer) this).detailedToString();
+        }
+
+        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
+        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
+    }
+
+    public boolean sendMessageToUser(String message, User user, AccountsMaster accountsMaster) {
         Conversation conversation;
         if (this instanceof Customer && user instanceof Seller && !user.getBlockedUsers().contains(this)) {
             conversation = accountsMaster.fetchConversation((Customer) this, (Seller) user);
@@ -104,10 +264,11 @@ public class User {
             try {
                 conversation.appendToFile(message, this, user);
             } catch (Exception e) {
-                System.out.println("Could Not Send Message");
+                return false;
             }
             conversation.setSellerUnread(true);
-        } else if (this instanceof Seller && user instanceof Customer) {
+            return true;
+        } else if (this instanceof Seller && user instanceof Customer && !user.getBlockedUsers().contains(this)) {
             conversation = accountsMaster.fetchConversation((Customer) user, (Seller) this);
             if (conversation == null) {
                 conversation = accountsMaster.createConversation((Customer) user, (Seller) this);
@@ -115,11 +276,12 @@ public class User {
             try {
                 conversation.appendToFile(message, this, user);
             } catch (Exception e) {
-                System.out.println("Could Not Send Message");
+                return false;
             }
             conversation.setCustomerUnread(true);
+            return true;
         } else {
-            System.out.printf("Cannot Talk to other %ss\n", (this instanceof Seller) ? "Seller" : "Customer");
+            return false;
         }
     }
 
@@ -135,13 +297,13 @@ public class User {
                 if (conversation.writeFile(readMessages)) {
                     System.out.println("Edited Message to: " + newMessage);
                 } else {
-                    System.out.println("Error: Could not edit message!");
+                    System.out.println("Error: Could not Edit Message");
                 }
             } else {
                 System.out.println("You Cannot Edit this Message");
             }
         } catch (Exception e) {
-            System.out.println("Error: Could not edit message!");
+            System.out.println("Error: Could not Edit Message");
         }
     }
 
@@ -157,94 +319,27 @@ public class User {
                     }
                 }
                 conversation.writeFile(readMessages);
+            } else {
+                System.out.println("You Cannot Delete this Message");
             }
         } catch (Exception e) {
-            System.out.println("You cannot delete this message!");
+            System.out.println("Error: Could not Delete Message");
         }
     }
 
-    public String getUsername() {
-        return username;
+    public boolean isParticipantOf(Conversation conversation) {
+        return this.equals(conversation.getSeller()) || this.equals(conversation.getCustomer());
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof User user)) return false;
+        return email.equals(user.email);
     }
 
-    public void updateUserFields() {
-        ArrayList<String> detailedUserStrings = new ArrayList<>();
-        try (BufferedReader bfr = new BufferedReader(new FileReader(Main.passwordFilePath))) {
-            String detailedUserString = bfr.readLine();
-
-            while (detailedUserString != null) {
-                String tempString = detailedUserString.substring(detailedUserString.indexOf("<") + 1,
-                        detailedUserString.lastIndexOf(">"));
-                String[] splitTempString = tempString.split(", ");
-                if (this.email.equals(splitTempString[1])) {
-                    if (this instanceof Seller) {
-                        detailedUserString = ((Seller) this).detailedToString();
-                    } else {
-                        detailedUserString = ((Customer) this).detailedToString();
-                    }
-                }
-                detailedUserStrings.add(detailedUserString);
-                detailedUserString = bfr.readLine();
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.out.println("Could not update User");
-        }
-
-        try (PrintWriter pw = new PrintWriter(new FileOutputStream(Main.passwordFilePath, false))) {
-            for (String detailedUserString : detailedUserStrings) {
-                pw.println(detailedUserString);
-            }
-        } catch (Exception e) {
-            System.out.println("Could not update User");
-        }
-    }
-
-    public String getEmail() {
-        return email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public ArrayList<User> getBlockedUsers() {
-        return blockedUsers;
-    }
-
-    public void setBlockedUsers(ArrayList<User> blockedUsers) {
-        this.blockedUsers = blockedUsers;
-        updateUserFields();
-    }
-
-    public void setInvisibleUsers(ArrayList<User> invisibleUsers) {
-        this.invisibleUsers = invisibleUsers;
-        updateUserFields();
-    }
-
-    public void setCensoredWords(ArrayList<String> censoredWords) {
-        this.censoredWords = censoredWords;
-        updateUserFields();
-    }
-
-    public ArrayList<User> getInvisibleUsers() {
-        return invisibleUsers;
-    }
-
-    public ArrayList<String> getCensoredWords() {
-        return censoredWords;
-    }
-
-    public boolean isRequestsCensorship() {
-        return requestsCensorship;
-    }
-
-    public void setRequestsCensorship(boolean requestsCensorship) {
-        this.requestsCensorship = requestsCensorship;
+    @Override
+    public String toString() {
+        return String.format("User<%s, %s, %s>", this.username, this.email, this.password);
     }
 }

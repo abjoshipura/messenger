@@ -153,7 +153,8 @@ public class Message {
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
-        if (!(o instanceof Message message1)) return false;
+        if (!(o instanceof Message)) return false;
+        Message message1 = (Message) o;
         return senderVisibility == message1.senderVisibility && recipientVisibility == message1.recipientVisibility
                 && id.equals(message1.id) && message.equals(message1.message) && timeStamp.equals(message1.timeStamp)
                 && sender.equals(message1.sender) && recipient.equals(message1.recipient);

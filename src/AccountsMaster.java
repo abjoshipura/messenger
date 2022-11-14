@@ -3,7 +3,7 @@ import java.util.*;
 import java.util.regex.Pattern;
 /**
  * AccountsMaster
- *
+ * <p>
  * The AccountsMaster class acts as the helper class to `Main.
  * It handles the creation and deletion of accounts
  *
@@ -19,6 +19,13 @@ public class AccountsMaster {
     public static ArrayList<Customer> customerArrayList = new ArrayList<>();
     public static ArrayList<Conversation> conversationArrayList = new ArrayList<>();
 
+    /**
+     * AccountsMaster constructor
+     *
+     * @param passwordFile passwordFile contains login info
+     * @param conversationsFile contains all conversations
+     *
+     */
     public AccountsMaster(String passwordFile, String conversationsFile) {
         this.passwordFile = passwordFile;
         this.conversationsFile = conversationsFile;
@@ -54,6 +61,12 @@ public class AccountsMaster {
         }
     }
 
+    /**
+     * Checks if a username is already taken
+     *
+     * @param username string username
+     * @return true if username is taken
+     */
     public boolean usernameAlreadyTaken(String username) {
         try (BufferedReader bfr = new BufferedReader(new FileReader(this.passwordFile))) {
             String userString = bfr.readLine();
@@ -71,6 +84,12 @@ public class AccountsMaster {
         }
     }
 
+    /**
+     * Checks if email is already in use
+     *
+     * @param email email string
+     * @return true if email in use
+     */
     public boolean emailAlreadyRegistered(String email) {
         try (BufferedReader bfr = new BufferedReader(new FileReader(this.passwordFile))) {
             String userString = bfr.readLine();
@@ -88,7 +107,12 @@ public class AccountsMaster {
         }
     }
 
-
+    /**
+     * Returns User using their username or email
+     *
+     * @param usernameOrEmail a string of their username or email
+     * @return User user representing the user that owns the email/username
+     */
     public User fetchAccount(String usernameOrEmail) {
         for (Seller seller : sellerArrayList) {
             if (seller.getUsername().equalsIgnoreCase(usernameOrEmail) ||
@@ -105,6 +129,15 @@ public class AccountsMaster {
         return null;
     }
 
+    /**
+     * creates account
+     *
+     * @param username username
+     * @param email email
+     * @param password password
+     * @param role role
+     * @return the created user
+     */
     public User createAccount(String username, String email, String password, String role) {
         try (PrintWriter pw = new PrintWriter(new FileWriter(passwordFile, true))) {
             if (role.equalsIgnoreCase("SELLER")) {
@@ -124,6 +157,11 @@ public class AccountsMaster {
         }
     }
 
+    /**
+     * deletes account
+     *
+     * @param deletedUser the user that will be deleted
+     */
     public void deleteAccount(User deletedUser) {
         try (PrintWriter pw = new PrintWriter(new FileWriter(passwordFile, false))) {
             if (deletedUser instanceof Seller) {
@@ -143,6 +181,12 @@ public class AccountsMaster {
         }
     }
 
+    /**
+     * returns number of unread messages
+     *
+     * @param user the user for which this will be done
+     * @return int num of unread messages
+     */
     public int numUnreadConversations(User user) {
         int numUnreadConversations = 0;
         ArrayList<Conversation> userConversations = listConversations(user);
@@ -157,6 +201,12 @@ public class AccountsMaster {
         return numUnreadConversations;
     }
 
+    /**
+     * lists all conversations for a user
+     *
+     * @param user user
+     * @return list of conversations
+     */
     public ArrayList<Conversation> listConversations(User user) {
         ArrayList<Conversation> conversations = new ArrayList<>();
         if (user instanceof Seller) {
@@ -185,7 +235,13 @@ public class AccountsMaster {
         return conversations;
     }
 
-
+    /**
+     * fetches conv based on who is involved
+     *
+     * @param customer person 1
+     * @param seller person 2
+     * @return the conversation
+     */
     public Conversation fetchConversation(Customer customer, Seller seller) {
         for (Conversation conversation : conversationArrayList) {
             if (conversation.getCustomer().equals(customer) && conversation.getSeller().equals(seller)) {
@@ -195,6 +251,13 @@ public class AccountsMaster {
         return null;
     }
 
+    /**
+     * creates a conversation between two people
+     *
+     * @param customer person 1
+     * @param seller person 2
+     * @return the created conv
+     */
     public Conversation createConversation(Customer customer, Seller seller) {
         try (PrintWriter pw = new PrintWriter(new FileWriter(conversationsFile, true))) {
             String conversationID = customer.getUsername() + "TO" + seller.getUsername();
@@ -211,6 +274,13 @@ public class AccountsMaster {
         }
     }
 
+    /**
+     * converts conversations to exportable csv files
+     *
+     * @param exportingConversations all conv to be exported
+     * @param destinationPath where the exports will go
+     * @return true if it works
+     */
 public boolean convertConversationsToCSV(ArrayList<Conversation> exportingConversations, String destinationPath) 
             throws IOException {
             
@@ -237,6 +307,12 @@ public boolean convertConversationsToCSV(ArrayList<Conversation> exportingConver
         return true;
     }
 
+    /**
+     * lists all customers for a seller
+     *
+     * @param seller the seller
+     * @return list of customers that the seller can see
+     */
     public ArrayList<Customer> listCustomers(Seller seller) {
         ArrayList<Customer> customers = new ArrayList<>();
         for (Customer customer: customerArrayList) {
@@ -248,6 +324,12 @@ public boolean convertConversationsToCSV(ArrayList<Conversation> exportingConver
         return customers;
     }
 
+    /**
+     * lists all stores for a customer
+     *
+     * @param customer customer
+     * @return list of stores that the customer can see
+     */
     public ArrayList<Store> listStores(Customer customer) {
         ArrayList<Store> stores = new ArrayList<>();
         for (Seller seller: sellerArrayList) {
@@ -258,6 +340,13 @@ public boolean convertConversationsToCSV(ArrayList<Conversation> exportingConver
         return stores;
     }
 
+    /**
+     * fetches customers based on a keyword that uses .contains
+     *
+     * @param searchKeyword the search keyword
+     * @param seller the seller
+     * @return customers matching the search keyword
+     */
     public ArrayList<Customer> fetchCustomers(String searchKeyword, Seller seller) {
         ArrayList<Customer> visibleCustomers = listCustomers(seller);
         ArrayList<Customer> searchResult = new ArrayList<>();
@@ -269,6 +358,13 @@ public boolean convertConversationsToCSV(ArrayList<Conversation> exportingConver
         return searchResult;
     }
 
+    /**
+     * fetches sellers based on search keyword
+     *
+     * @param searchKeyword the keyword
+     * @param customer customer
+     * @return list of sellers matching keyword
+     */
     public ArrayList<Seller> fetchSellers(String searchKeyword, Customer customer) {
         ArrayList<Seller> searchResult = new ArrayList<>();
         for (Seller seller: sellerArrayList) {
@@ -280,6 +376,13 @@ public boolean convertConversationsToCSV(ArrayList<Conversation> exportingConver
         return searchResult;
     }
 
+    /**
+     * replaces a string with a new string in  a file
+     *
+     * @param filePath the file
+     * @param oldString the old string
+     * @param newString the new string
+     */
     public static void replaceStringInFile(String filePath, String oldString, String newString) {
         ArrayList<String> strings = new ArrayList<>();
         try (BufferedReader bfr = new BufferedReader(new FileReader(filePath))) {

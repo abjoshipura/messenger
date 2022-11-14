@@ -40,4 +40,14 @@ public class Seller extends User {
     public ArrayList<Store> getStores() {
         return this.stores;
     }
+
+    public void createStore(String storeName, Seller seller) {
+        Store store = new Store(storeName, this);
+        stores.add(store);
+    }
+
+    public void setStores(ArrayList<Store> stores) {
+        this.stores = stores;
+        super.updateUserFields();
+    }
 }

@@ -10,8 +10,11 @@ public class Main {
         System.out.println("1. View Conversations");
         System.out.printf("2. View All %ss\n", (user instanceof Seller) ? "Customer" : "Store");
         System.out.printf("3. Search %ss\n", (user instanceof Seller) ? "Customer" : "Seller");
-        System.out.println("4. Edit Account");
-        System.out.println("5. Log Out");
+        if (user instanceof Seller) {
+            System.out.printf("4. Manage Stores\n");
+        }
+        System.out.printf("%d. Edit Account\n", (user instanceof Seller) ? 5 : 4);
+        System.out.printf("%d. Log Out\n", (user instanceof Seller) ? 6 : 5);
     }
 
     private static void printUserActionMenu(User user) {
@@ -42,12 +45,70 @@ public class Main {
                 runListMenu(scan, accountsMaster, loggedOnUser);
             } else if (selectedOption == 3) {
                 runSearchMenu(scan, accountsMaster, loggedOnUser);
-            } else if (selectedOption == 4) {
+            } else if (selectedOption == 4 && loggedOnUser instanceof Seller) {
+                // Manage Stores
+                runStoresMenu(scan, accountsMaster, (Seller) loggedOnUser);
+            } else if ((selectedOption == 5 && loggedOnUser instanceof Seller) || (selectedOption == 4 && loggedOnUser instanceof Customer)) {
+                // Edit Account
                 if (runAccountMenu(scan, accountsMaster, loggedOnUser)) {
                     break;
                 }
-            } else if (selectedOption == 5) {
+            } else if ((selectedOption == 6 && loggedOnUser instanceof Seller) || (selectedOption == 5 && loggedOnUser instanceof Customer)) {
                 System.out.println("Logging Out...");
+                break;
+            } else {
+                System.out.println("Invalid Option");
+            }
+        }
+    }
+
+    public static void runStoresMenu(Scanner scan, AccountsMaster accountsMaster, Seller loggedOnUser) {
+        ArrayList<Store> stores = loggedOnUser.getStores();
+        while (true) {
+            System.out.println("--------");
+            System.out.println("1. Create New Store");
+            System.out.println("2. View Existing Stores");
+            System.out.println("3. Back to Main Menu");
+            int selectedOption = Integer.parseInt(scan.nextLine());
+            int numStores = stores.size();
+            if (selectedOption == 1) { // Create New Store
+                System.out.println("Enter Store Name");
+                String storeName = scan.nextLine();
+                if (stores.size() != 0) {
+                    for (int i = 0; i < stores.size(); i++) {
+                        if (stores.get(i).getStoreName().equals(storeName)) {
+                            System.out.println("Duplicate Stores Not Allowed!");
+                            i = stores.size();
+                        } else {
+                            if (i == stores.size() - 1) { // No duplicate stores found by last element
+                                // Store is added to list
+                                loggedOnUser.createStore(storeName, loggedOnUser);
+                                loggedOnUser.setStores(stores);
+                            }
+                        }
+                    }
+                } else {
+                    // Store is added to list
+                    loggedOnUser.createStore(storeName, loggedOnUser);
+                    loggedOnUser.setStores(stores);
+                }
+                if (stores.size() == numStores + 1) {
+                    System.out.printf("Store \"%s\" Successfully Created!\n", storeName);
+                }
+            } else if (selectedOption == 2) { // View List of Existing Stores
+                if (numStores == 0) {
+                    System.out.println("No Stores Found!");
+                } else {
+                    for (int i = 0; i < stores.size(); i++) { // Prints list of stores
+                        System.out.printf("%d. %s\n", (i + 1), stores.get(i).getStoreName());
+                    }
+                    if (stores.size() != 1) {
+                        System.out.printf("%d Stores Found!\n", numStores);
+                    } else {
+                        System.out.println("1 Store Found!");
+                    }
+                }
+            } else if (selectedOption == 3) {
                 break;
             } else {
                 System.out.println("Invalid Option");

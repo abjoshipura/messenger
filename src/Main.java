@@ -69,7 +69,15 @@ public class Main {
             System.out.println("1. Create New Store");
             System.out.println("2. View Existing Stores");
             System.out.println("3. Back to Main Menu");
-            int selectedOption = Integer.parseInt(scan.nextLine());
+            int selectedOption;
+            while (true) {
+                try {
+                    selectedOption = Integer.parseInt(scan.nextLine());
+                    break;
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid Option");
+                }
+            }
             int numStores = stores.size();
             if (selectedOption == 1) { // Create New Store
                 System.out.println("Enter Store Name");

@@ -16,6 +16,7 @@ import java.util.Objects;
 public class Store {
     private String storeName;
     private Seller seller;
+    
 /*
  * public Store(String storeString)
  * Constructor that converts a Store
@@ -34,6 +35,7 @@ public class Store {
         }
         this.seller = new Seller(sellerString.toString(), true, false);
     }
+    
 /*
  * public Store(String storeName, Seller seller)
  * Constructor that creates a new Store object
@@ -46,22 +48,42 @@ public class Store {
         this.seller = seller;
     }
 
+    /**
+     * public String getStoreName()
+     * Getter for the store name.
+     */
     public String getStoreName() {
         return this.storeName;
     }
 
+    /**
+     * public void setStoreName(String storeName)
+     * Sets the store name with the passed in String.
+     */
     public void setStoreName(String storeName) {
         this.storeName = storeName;
     }
 
+    /**
+     * public Seller getSeller()
+     * Returns the seller.
+     */
     public Seller getSeller() {
         return seller;
     }
 
+    /**
+     * public void setSeller(Seller seller)
+     * Sets seller as the Seller object passed in.
+     */
     public void setSeller(Seller seller) {
         this.seller = seller;
     }
 
+    /**
+     * public boolean equals(Object o)
+     * Checks whether or not two sellers are equal based on the seller and their store names.
+     */
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -69,6 +91,11 @@ public class Store {
         return Objects.equals(storeName, store.storeName) && Objects.equals(seller, store.seller);
     }
 
+    /**
+     * public String toString()
+     * Returns the formatted String representing the store.
+     * Includes its name and the owner, the seller.
+     */
     public String toString() {
         return String.format("Store<%s, %s>", this.storeName, this.seller.detailedToStringWithoutStores());
     }

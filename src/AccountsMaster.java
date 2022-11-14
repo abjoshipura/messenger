@@ -201,8 +201,29 @@ public class AccountsMaster {
         }
     }
 
-    public boolean convertConversationsToCSV(ArrayList<Conversation> exportingConversations, String destinationPath) {
-        //TODO Implement Censoring Ensure No Passwords
+public boolean convertConversationsToCSV(ArrayList<Conversation> exportingConversations, String destinationPath) 
+            throws IOException {
+            
+        File dest = new File(destinationPath);
+        dest.getParentFile().mkdirs();
+
+        for (Conversation conv : exportingConversations) {
+            File c = new File(dest, String.format("%s.txt", conv.getConversationID()));
+            c.createNewFile();
+            File act = new File(dest, String.format("%s.csv", conv.getConversationID()));
+
+            PrintWriter bw = new PrintWriter(new FileWriter(c, true));
+
+            ArrayList<Message> temp = conv.readFile();
+
+            for (Message msg : temp) {
+                bw.println(msg.csvToString());
+            }
+            bw.close();
+
+            c.renameTo(act);
+        }
+
         return true;
     }
 

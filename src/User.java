@@ -342,4 +342,8 @@ public class User {
     public String toString() {
         return String.format("User<%s, %s, %s>", this.username, this.email, this.password);
     }
+    
+    public String csvToString() {
+        return String.format("%s, %s, %s", this.username, this.email, this.password);
+    }
 }

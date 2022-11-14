@@ -1,4 +1,5 @@
 import java.util.ArrayList;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 public class Main {
@@ -69,7 +70,15 @@ public class Main {
             System.out.println("1. Create New Store");
             System.out.println("2. View Existing Stores");
             System.out.println("3. Back to Main Menu");
-            int selectedOption = Integer.parseInt(scan.nextLine());
+            int selectedOption;
+            while (true) {
+                try {
+                    selectedOption = Integer.parseInt(scan.nextLine());
+                    break;
+                } catch (NumberFormatException e) {
+                    System.out.println("Invalid Option");
+                }
+            }
             int numStores = stores.size();
             if (selectedOption == 1) { // Create New Store
                 System.out.println("Enter Store Name");
@@ -644,6 +653,7 @@ public class Main {
     }
 
     public static void main(String[] args) {
+
         User loggedOnUser = null;
         Scanner scan = new Scanner(System.in);
         AccountsMaster accountsMaster = new AccountsMaster(passwordFilePath, conversationsFilePath);

@@ -1,6 +1,17 @@
 import java.io.*;
 import java.util.ArrayList;
-
+/**
+ * Conversation
+ *
+ * The Conversation class acts as the template for any conversation created between a Seller and a Customer.
+ * It holds elementary details about a conversation: conversationID, seller, and customer.
+ * It also holds a fileName for the destination file where all future Messages will be stored.
+ *
+ * @author Akshara Joshipura, Raymond Wang, Kevin Tang, Yejin Oh
+ *
+ * @version 11/14/22
+ *
+ */
 public class Conversation {
     private String conversationID;
     private final String fileName;
@@ -8,7 +19,11 @@ public class Conversation {
     private final Customer customer;
     private boolean sellerUnread;
     private boolean customerUnread;
-
+    /*
+    * public Conversation(String conversationString) Constructor that converts a
+    * Conversation object String into a Conversation object.
+    * This is used while reading Conversations from memory.
+     */
     public Conversation(String conversationString) {
         String strippedMessage = conversationString.substring(conversationString.indexOf("<") + 1,
                 conversationString.lastIndexOf(">"));
@@ -29,6 +44,12 @@ public class Conversation {
         this.customerUnread = Boolean.parseBoolean(conversationDetails[conversationDetails.length - 1]);
     }
 
+    /*
+     * public Conversation(String conversationID,
+     * String fileName, Seller seller, Customer customer)
+     * Constructor that creates a new Conversation object based on indirect input.
+     * This is used when creating a new Conversation before appending or writing to conversations.txt.
+     */
     public Conversation(String conversationID, String fileName, Seller seller, Customer customer) {
         this.conversationID = conversationID;
         this.fileName = fileName;

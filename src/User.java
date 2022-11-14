@@ -1,6 +1,18 @@
 import java.util.ArrayList;
 import java.util.Arrays;
-
+/**
+ * User
+ *
+ * The User class acts as the basic template for both Sellers and Customers.
+ * It holds the elementary details about a user: username, email, and password.
+ * It also holds lists for blocked users, invisible to users,
+ * and censored words to implement BLOCKING and CENSORING.
+ *
+ * @author Akshara Joshipura, Raymond Wang, Kevin Tang, Yejin Oh
+ *
+ * @version 11/14/22
+ *
+ */
 public class User {
     private String username;
     private final String email;
@@ -9,7 +21,11 @@ public class User {
     private ArrayList<User> blockedUsers;
     private ArrayList<User> invisibleUsers;
     private ArrayList<String> censoredWords;
-
+/*
+ * public User(String userString, boolean hasDetails) Constructor that
+ * instantiates all User fields to their values by
+ * parsing a deepToString() or toString() according to hasDetails.
+ */
     public User(String userString, boolean hasDetails) {
         userString = userString.substring(userString.indexOf("<") + 1, userString.lastIndexOf(">"));
         String[] splitUserString = userString.split(", ");
@@ -59,7 +75,11 @@ public class User {
         }
     }
 
-
+/*
+ * public User(String username, String email, String password)
+ * Constructor that creates a new User.
+ * Inherently called by Seller and Customer only.
+ */
     public User(String username, String email, String password) {
         this.username = username;
         this.email = email;
@@ -253,7 +273,12 @@ public class User {
         AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
         AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
     }
-
+/*
+ * public boolean sendMessageToUser(String message, User user, AccountsMaster accountsMaster)
+ * Method to send a message to User ONLY IF User has not blocked this User.
+ * Appends a new Message object String to the Conversation file.
+ * Sets the recipient's Conversation status to UNREAD.
+ */
     public boolean sendMessageToUser(String message, User user, AccountsMaster accountsMaster) {
         Conversation conversation;
         if (this instanceof Customer && user instanceof Seller && !user.getBlockedUsers().contains(this)) {
@@ -284,7 +309,10 @@ public class User {
             return false;
         }
     }
-
+/*
+ * public void editMessage(Message message, Conversation conversation, String newMessage)
+ * Method to edit a message in a Conversation ONLY IF this User is the sender of the Message.
+ */
     public void editMessage(Message message, Conversation conversation, String newMessage) {
         try {
             if (message.getSender().equals(this)) {
@@ -306,7 +334,11 @@ public class User {
             System.out.println("Error: Could not Edit Message");
         }
     }
-
+/*
+ public void deleteMessage(Message message, Conversation conversation)
+ * Method to delete a message in a Conversation. Sets the Message's corresponding
+ * senderVisibility or recipientVisibility to false.
+ */
     public void deleteMessage(Message message, Conversation conversation) {
         try {
             if (this.isParticipantOf(conversation)) {

@@ -11,6 +11,17 @@ import java.io.*;
 import java.util.NoSuchElementException;
 
 import static org.junit.Assert.*;
+/**
+ * AccountsMaster
+ *
+ * The AccountsMaster class acts as the helper class to `Main.
+ * It handles the creation and deletion of accounts
+ *
+ * @author Akshara Joshipura, Raymond Wang, Kevin Tang, Yejin Oh
+ *
+ * @version 11/14/22
+ *
+ */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class LoginTest {
     public static void main(String[] args) {

@@ -1,9 +1,28 @@
 import java.util.Objects;
-
+/**
+ * Store
+ *
+ * The Store class behaves as a template
+ * for any stores that can be created, edited,
+ * or deleted by a Seller. It holds the
+ * elementary details about a store: store
+ * name, the owner (a Seller object).
+ *
+ * @author Akshara Joshipura, Raymond Wang, Kevin Tang, Yejin Oh
+ *
+ * @version 11/14/22
+ *
+ */
 public class Store {
     private String storeName;
     private Seller seller;
-
+/*
+ * public Store(String storeString)
+ * Constructor that converts a Store
+ * object String into a Store object.
+ * This is used while reading Users and
+ * Conversations from memory.
+ */
     public Store(String storeString) {
         storeString = storeString.substring(storeString.indexOf("<") + 1, storeString.lastIndexOf(">"));
         String[] splitStoreString = storeString.split(", ");
@@ -15,7 +34,13 @@ public class Store {
         }
         this.seller = new Seller(sellerString.toString(), true, false);
     }
-
+/*
+ * public Store(String storeName, Seller seller)
+ * Constructor that creates a new Store object
+ * based on input. This is used while creating
+ * new Stores before adding to Seller strings
+ * in passwords.txt and conversations.txt.
+ */
     public Store(String storeName, Seller seller) {
         this.storeName = storeName;
         this.seller = seller;

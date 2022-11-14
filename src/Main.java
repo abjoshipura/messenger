@@ -1,7 +1,17 @@
 import java.util.ArrayList;
 import java.util.Scanner;
 import java.io.*;
-
+/**
+ * AccountsMaster
+ *
+ * The AccountsMaster class acts as the helper class to `Main.
+ * It handles the creation and deletion of accounts
+ *
+ * @author Akshara Joshipura, Raymond Wang, Kevin Tang, Yejin Oh
+ *
+ * @version 11/14/22
+ *
+ */
 public class Main {
     public static final String passwordFilePath = "passwords.txt";
     public static final String conversationsFilePath = "conversations.txt";

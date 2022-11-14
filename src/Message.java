@@ -3,7 +3,22 @@ import java.time.Instant;
 import java.sql.Timestamp;
 
 
-
+/**
+ * Message
+ *
+ * The Message class behaves as a template for
+ * any message sent between Users. It holds
+ * elementary details about a message: time
+ * stamp, a UUID identifier, the message, the
+ * sender (a User object) and the recipient (a User object).
+ * It also possesses two attributes: senderVisibility and
+ * recipientVisibility to implement DELETING.
+ *
+ * @author Akshara Joshipura, Raymond Wang, Kevin Tang, Yejin Oh
+ *
+ * @version 11/14/22
+ *
+ */
 public class Message {
     private final String timeStamp;
     private final UUID id;
@@ -13,6 +28,11 @@ public class Message {
     private boolean senderVisibility;
     private boolean recipientVisibility;
 
+    /*
+     * public Message(String messageString) Constructor
+     * that converts a Message object String into a Message
+     * object. This is used while reading Messages from memory.
+     */
     public Message(String messageString) {
         String strippedMessage = messageString.substring(messageString.indexOf("<") + 1,
                 messageString.lastIndexOf(">"));
@@ -42,6 +62,12 @@ public class Message {
         this.recipientVisibility = Boolean.parseBoolean(messageDetails[indexOfNextElem]);
     }
 
+    /*
+     * public Message(String message, User sender, User recipient)
+     * Constructor that creates a new Message object based on input.
+     * This is used when creating a new Messages before appending
+     * or writing to a conversation file.
+     */
     public Message(String message, User sender, User recipient) {
         Timestamp instant = Timestamp.from(Instant.now());
         this.timeStamp = instant.toString();
@@ -71,6 +97,11 @@ public class Message {
         return message;
     }
 
+    /*
+     * public String getCensoredMessage(User user)
+     * Method that returns the message censored according
+     * to the user's settings.
+     */
     public String getCensoredMessage(User user) {
         String tempMessage = this.message;
         ArrayList<String> censoredWords = user.getCensoredWords();

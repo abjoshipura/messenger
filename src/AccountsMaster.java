@@ -1,7 +1,17 @@
 import java.io.*;
 import java.util.*;
 import java.util.regex.Pattern;
-
+/**
+ * AccountsMaster
+ *
+ * The AccountsMaster class acts as the helper class to `Main.
+ * It handles the creation and deletion of accounts
+ *
+ * @author Akshara Joshipura, Raymond Wang, Kevin Tang, Yejin Oh
+ *
+ * @version 11/14/22
+ *
+ */
 public class AccountsMaster {
     private final String passwordFile;
     private final String conversationsFile;

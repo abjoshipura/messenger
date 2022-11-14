@@ -201,8 +201,9 @@ public class AccountsMaster {
         }
     }
 
-    public boolean convertConversationsToCSV(ArrayList<Conversation> exportingConversations, String destinationPath) {
-        
+public boolean convertConversationsToCSV(ArrayList<Conversation> exportingConversations, String destinationPath) 
+            throws IOException {
+            
         File dest = new File(destinationPath);
         dest.getParentFile().mkdirs();
 

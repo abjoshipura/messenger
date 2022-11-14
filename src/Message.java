@@ -112,27 +112,44 @@ public class Message {
         }
         return tempMessage;
     }
-
+    
+    /*
+     * Sets message equal to the new message
+     */
     public void setMessage(String message) {
         this.message = message;
     }
 
+    /*
+     * Returns the visibility of the message of the sender.
+     */
+     
     public boolean isSenderVisibility() {
         return senderVisibility;
     }
 
+    /*
+     * Sets the sender visibility status of the message.
+     */
     public void setSenderVisibility(boolean senderVisibility) {
         this.senderVisibility = senderVisibility;
     }
-
+    /*
+     * Returns the visibility of the message of the recipient.
+     */
     public boolean isRecipientVisibility() {
         return recipientVisibility;
     }
-
+    /*
+     * Sets the recipient visibility status of the message.
+     */
     public void setRecipientVisibility(boolean recipientVisibility) {
         this.recipientVisibility = recipientVisibility;
     }
 
+    /*
+     * Checks whether two messages are equal to one another.
+     */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -141,13 +158,19 @@ public class Message {
                 && id.equals(message1.id) && message.equals(message1.message) && timeStamp.equals(message1.timeStamp)
                 && sender.equals(message1.sender) && recipient.equals(message1.recipient);
     }
-
+    
+    /*
+     * Formats a message as a String when a Message object is printed.
+     */
     @Override
     public String toString() {
         return String.format("Message<%s, %s, %s, %s, %s, %b, %b>", this.timeStamp, this.id,
                 this.sender.toString(), this.recipient.toString(), this.message, this.senderVisibility, this.recipientVisibility);
     }
     
+    /*
+     *Formats a message as a String when importing it to a csv file.
+     */
     public String csvToString() {
         return String.format("%s, %s, %s, %s, %s, %b, %b", this.timeStamp, this.id,
                 this.sender.csvToString(), this.recipient.csvToString(), this.message, this.senderVisibility, this.recipientVisibility);

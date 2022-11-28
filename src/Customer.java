@@ -1,58 +1,52 @@
 /**
- * Customer
+ * Template class (extends User) for Customers. Stores elementary details about a Customer. Holds the same set of
+ * information in User.
+ * <br>
+ * instanceOf Customer is used to provide a Customer their customized permissions where required.
  *
- * The Customer class extends User to behave as a
- * specific template for customers. It holds the same
- * set of information as User. instanceOf Customer is
- * used to provide a Customer their customized permissions
- * where required.
-
- * @author Akshara Joshipura, Raymond Wang, Kevin Tang, Yejin Oh
- *
- * @version 11/14/22
- *
+ * @author Akshara Joshipura
+ * @version 27 November 2022
  */
+
 public class Customer extends User {
-    /*
-     * public Customer(String customerString, boolean hasDetails)
-     * Constructor that inherently calls
-     * super(String userString, boolean hasDetails) to
-     * instantiate Customer fields to their values.
-     * It parses the deepToString() or super.toString()
-     * version of the class written in memory according to hasDetails.
+    /**
+     * Parses a Customer object's String and converts it into a Customer object. Used while reading Customer(s)
+     * from memory. Inherently calls {@link User#User(String userString, boolean hasDetails)} to instantiate inherited
+     * fields to their values. <br> <br>
+     * Possible customerString values dependent on memory: <br>
+     * hasDetails == false => {@link User#toString()} <br>
+     * hasDetails == true => {@link Customer#detailedToString()}
      *
-     * @param customerString string for customer
-     * @param hasDetails whether or not there should be details
+     * @param customerString A Customer String
+     * @param hasDetails     Whether the Customer String is detailed (i.e. it contains blocked user, invisible user,
+     *                       and censored words)
+     * @see User#toString()
+     * @see Customer#detailedToString()
      */
     public Customer(String customerString, boolean hasDetails) {
         super(customerString, hasDetails);
     }
 
-    /*
-     * public Customer(String name, String email, String password)
-     * Constructor that inherently calls
-     * super(String name, String email, String password)
-     * to create a new Customer.
+    /**
+     * Creates a new Customer object with provided parameters. Inherently calls {@link User#User(String name,
+     * String email, String password)} Used when creating a new Customer account.
      *
-     * @param name
-     * @param email
-     * @param password
+     * @param name     The name of the customer
+     * @param email    The email of the customer
+     * @param password The password of the customer
      */
     public Customer(String name, String email, String password) {
         super(name, email, password);
     }
 
-    /*
-     * public String detailedToString()
-     * Method that returns a String containing:
-     * username, email, password, requestsCensorship,
-     * blockedUsers, InvisibleUsers, and censoredWords.
-     * This is used in writing into passwords.txt to
-     * store censoring toggle, blocked users,
-     * invisible to users, and censored word
-     * pairs for the next log-in.
+    /**
+     * Generates a formatted String of the Customer containing all details.
+     * <br> <br>
+     * General format: <br>
+     * Customer&lt;username, email, password, this.getBlockedUsers(), this.getInvisibleUsers(),
+     * this.getCensoredWords()&gt;
      *
-     * @return the detailed string
+     * @return Returns the Customer object's String
      */
     public String detailedToString() {
         return String.format("Customer<%s, %s, %s, %b, %s, %s, %s>", this.getUsername(), this.getEmail(),
@@ -61,10 +55,10 @@ public class Customer extends User {
     }
 
     /**
-     * public String toString()
-     * Returns a formatted String for the customer.
+     * Generates a formatted String of the Customer as a User object String by inherently calling
+     * {@link User#toString()}
      *
-     * @return the formatted String object
+     * @return Returns the Customer object's User object String
      */
     @Override
     public String toString() {

@@ -2,178 +2,260 @@ import java.util.*;
 import java.time.Instant;
 import java.sql.Timestamp;
 
-
 /**
- * Message
+ * Template class for all messages sent between two Users. Stores elementary details about a message.
  *
- * The Message class behaves as a template for
- * any message sent between Users. It holds
- * elementary details about a message: time
- * stamp, a UUID identifier, the message, the
- * sender (a User object) and the recipient (a User object).
- * It also possesses two attributes: senderVisibility and
- * recipientVisibility to implement DELETING.
- *
- * @author Akshara Joshipura, Raymond Wang, Kevin Tang, Yejin Oh
- *
- * @version 11/14/22
- *
+ * @author Akshara Joshipura
+ * @version 27 November 2022
  */
+
 public class Message {
-    private final String timeStamp;
-    private final UUID id;
+
+    /**
+     * The time stamp of the message
+     */
+    private final String TIMESTAMP;
+
+    /**
+     * The unique ID of a message
+     */
+    private final UUID ID;
+
+    /**
+     * The content of a message
+     */
     private String message;
-    private final User sender;
-    private final User recipient;
+
+    /**
+     * The sender details of a message
+     */
+    private final User SENDER;
+
+    /**
+     * The recipient details of a message
+     */
+    private final User RECIPIENT;
+
+    /**
+     * The sender's visibility of a message. Helps implement deleting
+     */
     private boolean senderVisibility;
+
+    /**
+     * The recipient's visibility of a message. Helps implement deleting
+     */
     private boolean recipientVisibility;
 
-    /*
-     * public Message(String messageString) Constructor
-     * that converts a Message object String into a Message
-     * object. This is used while reading Messages from memory.
+    /**
+     * Parses a Message object's String and converts it into a Message object. Used while reading Message(s)
+     * from memory. Inherently calls {@link User#User(String userString, boolean hasDetails)}
+     *
+     * @param messageString A Message String
+     * @see Message#toString() Message toString()
      */
     public Message(String messageString) {
+        // Strips the header from the Message object String to help in parsing
         String strippedMessage = messageString.substring(messageString.indexOf("<") + 1,
                 messageString.lastIndexOf(">"));
+        String[] messageElements = strippedMessage.split(", ");
 
-        String[] messageDetails = strippedMessage.split(", ");
-        this.timeStamp = messageDetails[0];
-        this.id = UUID.fromString(messageDetails[1]);
+        this.TIMESTAMP = messageElements[0];
+        this.ID = UUID.fromString(messageElements[1]);
 
-        int elementsInUserString = 3;
-        int indexOfNextElem = 2;
+        final int NUM_USER_ELEMENTS = 3;  // A constant number that makes
+        int indexOfNextElem = 2;  // Counter to keep track of the next element to parse
+
+        // Parses messageElements[] to build a User object String that can be passed to the User constructor
         StringBuilder senderString = new StringBuilder();
-        for (int i = indexOfNextElem; i < indexOfNextElem + elementsInUserString; i++) {
-            senderString.append(messageDetails[i]).append(", ");
+        for (int i = indexOfNextElem; i < indexOfNextElem + NUM_USER_ELEMENTS; i++) {
+            senderString.append(messageElements[i]).append(", ");
         }
-        this.sender = new User(senderString.toString(), false);
-        indexOfNextElem = indexOfNextElem + elementsInUserString;
+        this.SENDER = new User(senderString.toString(), false);
+        indexOfNextElem = indexOfNextElem + NUM_USER_ELEMENTS;
 
+        // Parses messageElements[] to build a User object String that can be passed to the User constructor
         StringBuilder recipientString = new StringBuilder();
-        for (int i = indexOfNextElem; i < indexOfNextElem + elementsInUserString; i++) {
-            recipientString.append(messageDetails[i]).append(", ");
+        for (int i = indexOfNextElem; i < indexOfNextElem + NUM_USER_ELEMENTS; i++) {
+            recipientString.append(messageElements[i]).append(", ");
         }
-        this.recipient = new User(recipientString.toString(), false);
-        indexOfNextElem = indexOfNextElem + elementsInUserString;
+        this.RECIPIENT = new User(recipientString.toString(), false);
+        indexOfNextElem = indexOfNextElem + NUM_USER_ELEMENTS;
 
-        this.message = messageDetails[indexOfNextElem++];
-        this.senderVisibility = Boolean.parseBoolean(messageDetails[indexOfNextElem++]);
-        this.recipientVisibility = Boolean.parseBoolean(messageDetails[indexOfNextElem]);
+        this.message = messageElements[indexOfNextElem++];
+        this.senderVisibility = Boolean.parseBoolean(messageElements[indexOfNextElem++]);
+        this.recipientVisibility = Boolean.parseBoolean(messageElements[indexOfNextElem]);
     }
 
-    /*
-     * public Message(String message, User sender, User recipient)
-     * Constructor that creates a new Message object based on input.
-     * This is used when creating a new Messages before appending
+    /**
+     * Creates a new Message object with provided parameters. Used when creating a new Message before appending
      * or writing to a conversation file.
+     *
+     * @param message   The content of the message. Taken from the active user's input
+     * @param sender    The sender (active user) of the message
+     * @param recipient The recipient of the message. Taken from the Conversation depending on the active user's role
      */
     public Message(String message, User sender, User recipient) {
-        Timestamp instant = Timestamp.from(Instant.now());
-        this.timeStamp = instant.toString();
+        Timestamp instant = Timestamp.from(Instant.now());  // Fetches current date-time
+        this.TIMESTAMP = instant.toString();
 
-        this.id = UUID.randomUUID();
-        this.sender = sender;
-        this.recipient = recipient;
+        this.ID = UUID.randomUUID();  // Generates a unique, random ID for each new Message
+        this.SENDER = sender;
+        this.RECIPIENT = recipient;
         this.message = message;
 
         this.senderVisibility = true;
         this.recipientVisibility = true;
     }
 
+    /**
+     * Accessor method for String TIMESTAMP
+     *
+     * @return Returns the message's timestamp
+     */
+    public String getTimeStamp() {
+        return this.TIMESTAMP;
+    }
+
+    /**
+     * Accessor method for UUID ID
+     *
+     * @return Returns the message's unique ID
+     */
     public UUID getID() {
-        return this.id;
+        return this.ID;
     }
 
+    /**
+     * Accessor method for User SENDER
+     *
+     * @return Returns the message's sender
+     */
     public User getSender() {
-        return sender;
+        return SENDER;
     }
 
+    /**
+     * Accessor method for User RECIPIENT
+     *
+     * @return Returns the message's recipient
+     */
     public User getRecipient() {
-        return recipient;
+        return RECIPIENT;
     }
 
+    /**
+     * Accessor method for String message
+     *
+     * @return Returns the message's content
+     */
     public String getMessage() {
         return message;
     }
 
-    /*
-     * public String getCensoredMessage(User user)
-     * Method that returns the message censored according
-     * to the user's settings.
+    /**
+     * Customized (as per parameter user) accessor method for String message to implement censoring.
+     *
+     * @param user The user viewing a Conversation
+     * @return Returns the message's content according to the parameter user's censorship settings
      */
     public String getCensoredMessage(User user) {
         String tempMessage = this.message;
         ArrayList<String> censoredWords = user.getCensoredWords();
         for (String censoredWord : censoredWords) {
-            tempMessage = tempMessage.replaceAll("(?i)\\b" + censoredWord.substring(0,
-                    censoredWord.indexOf(":")) + "\\b", censoredWord.substring(
-                    censoredWord.indexOf(":") + 1));
+            // Replaces censored words with their given / automatically generated replacements
+            tempMessage = tempMessage.replaceAll("(?i)\\b" + censoredWord.substring(0, censoredWord.indexOf(":"))
+                    + "\\b", censoredWord.substring(censoredWord.indexOf(":") + 1));
         }
         return tempMessage;
     }
-    
-    /*
-     * Sets message equal to the new message
+
+    /**
+     * Mutator method for String message.
+     *
+     * @param message The new message content. Used during editing.
      */
     public void setMessage(String message) {
         this.message = message;
     }
 
-    /*
-     * Returns the visibility of the message of the sender.
+    /**
+     * Accessor method for boolean senderVisibility
+     *
+     * @return Returns the visibility of the message by the sender.
      */
-     
     public boolean isSenderVisibility() {
         return senderVisibility;
     }
 
-    /*
-     * Sets the sender visibility status of the message.
+    /**
+     * Mutator method for boolean senderVisibility.
+     *
+     * @param senderVisibility The new visibility status. Used during deleting.
      */
     public void setSenderVisibility(boolean senderVisibility) {
         this.senderVisibility = senderVisibility;
     }
-    /*
-     * Returns the visibility of the message of the recipient.
+
+    /**
+     * Accessor method for boolean recipientVisibility
+     *
+     * @return Returns the visibility of the message by the recipientVisibility.
      */
     public boolean isRecipientVisibility() {
         return recipientVisibility;
     }
-    /*
-     * Sets the recipient visibility status of the message.
+
+    /**
+     * Mutator method for boolean recipientVisibility.
+     *
+     * @param recipientVisibility The new visibility status. Used during deleting.
      */
     public void setRecipientVisibility(boolean recipientVisibility) {
         this.recipientVisibility = recipientVisibility;
     }
 
-    /*
-     * Checks whether two messages are equal to one another.
+    /**
+     * Checks the equality of two Message objects. Compares all class fields.
+     *
+     * @param o Object to be compared with
+     * @return Returns whether the equality condition was met
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof Message)) return false;
-        Message message1 = (Message) o;
-        return senderVisibility == message1.senderVisibility && recipientVisibility == message1.recipientVisibility
-                && id.equals(message1.id) && message.equals(message1.message) && timeStamp.equals(message1.timeStamp)
-                && sender.equals(message1.sender) && recipient.equals(message1.recipient);
+        Message message = (Message) o;
+        return senderVisibility == message.senderVisibility && recipientVisibility == message.recipientVisibility
+                && ID.equals(message.ID) && this.message.equals(message.message) && TIMESTAMP.equals(message.TIMESTAMP)
+                && SENDER.equals(message.SENDER) && RECIPIENT.equals(message.RECIPIENT);
     }
-    
-    /*
-     * Formats a message as a String when a Message object is printed.
+
+    /**
+     * Generates a formatted String of the Message containing all details.
+     * <br> <br>
+     * General format: <br>
+     * Message&lt;timeStamp, id, sender.toString(), recipient.toString(), message, senderVisibility,
+     * recipientVisibility&gt;
+     *
+     * @return Returns the Message object's String
      */
     @Override
     public String toString() {
-        return String.format("Message<%s, %s, %s, %s, %s, %b, %b>", this.timeStamp, this.id,
-                this.sender.toString(), this.recipient.toString(), this.message, this.senderVisibility, this.recipientVisibility);
+        return String.format("Message<%s, %s, %s, %s, %s, %b, %b>", this.TIMESTAMP, this.ID, this.SENDER.toString(),
+                this.RECIPIENT.toString(), this.message, this.senderVisibility, this.recipientVisibility);
     }
-    
-    /*
-     *Formats a message as a String when importing it to a csv file.
+
+    /**
+     * Generates a formatted String of the Message containing only the required details for CSV conversion.
+     * (i.e. does not contain sensitive information like passwords)
+     * <br> <br>
+     * General format: <br>
+     * timeStamp, id, sender.csvToString(), recipient.csvToString(), message, senderVisibility, recipientVisibility
+     *
+     * @return Returns the Message object's String for CSV conversion
      */
     public String csvToString() {
-        return String.format("%s, %s, %s, %s, %s, %b, %b", this.timeStamp, this.id,
-                this.sender.csvToString(), this.recipient.csvToString(), this.message, this.senderVisibility, this.recipientVisibility);
+        return String.format("%s, %s, %s, %s, %s, %b, %b", this.TIMESTAMP, this.ID, this.SENDER.csvToString(),
+                this.RECIPIENT.csvToString(), this.message, this.senderVisibility, this.recipientVisibility);
     }
 }

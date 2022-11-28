@@ -1,41 +1,78 @@
+import java.io.BufferedReader;
+import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
+
 /**
- * User
+ * Template class for all Users (both Sellers and Customers). Stores elementary details about a user.
  *
- * The User class acts as the basic template for both Sellers and Customers.
- * It holds the elementary details about a user: username, email, and password.
- * It also holds lists for blocked users, invisible to users,
- * and censored words to implement BLOCKING and CENSORING.
- *
- * @author Akshara Joshipura, Raymond Wang, Kevin Tang, Yejin Oh
- *
- * @version 11/14/22
- *
+ * @author Akshara Joshipura
+ * @version 27 November 2022
  */
 public class User {
+
+    /**
+     * The username of the User
+     */
     private String username;
-    private final String email;
+
+    /**
+     * The email of the User
+     */
+    private final String EMAIL;
+
+    /**
+     * The password of the User
+     */
     private String password;
+
+    /**
+     * The status of whether the user wants to censor messages
+     */
     private boolean requestsCensorship;
+
+    /**
+     * The ArrayList&lt;User&gt; of users blocked by the User
+     */
     private ArrayList<User> blockedUsers;
+
+    /**
+     * The ArrayList&lt;User&gt; of users this User is invisible to
+     */
     private ArrayList<User> invisibleUsers;
+
+    /**
+     * The ArrayList&lt;String&gt; of censor word pairs for the User
+     */
     private ArrayList<String> censoredWords;
-/*
- * public User(String userString, boolean hasDetails) Constructor that
- * instantiates all User fields to their values by
- * parsing a deepToString() or toString() according to hasDetails.
- */
+
+    /**
+     * Parses a User object's String and instantiates User fields to their values.
+     * <br> <br>
+     * Possible userString values dependent on memory: <br>
+     * hasDetails == false => {@link User#toString()} <br>
+     * hasDetails == true => {@link Seller#detailedToString()} / {@link Customer#detailedToString()}
+     *
+     * @param userString A User String
+     * @param hasDetails Whether the User String is detailed (i.e. it contains blocked user, invisible user,
+     *                   and censored words)
+     * @see User#toString()
+     * @see Seller#detailedToString()
+     * @see Seller#detailedToStringWithoutStores()
+     * @see Customer#detailedToString()
+     */
     public User(String userString, boolean hasDetails) {
-        userString = userString.substring(userString.indexOf("<") + 1, userString.lastIndexOf(">"));
-        String[] splitUserString = userString.split(", ");
+        // Strips userString to a String containing only User object details
+        String strippedUserString = userString.substring(userString.indexOf("<") + 1, userString.lastIndexOf(">"));
+        String[] splitUserString = strippedUserString.split(", ");
         this.username = splitUserString[0];
-        this.email = splitUserString[1];
+        this.EMAIL = splitUserString[1];
         this.password = splitUserString[2];
 
         if (hasDetails) {
             this.requestsCensorship = Boolean.parseBoolean(splitUserString[3]);
 
+            // Parses the User object details to compile a list of blocked users
             this.blockedUsers = new ArrayList<>();
             String blockedUsersString = userString.substring(userString.indexOf("[") + 1, userString.indexOf("]"));
             if (blockedUsersString.length() > 0) {
@@ -48,6 +85,7 @@ public class User {
                 }
             }
 
+            // Parses the User object details to compile a list of users this User is invisible to
             userString = userString.substring(userString.indexOf("]") + 3);
             this.invisibleUsers = new ArrayList<>();
             String invisibleUsersString = userString.substring(userString.indexOf("[") + 1, userString.indexOf("]"));
@@ -61,6 +99,7 @@ public class User {
                 }
             }
 
+            // Parses the User object details to compile a list of censored word pairs
             userString = userString.substring(userString.indexOf("]") + 3);
             this.censoredWords = new ArrayList<>();
             String censoredWordPairs = userString.substring(userString.indexOf("[") + 1, userString.indexOf("]"));
@@ -75,14 +114,16 @@ public class User {
         }
     }
 
-/*
- * public User(String username, String email, String password)
- * Constructor that creates a new User.
- * Inherently called by Seller and Customer only.
- */
+    /**
+     * Creates a new User object with provided parameters.
+     *
+     * @param username The name of the seller
+     * @param email    The email of the seller
+     * @param password The password of the seller
+     */
     public User(String username, String email, String password) {
         this.username = username;
-        this.email = email;
+        this.EMAIL = email;
         this.password = password;
 
         this.requestsCensorship = false;
@@ -92,323 +133,604 @@ public class User {
     }
 
     /**
-     * public String getUsername()
-     * Returns the username.
+     * Accessor method for String username
+     *
+     * @return Returns the user's username
      */
     public String getUsername() {
         return username;
     }
 
     /**
-     * public String getEmail()
-     * Returns the user's email.
+     * Accessor method for String email
+     *
+     * @return Returns the user's email
      */
     public String getEmail() {
-        return email;
+        return EMAIL;
     }
 
     /**
-     * public String getPassword()
-     * Returns the user's password.
+     * Accessor method for String password
+     *
+     * @return Returns the user's password
      */
     public String getPassword() {
         return password;
     }
 
     /**
-     * public ArrayList<User> getBlockedUsers()
-     * Returns the ArrayList of users blocked by the user.
+     * Accessor method for ArrayList&lt;User&gt; blockedUsers
+     *
+     * @return Returns the user's list of blocked users
      */
     public ArrayList<User> getBlockedUsers() {
         return blockedUsers;
     }
-    
+
     /**
-     * public ArrayList<User> getInvisibleUsers()
-     * Returns the list of invisible users to the user.
+     * Accessor method for ArrayList&lt;User&gt; invisibleUsers
+     *
+     * @return Returns the user's list of invisible to users
      */
     public ArrayList<User> getInvisibleUsers() {
         return invisibleUsers;
     }
 
     /**
-     * public ArrayList<String> getCensoredWords()
-     * Returns the ArrayList of words censored by the user.
+     * Accessor method for ArrayList&lt;String&gt; censoredWords
+     *
+     * @return Returns the user's censored word pairs
      */
     public ArrayList<String> getCensoredWords() {
         return censoredWords;
     }
 
     /**
-     * Returns whether or not the user requests censorship.
+     * Accessor method for boolean requestsCensorship
+     *
+     * @return Returns the status of whether the User wants to censor messages
      */
     public boolean isRequestsCensorship() {
         return requestsCensorship;
     }
 
     /**
-     * public void setUsername(String username)
-     * Sets the user's username to a new username, so long as it is unique.
+     * Checks whether this user is a participant of the parameter conversation
+     *
+     * @param conversation The conversation of which this user is or is not a participant of
+     * @return Returns the whether this user is a participant of the parameter conversation independent of the role
      */
-    public void setUsername(String username) {
-        username = username.replaceAll("[,<>]", "_");
+    public boolean isParticipantOf(Conversation conversation) {
+        return this.equals(conversation.getSeller()) || this.equals(conversation.getCustomer());
+    }
 
-        String oldUserID = this.username + ", " + this.email + ", " + this.password;
-        String newUserID = username + ", " + this.email + ", " + this.password;
-        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserID, newUserID);
-        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserID, newUserID);
+    /**
+     * Sends network request to update passwords.txt
+     *
+     * @param writer    The PrintWriter object to be used to send the network request
+     * @param oldString The old String that is to be replaced by newString
+     * @param newString The new String that is to replace oldString
+     */
+    public void updateAccountsFile(PrintWriter writer, String oldString, String newString) {
+        String updateAccountsRequest = "[FILE.UPDATE]" + MessengerClient.PASSWORD_FILE_PATH + ";" + oldString
+                + ";" + newString;
+        MessengerClient.sendRequest(writer, updateAccountsRequest);
+    }
 
-        for (Conversation conversation : AccountsMaster.conversationArrayList) {
+    /**
+     * Sends network request to update conversations.txt
+     *
+     * @param writer    The PrintWriter object to be used to send the network request
+     * @param oldString The old String that is to be replaced by newString
+     * @param newString The new String that is to replace oldString
+     */
+    public void updateConversationsFile(PrintWriter writer, String oldString, String newString) {
+        String updateAccountsRequest = "[FILE.UPDATE]" + MessengerClient.CONVERSATIONS_FILE_PATH + ";" + oldString
+                + ";" + newString;
+        MessengerClient.sendRequest(writer, updateAccountsRequest);
+    }
+
+    /**
+     * Mutator method that changes the username to the parameter username.
+     * Sends request to update all files for later retrieval.
+     *
+     * @param reader   The BufferedReader object to be used to read network responses
+     * @param writer   The PrintWriter object to be used to send the network request
+     * @param username The new username
+     */
+    public void setUsername(BufferedReader reader, PrintWriter writer, String username) {
+        String oldUserID = this.username + ", " + this.EMAIL + ", " + this.password;
+        String newUserID = username + ", " + this.EMAIL + ", " + this.password;
+
+        ArrayList<Conversation> conversations = new ArrayList<>();
+        String listConversationsRequest = "[LIST.CONVERSATIONS]";
+        MessengerClient.sendRequest(writer, listConversationsRequest);
+        String stringListOfConversations = MessengerClient.readResponse(reader);
+
+        if (stringListOfConversations != null && stringListOfConversations.length() > 0) {
+            String[] listOfConversationStrings = stringListOfConversations.split(";");
+            for (String conversationString : listOfConversationStrings) {
+                conversations.add(new Conversation(conversationString));
+            }
+        }
+
+        for (Conversation conversation : conversations) {
+            // Updates all Conversation object Strings' conversationIDs in conversations.txt
             if (this instanceof Seller && conversation.getSeller().equals(this)) {
                 String newConversationID = conversation.getCustomer().getUsername() + "TO" + username;
-                conversation.setConversationID(newConversationID);
+                conversation.setConversationID(writer, newConversationID);
             } else if (this instanceof Customer && conversation.getCustomer().equals(this)) {
                 String newConversationID = username + "TO" + conversation.getSeller().getUsername();
-                conversation.setConversationID(newConversationID);
+                conversation.setConversationID(writer, newConversationID);
             }
-            AccountsMaster.replaceStringInFile(conversation.getFileName(), oldUserID, newUserID);
+
+            // Updates all Message object Strings in each conversation's file
+            String updateConversationsRequest = "[FILE.UPDATE]" + conversation.getFileName() + ";" + oldUserID +
+                    ";" + newUserID;
+            MessengerClient.sendRequest(writer, updateConversationsRequest);
         }
+
+        // Updates all Seller/Customer object Strings in passwords.txt
+        String updateAccountsRequest = "[FILE.UPDATE]" + MessengerClient.PASSWORD_FILE_PATH + ";" + oldUserID +
+                ";" + newUserID;
+        MessengerClient.sendRequest(writer, updateAccountsRequest);
+        // Updates all Conversation object Strings in conversations.txt
+        String updateConversationsRequest = "[FILE.UPDATE]" + MessengerClient.CONVERSATIONS_FILE_PATH + ";" +
+                oldUserID + ";" + newUserID;
+        MessengerClient.sendRequest(writer, updateConversationsRequest);
 
         this.username = username;
     }
 
     /**
-     * public void setPassword(String password)
-     * Sets the user's password according to the String passed in.
+     * Mutator method that changes the password to the parameter password.
+     * Sends request to update all files for later retrieval.
+     *
+     * @param reader   The BufferedReader object to be used to read network responses
+     * @param writer   The PrintWriter object to be used to send the network request
+     * @param password The new password
      */
-    public void setPassword(String password) {
-        String oldUserID = this.username + ", " + this.email + ", " + this.password;
-        String newUserID = this.username + ", " + this.email + ", " + password;
-        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserID, newUserID);
-        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserID, newUserID);
+    public void setPassword(BufferedReader reader, PrintWriter writer, String password) {
+        String oldUserID = this.username + ", " + this.EMAIL + ", " + this.password;
+        String newUserID = this.username + ", " + this.EMAIL + ", " + password;
 
-        for (Conversation conversation : AccountsMaster.conversationArrayList) {
-            if (this.isParticipantOf(conversation)) {
-                AccountsMaster.replaceStringInFile(conversation.getFileName(), oldUserID, newUserID);
+        ArrayList<Conversation> conversations = new ArrayList<>();
+        String listConversationsRequest = "[LIST.CONVERSATIONS]";
+        MessengerClient.sendRequest(writer, listConversationsRequest);
+        String stringListOfConversations = MessengerClient.readResponse(reader);
+
+        if (stringListOfConversations != null && stringListOfConversations.length() > 0) {
+            String[] listOfConversationStrings = stringListOfConversations.split(";");
+            for (String conversationString : listOfConversationStrings) {
+                conversations.add(new Conversation(conversationString));
             }
         }
+
+        for (Conversation conversation : conversations) {
+            // Updates all Message object Strings in conversation's file
+            if (this.isParticipantOf(conversation)) {
+                String updateConversationsRequest = "[FILE.UPDATE]" + conversation.getFileName() + ";" + oldUserID
+                        + ";" + newUserID;
+                MessengerClient.sendRequest(writer, updateConversationsRequest);
+            }
+        }
+
+        // Updates all Seller/Customer object Strings in passwords.txt
+        String updateAccountsRequest = "[FILE.UPDATE]" + MessengerClient.PASSWORD_FILE_PATH + ";" + oldUserID
+                + ";" + newUserID;
+        MessengerClient.sendRequest(writer, updateAccountsRequest);
+        // Updates all Conversation object Strings in conversations.txt
+        String updateConversationsRequest = "[FILE.UPDATE]" + MessengerClient.CONVERSATIONS_FILE_PATH + ";" +
+                oldUserID + ";" + newUserID;
+        MessengerClient.sendRequest(writer, updateConversationsRequest);
 
         this.password = password;
     }
 
     /**
-     * public void setRequestsCensorship(boolean requestsCensorship)
-     * Sets the setting of whether or not the user requests censorship in messages.
+     * Mutator method that toggles the status of whether the user wants to censor messages.
+     * Sends request to update passwords.txt and conversations.txt for later retrieval.
+     *
+     * @param writer The PrintWriter object to be used to send the network request
      */
-    public void setRequestsCensorship(boolean requestsCensorship) {
+    public void toggleRequestsCensorship(PrintWriter writer) {
         String oldUserString;
         String newUserString;
         if (this instanceof Seller) {
             oldUserString = ((Seller) this).detailedToString();
-            this.requestsCensorship = requestsCensorship;
+            String oldShortSellerString = ((Seller) this).detailedToStringWithoutStores();
+            this.requestsCensorship = !this.requestsCensorship;
             newUserString = ((Seller) this).detailedToString();
-        } else {
-            oldUserString = ((Customer) this).detailedToString();
-            this.requestsCensorship = requestsCensorship;
-            newUserString = ((Customer) this).detailedToString();
-        }
-        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
-        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
-    }
+            String newShortSellerString = ((Seller) this).detailedToStringWithoutStores();
 
-    /**
-     * public void addBlockedUser(User blockedUser)
-     * Adds blockedUser to the ArrayList of users blocked by the user.
-     */
-    public void addBlockedUser(User blockedUser) {
-        String oldUserString;
-        String newUserString;
-        if (this instanceof Seller) {
-            oldUserString = ((Seller) this).detailedToString();
-            this.blockedUsers.add(blockedUser);
-            newUserString = ((Seller) this).detailedToString();
-        } else {
-            oldUserString = ((Customer) this).detailedToString();
-            this.blockedUsers.add(blockedUser);
-            newUserString = ((Customer) this).detailedToString();
-        }
-
-        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
-        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
-    }
-
-    /**
-     * public void removeBlockedUser(User blockedUser)
-     * Unblocks blockedUser and removes them from the user's list of blocked users.
-     */
-    public void removeBlockedUser(User blockedUser) {
-        String oldUserString;
-        String newUserString;
-        if (this instanceof Seller) {
-            oldUserString = ((Seller) this).detailedToString();
-            this.blockedUsers.remove(blockedUser);
-            newUserString = ((Seller) this).detailedToString();
-        } else {
-            oldUserString = ((Customer) this).detailedToString();
-            this.blockedUsers.remove(blockedUser);
-            newUserString = ((Customer) this).detailedToString();
-        }
-
-        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
-        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
-    }
-
-    /**
-     * public void addInvisibleUser(User invisibleUser)
-     * Adds  invisibleUser to the list of invisible users.
-     */
-    public void addInvisibleUser(User invisibleUser) {
-        String oldUserString;
-        String newUserString;
-        if (this instanceof Seller) {
-            oldUserString = ((Seller) this).detailedToString();
-            this.invisibleUsers.add(invisibleUser);
-            newUserString = ((Seller) this).detailedToString();
-        } else {
-            oldUserString = ((Customer) this).detailedToString();
-            this.invisibleUsers.add(invisibleUser);
-            newUserString = ((Customer) this).detailedToString();
-        }
-
-        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
-        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
-    }
-
-    /**
-     * public void removeInvisibleUser(User invisibleUser)
-     * Removes invisibleUser from the list of invisible users.
-     */
-    public void removeInvisibleUser(User invisibleUser) {
-        String oldUserString;
-        String newUserString;
-        if (this instanceof Seller) {
-            oldUserString = ((Seller) this).detailedToString();
-            this.invisibleUsers.remove(invisibleUser);
-            newUserString = ((Seller) this).detailedToString();
-        } else {
-            oldUserString = ((Customer) this).detailedToString();
-            this.invisibleUsers.remove(invisibleUser);
-            newUserString = ((Customer) this).detailedToString();
-        }
-
-        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
-        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
-    }
-
-    /**
-     * public void addCensoredWord(String censoredWord)
-     * Adds a word to be censored for the user.
-     */
-    public void addCensoredWord(String censoredWord) {
-        String oldUserString;
-        String newUserString;
-        if (this instanceof Seller) {
-            oldUserString = ((Seller) this).detailedToString();
-            this.censoredWords.add(censoredWord);
-            newUserString = ((Seller) this).detailedToString();
-        } else {
-            oldUserString = ((Customer) this).detailedToString();
-            this.censoredWords.add(censoredWord);
-            newUserString = ((Customer) this).detailedToString();
-        }
-
-        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
-        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
-    }
-
-    /**
-     * public void removeCensoredWord(int index)
-     * At given index, removes a word from censorship for the user from the ArrayList.
-     */
-    public void removeCensoredWord(int index) {
-        String oldUserString;
-        String newUserString;
-        if (this instanceof Seller) {
-            oldUserString = ((Seller) this).detailedToString();
-            this.censoredWords.remove(index);
-            newUserString = ((Seller) this).detailedToString();
-        } else {
-            oldUserString = ((Customer) this).detailedToString();
-            this.censoredWords.remove(index);
-            newUserString = ((Customer) this).detailedToString();
-        }
-
-        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
-        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
-    }
-    
-/*
- * public boolean sendMessageToUser(String message, User user, AccountsMaster accountsMaster)
- * Method to send a message to User ONLY IF User has not blocked this User.
- * Appends a new Message object String to the Conversation file.
- * Sets the recipient's Conversation status to UNREAD.
- */
-    public boolean sendMessageToUser(String message, User user, AccountsMaster accountsMaster) {
-        Conversation conversation;
-        if (this instanceof Customer && user instanceof Seller && !user.getBlockedUsers().contains(this)) {
-            conversation = accountsMaster.fetchConversation((Customer) this, (Seller) user);
-            if (conversation == null) {
-                conversation = accountsMaster.createConversation((Customer) this, (Seller) user);
+            updateAccountsFile(writer, oldUserString, newUserString);
+            for (Store store : ((Seller) this).getStores()) {
+                store.getSeller().toggleRequestsCensorship(writer);
             }
+
+            updateAccountsFile(writer, oldShortSellerString, newShortSellerString);
+            updateConversationsFile(writer, oldShortSellerString, newShortSellerString);
+        } else {
+            oldUserString = ((Customer) this).detailedToString();
+            this.requestsCensorship = !this.requestsCensorship;
+            newUserString = ((Customer) this).detailedToString();
+
+            updateAccountsFile(writer, oldUserString, newUserString);
+            updateConversationsFile(writer, oldUserString, newUserString);
+        }
+    }
+
+    /**
+     * Mutator method that adds a new User to this user's list of blocked users.
+     * Sends request to update passwords.txt and conversations.txt for later retrieval.
+     *
+     * @param writer      The PrintWriter object to be used to send the network request
+     * @param blockedUser The new User to be added to this user's list of blocked users
+     */
+    public void addBlockedUser(PrintWriter writer, User blockedUser) {
+        String oldUserString;
+        String newUserString;
+        if (this instanceof Seller && !this.blockedUsers.contains(blockedUser)) {
+            oldUserString = ((Seller) this).detailedToString();
+            String oldShortSellerString = ((Seller) this).detailedToStringWithoutStores();
+            this.blockedUsers.add(blockedUser);
+            newUserString = ((Seller) this).detailedToString();
+            String newShortSellerString = ((Seller) this).detailedToStringWithoutStores();
+
+            updateAccountsFile(writer, oldUserString, newUserString);
+            for (Store store : ((Seller) this).getStores()) {
+                store.getSeller().addBlockedUser(writer, blockedUser);
+            }
+
+            updateAccountsFile(writer, oldShortSellerString, newShortSellerString);
+            updateConversationsFile(writer, oldShortSellerString, newShortSellerString);
+        } else if (this instanceof Customer) {
+            oldUserString = ((Customer) this).detailedToString();
+            this.blockedUsers.add(blockedUser);
+            newUserString = ((Customer) this).detailedToString();
+
+            updateAccountsFile(writer, oldUserString, newUserString);
+            updateConversationsFile(writer, oldUserString, newUserString);
+        }
+    }
+
+    /**
+     * Mutator method that removes the parameter User from this user's list of blocked users.
+     * Sends request to update passwords.txt and conversations.txt for later retrieval.
+     *
+     * @param writer      The PrintWriter object to be used to send the network request
+     * @param blockedUser The User to be removed from this user's list of blocked users
+     */
+    public void removeBlockedUser(PrintWriter writer, User blockedUser) {
+        String oldUserString;
+        String newUserString;
+        if (this instanceof Seller && this.blockedUsers.contains(blockedUser)) {
+            oldUserString = ((Seller) this).detailedToString();
+            String oldShortSellerString = ((Seller) this).detailedToStringWithoutStores();
+            this.blockedUsers.remove(blockedUser);
+            newUserString = ((Seller) this).detailedToString();
+            String newShortSellerString = ((Seller) this).detailedToStringWithoutStores();
+
+            updateAccountsFile(writer, oldUserString, newUserString);
+            for (Store store : ((Seller) this).getStores()) {
+                store.getSeller().removeBlockedUser(writer, blockedUser);
+            }
+
+            updateAccountsFile(writer, oldShortSellerString, newShortSellerString);
+            updateConversationsFile(writer, oldShortSellerString, newShortSellerString);
+        } else if (this instanceof Customer) {
+            oldUserString = ((Customer) this).detailedToString();
+            this.blockedUsers.remove(blockedUser);
+            newUserString = ((Customer) this).detailedToString();
+
+            updateAccountsFile(writer, oldUserString, newUserString);
+            updateConversationsFile(writer, oldUserString, newUserString);
+        }
+    }
+
+    /**
+     * Mutator method that adds a new User to this user's list of users this user is invisible to.
+     * Sends request to update passwords.txt and conversations.txt for later retrieval.
+     *
+     * @param writer        The PrintWriter object to be used to send the network request
+     * @param invisibleUser The new User to be added to this user's list of users this User is invisible to
+     */
+    public void addInvisibleUser(PrintWriter writer, User invisibleUser) {
+        String oldUserString;
+        String newUserString;
+        if (this instanceof Seller && !this.invisibleUsers.contains(invisibleUser)) {
+            oldUserString = ((Seller) this).detailedToString();
+            String oldShortSellerString = ((Seller) this).detailedToStringWithoutStores();
+            this.invisibleUsers.add(invisibleUser);
+            newUserString = ((Seller) this).detailedToString();
+            String newShortSellerString = ((Seller) this).detailedToStringWithoutStores();
+
+            updateAccountsFile(writer, oldUserString, newUserString);
+            for (Store store : ((Seller) this).getStores()) {
+                store.getSeller().addInvisibleUser(writer, invisibleUser);
+            }
+
+            updateAccountsFile(writer, oldShortSellerString, newShortSellerString);
+            updateConversationsFile(writer, oldShortSellerString, newShortSellerString);
+        } else if (this instanceof Customer) {
+            oldUserString = ((Customer) this).detailedToString();
+            this.invisibleUsers.add(invisibleUser);
+            newUserString = ((Customer) this).detailedToString();
+
+            updateAccountsFile(writer, oldUserString, newUserString);
+            updateConversationsFile(writer, oldUserString, newUserString);
+        }
+    }
+
+    /**
+     * Mutator method that removes the parameter User from this user's list of users this user is invisible to.
+     * Sends request to update passwords.txt and conversations.txt for later retrieval.
+     *
+     * @param writer        The PrintWriter object to be used to send the network request
+     * @param invisibleUser The User to be removed from this user's list of users this User is invisible to
+     */
+    public void removeInvisibleUser(PrintWriter writer, User invisibleUser) {
+        String oldUserString;
+        String newUserString;
+        if (this instanceof Seller && this.invisibleUsers.contains(invisibleUser)) {
+            oldUserString = ((Seller) this).detailedToString();
+            String oldShortSellerString = ((Seller) this).detailedToStringWithoutStores();
+            this.invisibleUsers.remove(invisibleUser);
+            newUserString = ((Seller) this).detailedToString();
+            String newShortSellerString = ((Seller) this).detailedToStringWithoutStores();
+
+            updateAccountsFile(writer, oldUserString, newUserString);
+            for (Store store : ((Seller) this).getStores()) {
+                store.getSeller().removeInvisibleUser(writer, invisibleUser);
+            }
+
+            updateAccountsFile(writer, oldShortSellerString, newShortSellerString);
+            updateConversationsFile(writer, oldShortSellerString, newShortSellerString);
+        } else if (this instanceof Customer) {
+            oldUserString = ((Customer) this).detailedToString();
+            this.invisibleUsers.remove(invisibleUser);
+            newUserString = ((Customer) this).detailedToString();
+
+            updateAccountsFile(writer, oldUserString, newUserString);
+            updateConversationsFile(writer, oldUserString, newUserString);
+        }
+    }
+
+    /**
+     * Mutator method that adds a new censored word pair to this user's list of censored word pairs.
+     * Sends request to update passwords.txt and conversations.txt for later retrieval.
+     *
+     * @param writer       The PrintWriter object to be used to send the network request
+     * @param censoredWord The new censored word pair to be added to this user's list of censored word pairs
+     */
+    public void addCensoredWord(PrintWriter writer, String censoredWord) {
+        String oldUserString;
+        String newUserString;
+        if (this instanceof Seller && !this.censoredWords.contains(censoredWord)) {
+            oldUserString = ((Seller) this).detailedToString();
+            String oldShortSellerString = ((Seller) this).detailedToStringWithoutStores();
+            this.censoredWords.add(censoredWord);
+            newUserString = ((Seller) this).detailedToString();
+            String newShortSellerString = ((Seller) this).detailedToStringWithoutStores();
+
+            updateAccountsFile(writer, oldUserString, newUserString);
+            for (Store store : ((Seller) this).getStores()) {
+                store.getSeller().addCensoredWord(writer, censoredWord);
+            }
+
+            updateAccountsFile(writer, oldShortSellerString, newShortSellerString);
+            updateConversationsFile(writer, oldShortSellerString, newShortSellerString);
+        } else if (this instanceof Customer) {
+            oldUserString = ((Customer) this).detailedToString();
+            this.censoredWords.add(censoredWord);
+            newUserString = ((Customer) this).detailedToString();
+
+            updateAccountsFile(writer, oldUserString, newUserString);
+            updateConversationsFile(writer, oldUserString, newUserString);
+        }
+    }
+
+    /**
+     * Mutator method that removes the parameter censored word pair from this user's list of censored word pairs.
+     * Sends request to update passwords.txt and conversations.txt for later retrieval.
+     *
+     * @param writer       The PrintWriter object to be used to send the network request
+     * @param index        The index of the censored word pair to be removed in the user's list of censored word pairs
+     * @param censoredWord The censored word pair to be removed from this user's list of censored word pairs
+     */
+    public void removeCensoredWord(PrintWriter writer, int index, String censoredWord) {
+        String oldUserString;
+        String newUserString;
+        if (this instanceof Seller && this.censoredWords.get(index).equals(censoredWord)) {
+            oldUserString = ((Seller) this).detailedToString();
+            String oldShortSellerString = ((Seller) this).detailedToStringWithoutStores();
+            this.censoredWords.remove(index);
+            newUserString = ((Seller) this).detailedToString();
+            String newShortSellerString = ((Seller) this).detailedToStringWithoutStores();
+
+            updateAccountsFile(writer, oldUserString, newUserString);
+            for (Store store : ((Seller) this).getStores()) {
+                store.getSeller().removeCensoredWord(writer, index, censoredWord);
+            }
+            updateAccountsFile(writer, oldShortSellerString, newShortSellerString);
+            updateConversationsFile(writer, oldShortSellerString, newShortSellerString);
+        } else if (this instanceof Customer) {
+            oldUserString = ((Customer) this).detailedToString();
+            this.censoredWords.remove(index);
+            newUserString = ((Customer) this).detailedToString();
+
+            updateAccountsFile(writer, oldUserString, newUserString);
+            updateConversationsFile(writer, oldUserString, newUserString);
+        }
+    }
+
+    /**
+     * Sends a message to the parameter user ONLY IF this user is not blocked by the parameter user. Creates a new
+     * conversation if one does not already exist.
+     *
+     * @param reader  The BufferedReader object to be used to read network responses
+     * @param writer  The PrintWriter object to be used to send the network request
+     * @param message The message content of the message to be sent
+     * @param user    The user to which the message is being sent
+     * @return Returns whether the message was sent successfully
+     */
+    public boolean sendMessageToUser(BufferedReader reader, PrintWriter writer, String message, User user) {
+        if (this instanceof Customer && user instanceof Seller && !user.getBlockedUsers().contains(this)) {
+            Conversation conversation = null;
+            String fetchRequest = "[FETCH.CONVERSATION]" + ((Customer) this).detailedToString() + ";" +
+                    ((Seller) user).detailedToString();
+            MessengerClient.sendRequest(writer, fetchRequest);
+            String conversationString = MessengerClient.readResponse(reader);
+
+            if (conversationString != null) {
+                if (conversationString.isEmpty()) {
+                    String createRequest = "[CREATE.CONVERSATION]" + ((Customer) this).detailedToString() + ";" +
+                            ((Seller) user).detailedToString();
+                    MessengerClient.sendRequest(writer, createRequest);
+                    String newConversationString = MessengerClient.readResponse(reader);
+                    if (newConversationString != null) {
+                        conversation = new Conversation(newConversationString);
+                    }
+                } else {
+                    conversation = new Conversation(conversationString);
+                }
+            } else {
+                return false;
+            }
+
             try {
-                conversation.appendToFile(message, this, user);
+                if (conversation != null) {
+                    String appendRequest = "[FILE.APPEND]" + conversation + ";" + message + ";" + this + ";" + user;
+                    MessengerClient.sendRequest(writer, appendRequest);
+                    if (!Boolean.parseBoolean(MessengerClient.readResponse(reader))) {
+                        return false;
+                    }
+                    conversation.setSellerUnread(true, writer);
+                }
             } catch (Exception e) {
                 return false;
             }
-            conversation.setSellerUnread(true);
             return true;
         } else if (this instanceof Seller && user instanceof Customer && !user.getBlockedUsers().contains(this)) {
-            conversation = accountsMaster.fetchConversation((Customer) user, (Seller) this);
-            if (conversation == null) {
-                conversation = accountsMaster.createConversation((Customer) user, (Seller) this);
+            Conversation conversation = null;
+            String fetchRequest = "[FETCH.CONVERSATION]" + ((Customer) user).detailedToString() + ";" +
+                    ((Seller) this).detailedToString();
+            MessengerClient.sendRequest(writer, fetchRequest);
+            String conversationString = MessengerClient.readResponse(reader);
+
+            if (conversationString != null) {
+                if (conversationString.isEmpty()) {
+                    String createRequest = "[CREATE.CONVERSATION]" + ((Customer) user).detailedToString() + ";" +
+                            ((Seller) this).detailedToString();
+                    MessengerClient.sendRequest(writer, createRequest);
+                    String newConversationString = MessengerClient.readResponse(reader);
+                    if (newConversationString != null) {
+                        conversation = new Conversation(newConversationString);
+                    }
+                } else {
+                    conversation = new Conversation(conversationString);
+                }
+            } else {
+                return false;
             }
+
             try {
-                conversation.appendToFile(message, this, user);
+                if (conversation != null) {
+                    String appendRequest = "[FILE.APPEND]" + conversation + ";" + message + ";" + this + ";" + user;
+                    MessengerClient.sendRequest(writer, appendRequest);
+                    if (!Boolean.parseBoolean(MessengerClient.readResponse(reader))) {
+                        return false;
+                    }
+                    conversation.setCustomerUnread(writer, true);
+                }
             } catch (Exception e) {
                 return false;
             }
-            conversation.setCustomerUnread(true);
             return true;
         } else {
             return false;
         }
     }
-    
-/*
- * public void editMessage(Message message, Conversation conversation, String newMessage)
- * Method to edit a message in a Conversation ONLY IF this User is the sender of the Message.
- */
-    public void editMessage(Message message, Conversation conversation, String newMessage) {
+
+    /**
+     * Edits a message in the parameter conversation and changes the message content to the parameter newMessage
+     * ONLY IF the sender of the message is this user.
+     *
+     * @param reader       The BufferedReader object to be used to read network responses
+     * @param writer       The PrintWriter object to be used to send the network request
+     * @param message      The Message object that is to be edited (message content changes)
+     * @param conversation The Conversation object whose file is read and rewritten with the edited message
+     * @param newMessage   The new edited message content
+     * @return Returns whether the message was edited successfully
+     */
+    public boolean editMessage(BufferedReader reader, PrintWriter writer, Message message, Conversation conversation,
+                               String newMessage) {
         try {
             if (message.getSender().equals(this)) {
-                ArrayList<Message> readMessages = conversation.readFile();
+                ArrayList<Message> readMessages = new ArrayList<>();
+                String listMessagesRequest = "[LIST.MESSAGES]" + conversation;
+                MessengerClient.sendRequest(writer, listMessagesRequest);
+                String stringListOfMessages = MessengerClient.readResponse(reader);
+
+                if (stringListOfMessages != null && stringListOfMessages.length() > 0) {
+                    String[] listOfMessageStrings = stringListOfMessages.split(";");
+                    for (String messageString : listOfMessageStrings) {
+                        readMessages.add(new Message(messageString));
+                    }
+                }
+
                 for (Message readMessage : readMessages) {
                     if (message.equals(readMessage)) {
                         readMessage.setMessage(newMessage);
                     }
                 }
-                if (conversation.writeFile(readMessages)) {
-                    System.out.println("Edited Message to: " + newMessage);
-                } else {
-                    System.out.println("Error: Could not Edit Message");
+
+                StringBuilder rewriteFileRequest = new StringBuilder("[FILE.REWRITE]" + conversation + ";");
+                for (Message readMessage : readMessages) {
+                    rewriteFileRequest.append(readMessage.toString()).append(";");
                 }
+                if (rewriteFileRequest.length() > 0) {
+                    rewriteFileRequest = new StringBuilder(rewriteFileRequest.substring(0,
+                            rewriteFileRequest.length() - 1));
+                }
+                MessengerClient.sendRequest(writer, rewriteFileRequest.toString());
+
+                return Boolean.parseBoolean(MessengerClient.readResponse(reader));
             } else {
-                System.out.println("You Cannot Edit this Message");
+                return false;
             }
         } catch (Exception e) {
-            System.out.println("Error: Could not Edit Message");
+            return false;
         }
     }
-    
-/*
- public void deleteMessage(Message message, Conversation conversation)
- * Method to delete a message in a Conversation. Sets the Message's corresponding
- * senderVisibility or recipientVisibility to false.
- */
-    public void deleteMessage(Message message, Conversation conversation) {
+
+    /**
+     * Deletes a message in the parameter conversation by changing the message's sender visibility status or recipient
+     * visibility status depending on this user and the parameter conversation.
+     *
+     * @param reader       The BufferedReader object to be used to read network responses
+     * @param writer       The PrintWriter object to be used to send the network request
+     * @param message      The Message object that is to be deleted (message visibility changes according to the user)
+     * @param conversation The Conversation object whose file is read and rewritten with the edited message
+     * @return Returns whether the message was deleted successfully
+     */
+    public boolean deleteMessage(BufferedReader reader, PrintWriter writer, Message message,
+                                 Conversation conversation) {
         try {
             if (this.isParticipantOf(conversation)) {
-                ArrayList<Message> readMessages = conversation.readFile();
+                ArrayList<Message> readMessages = new ArrayList<>();
+                String listMessagesRequest = "[LIST.MESSAGES]" + conversation;
+                MessengerClient.sendRequest(writer, listMessagesRequest);
+                String stringListOfMessages = MessengerClient.readResponse(reader);
+
+                if (stringListOfMessages != null && stringListOfMessages.length() > 0) {
+                    String[] listOfMessageStrings = stringListOfMessages.split(";");
+                    for (String messageString : listOfMessageStrings) {
+                        readMessages.add(new Message(messageString));
+                    }
+                }
+
                 for (Message readMessage : readMessages) {
                     if (message.equals(readMessage) && message.getSender().equals(this)) {
                         readMessage.setSenderVisibility(false);
@@ -416,50 +738,61 @@ public class User {
                         readMessage.setRecipientVisibility(false);
                     }
                 }
-                conversation.writeFile(readMessages);
+
+                StringBuilder rewriteFileRequest = new StringBuilder("[FILE.REWRITE]" + conversation + ";");
+                for (Message readMessage : readMessages) {
+                    rewriteFileRequest.append(readMessage.toString()).append(";");
+                }
+                if (rewriteFileRequest.length() > 0) {
+                    rewriteFileRequest = new StringBuilder(rewriteFileRequest.substring(0,
+                            rewriteFileRequest.length() - 1));
+                }
+                MessengerClient.sendRequest(writer, rewriteFileRequest.toString());
+                return Boolean.parseBoolean(MessengerClient.readResponse(reader));
             } else {
-                System.out.println("You Cannot Delete this Message");
+                return false;
             }
         } catch (Exception e) {
-            System.out.println("Error: Could not Delete Message");
+            return false;
         }
     }
 
     /**
-     * public boolean isParticipantOf(Conversation conversation)
-     * Returns whether or not the user is a participant of the conversation passed in. 
-     */
-    public boolean isParticipantOf(Conversation conversation) {
-        return this.equals(conversation.getSeller()) || this.equals(conversation.getCustomer());
-    }
-
-    /**
-     * public boolean equals(Object o)
-     * Checks if two users are the same.
-     * Based on the email as a unique identifier.
+     * Checks the equality of two User objects. Compares only EMAIL since it is the only constant.
+     *
+     * @param o Object to be compared with
+     * @return Returns whether the equality condition was met
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (!(o instanceof User)) return false;
-        User user = (User) o;
-        return email.equals(user.email);
+        return EMAIL.equals(((User) o).getEmail());
     }
 
     /**
-     * public String toString()
-     * Returns the formatted String representing the user's account details.
+     * Generates a formatted String of the User containing elementary identification details.
+     * <br> <br>
+     * General format: <br>
+     * User&lt;username, EMAIL, password&gt;
+     *
+     * @return Returns the User object's String
      */
     @Override
     public String toString() {
-        return String.format("User<%s, %s, %s>", this.username, this.email, this.password);
+        return String.format("User<%s, %s, %s>", this.username, this.EMAIL, this.password);
     }
-    
+
     /**
-     * public String csvToString()
-     * Returns the formatted String for the user's email in CSV.
+     * Generates a formatted String of the User containing only the required details for CSV conversion.
+     * (i.e. does not contain sensitive information like passwords)
+     * <br> <br>
+     * General format: <br>
+     * EMAIL
+     *
+     * @return Returns the User object's String for CSV conversion
      */
     public String csvToString() {
-        return String.format("%s",this.email);
+        return String.format("%s", this.EMAIL);
     }
 }

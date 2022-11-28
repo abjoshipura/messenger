@@ -1,205 +1,211 @@
 import java.io.*;
 import java.util.ArrayList;
+
 /**
- * Conversation
+ * Template class for all conversations created between a Seller and a Customer. Stores elementary details about
+ * a conversation. Also stores a destination file's path where all Message(s) are stored in memory.
  *
- * The Conversation class acts as the template for any conversation created between a Seller and a Customer.
- * It holds elementary details about a conversation: conversationID, seller, and customer.
- * It also holds a fileName for the destination file where all future Messages will be stored.
- *
- * @author Akshara Joshipura, Raymond Wang, Kevin Tang, Yejin Oh
- *
- * @version 11/14/22
- *
+ * @author Akshara Joshipura
+ * @version 27 November 2022
  */
 public class Conversation {
-    private String conversationID;
-    private final String fileName;
-    private final Seller seller;
-    private final Customer customer;
-    private boolean sellerUnread;
-    private boolean customerUnread;
+
     /**
-     * public Conversation(String conversationString) Constructor that converts a
-     * Conversation object String into a Conversation object.
-     * This is used while reading Conversations from memory.
+     * The conversationID of the conversation
+     */
+    private String conversationID;
+
+    /**
+     * The destination file path of the conversation
+     */
+    private final String FILE_NAME;
+
+    /**
+     * The participating Seller in the conversation
+     */
+    private final Seller SELLER;
+
+    /**
+     * The participating Customer in the conversation
+     */
+    private final Customer CUSTOMER;
+
+    /**
+     * The read status of the participating Seller in the conversation
+     */
+    private boolean sellerUnread;
+
+    /**
+     * The read status of the participating Customer in the conversation
+     */
+    private boolean customerUnread;
+
+    /**
+     * Parses a Conversation object's String and converts it into a Conversation object.
+     * Used while reading Conversation(s) from memory. Inherently calls {@link User#User(String userString,
+     * boolean hasDetails)}
      *
-     * @param conversationString the string to be read
+     * @param conversationString A Conversation String
+     * @see Conversation#toString()
      */
     public Conversation(String conversationString) {
+        // Strips the header from the Conversation object String to help in parsing
         String strippedMessage = conversationString.substring(conversationString.indexOf("<") + 1,
                 conversationString.lastIndexOf(">"));
-
         String[] conversationDetails = strippedMessage.split(", ");
+
         this.conversationID = conversationDetails[0];
-        this.fileName = conversationDetails[1];
+        this.FILE_NAME = conversationDetails[1];
 
         String sellerString = strippedMessage.substring(strippedMessage.indexOf("Seller<"),
                 strippedMessage.indexOf("]>") + 2);
+        this.SELLER = new Seller(sellerString, true, false);
+
         String customerString = strippedMessage.substring(strippedMessage.indexOf("Customer<"),
                 strippedMessage.lastIndexOf("]>") + 2);
-
-        this.seller = new Seller(sellerString, true, false);
-        this.customer = new Customer(customerString, true);
+        this.CUSTOMER = new Customer(customerString, true);
 
         this.sellerUnread = Boolean.parseBoolean(conversationDetails[conversationDetails.length - 2]);
         this.customerUnread = Boolean.parseBoolean(conversationDetails[conversationDetails.length - 1]);
     }
 
     /**
-     * public Conversation(String conversationID,
-     * String fileName, Seller seller, Customer customer)
-     * Constructor that creates a new Conversation object based on indirect input.
-     * This is used when creating a new Conversation before appending or writing to conversations.txt.
-     * @param conversationID the conversation unique id
-     * @param fileName the filename
-     * @param seller the seller
-     * @param customer the customer
+     * Creates a new Conversation object with provided parameters. Used when creating a new Conversation before
+     * appending or writing to a conversations.txt.
+     *
+     * @param conversationID The conversation's unique ID. Created from participants' usernames
+     * @param fileName       The destination file's path that will contain all Message object Strings of Messages
+     *                       in this Conversation. Created from participants' email IDs
+     * @param seller         The seller in the conversation
+     * @param customer       The customer in the conversation
      */
     public Conversation(String conversationID, String fileName, Seller seller, Customer customer) {
         this.conversationID = conversationID;
-        this.fileName = fileName;
-        this.seller = seller;
-        this.customer = customer;
+        this.FILE_NAME = fileName;
+        this.SELLER = seller;
+        this.CUSTOMER = customer;
 
         this.sellerUnread = false;
         this.customerUnread = false;
     }
 
     /**
-     * returns filename
+     * Accessor method for String FILE_NAME
      *
-     * @return filename of conv
+     * @return Returns the conversation's file
      */
     public String getFileName() {
-        return fileName;
+        return FILE_NAME;
     }
 
     /**
-     * returns seller
+     * Accessor method for Seller SELLER
      *
-     * @return seller
+     * @return Returns the conversation's seller
      */
     public Seller getSeller() {
-        return seller;
+        return SELLER;
     }
 
     /**
-     * returns customer
+     * Accessor method for Customer CUSTOMER
      *
-     * @return customer
+     * @return Returns the conversation's customer
      */
     public Customer getCustomer() {
-        return customer;
+        return CUSTOMER;
     }
 
     /**
-     * returns conv id
+     * Accessor method for String conversationID
      *
-     * @return id
+     * @return Returns the conversation's ID
      */
     public String getConversationID() {
         return conversationID;
     }
 
-    /**
-     * checks if conv is unread for customer
-     *
-     * @return boolean
-     */
-    public boolean isCustomerUnread() {
-        return customerUnread;
-    }
 
     /**
-     * checks if conv is unread for seller
+     * Accessor method for boolean sellerUnread
      *
-     * @return boolean
+     * @return Returns the read status of the conversation for the participating Seller.
      */
     public boolean isSellerUnread() {
         return sellerUnread;
     }
 
     /**
-     * sets conv id
-     * @param conversationID id
+     * Accessor method for boolean customerUnread
      *
+     * @return Returns the read status of the conversation for the participating Customer.
      */
-    public void setConversationID(String conversationID) {
-        String oldString = this.toString();
+    public boolean isCustomerUnread() {
+        return customerUnread;
+    }
+
+    /**
+     * Mutator method that changes the conversationID to the parameter conversationID.
+     * Sends request to update conversations.txt for later retrieval.
+     *
+     * @param writer         The PrintWriter object to be used to send the network request
+     * @param conversationID The new conversationID
+     */
+    public void setConversationID(PrintWriter writer, String conversationID) {
+        String oldString = this.conversationID;
         this.conversationID = conversationID;
-        String newString = this.toString();
+        String newString = this.conversationID;
 
-        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldString, newString);
+        String updateConversationsRequest = "[FILE.UPDATE]" + MessengerClient.CONVERSATIONS_FILE_PATH + ";" +
+                oldString + ";" + newString;
+        MessengerClient.sendRequest(writer, updateConversationsRequest);
     }
 
     /**
-     * sets unread to true or false for customer
+     * Mutator method that changes the sellerUnread status to the parameter sellerUnread.
+     * Sends request to update conversations.txt for later retrieval.
      *
-     * @param customerUnread boolean
-     *
+     * @param writer       The PrintWriter object to be used to send the network request
+     * @param sellerUnread The new read status of the conversation for the participating Seller
      */
-    public void setCustomerUnread(boolean customerUnread) {
-        String oldString = this.toString();
-        this.customerUnread = customerUnread;
-        String newString = this.toString();
-
-        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldString, newString);
-    }
-
-    /**
-     * set seller unread
-     *
-     * @param sellerUnread boolean
-     */
-    public void setSellerUnread(boolean sellerUnread) {
+    public void setSellerUnread(boolean sellerUnread, PrintWriter writer) {
         String oldString = this.toString();
         this.sellerUnread = sellerUnread;
         String newString = this.toString();
 
-        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldString, newString);
+        String updateAccountsRequest = "[FILE.UPDATE]" + MessengerClient.CONVERSATIONS_FILE_PATH + ";" +
+                oldString + ";" + newString;
+        MessengerClient.sendRequest(writer, updateAccountsRequest);
     }
 
     /**
-     * updates conv fields
+     * Mutator method that changes the customerUnread status to the parameter customerUnread.
+     * Sends request to update conversations.txt for later retrieval.
      *
+     * @param writer         The PrintWriter object to be used to send the network request
+     * @param customerUnread The new read status of the conversation for the participating Customer
      */
-    public void updateConversationFields() {
-        ArrayList<String> conversationStrings = new ArrayList<>();
-        try (BufferedReader bfr = new BufferedReader(new FileReader(Main.conversationsFilePath))) {
-            String conversationString = bfr.readLine();
-            while (conversationString != null) {
-                String tempString = conversationString.substring(conversationString.indexOf("<") + 1,
-                        conversationString.lastIndexOf(">"));
-                String[] splitTempString = tempString.split(", ");
-                if (this.fileName.equals(splitTempString[1])) {
-                    conversationString = this.toString();
-                }
-                conversationStrings.add(conversationString);
-                conversationString = bfr.readLine();
-            }
+    public void setCustomerUnread(PrintWriter writer, boolean customerUnread) {
+        String oldString = this.toString();
+        this.customerUnread = customerUnread;
+        String newString = this.toString();
 
-        } catch (Exception e) {
-            System.out.println("Could not update Conversation");
-        }
-
-        try (PrintWriter pw = new PrintWriter(new FileOutputStream(Main.conversationsFilePath, false))) {
-            for (String conversationString : conversationStrings) {
-                pw.println(conversationString);
-            }
-        } catch (Exception e) {
-            System.out.println("Could not update Conversation");
-        }
+        String updateAccountsRequest = "[FILE.UPDATE]" + MessengerClient.CONVERSATIONS_FILE_PATH + ";" +
+                oldString + ";" + newString;
+        MessengerClient.sendRequest(writer, updateAccountsRequest);
     }
 
     /**
-     * read file returns arraylist of messages
-     * @param user user
-     * @return an arraylist of messages from user perspective
+     * Reads this Conversation's destination file to compile an ArrayList&lt;Message&gt; of messages according to the
+     * parameter user's deletions (i.e. Message.senderVisibility or Message.recipientVisibility). Inherently calls the
+     * Message constructor {@link Message#Message(String messageString)}
+     *
+     * @param user The user viewing this Conversation
+     * @return Returns an ArrayList&lt;Message&gt; of messages according to the parameter user's deletions
      */
     public ArrayList<Message> readFileAsPerUser(User user) {
         ArrayList<Message> readMessages = new ArrayList<>();
-        try (BufferedReader bfr = new BufferedReader(new FileReader(this.fileName))) {
+        try (BufferedReader bfr = new BufferedReader(new FileReader(this.FILE_NAME))) {
             Message message = null;
             String messageLine = bfr.readLine();
             if (messageLine != null) {
@@ -225,13 +231,14 @@ public class Conversation {
     }
 
     /**
-     * reads a file objectively
+     * Reads this Conversation's destination file to compile an ArrayList&lt;Message&gt; of messages. Inherently calls
+     * the Message constructor {@link Message#Message(String messageString)}
      *
-     * @return arraylist of objective messages
+     * @return Returns an ArrayList&lt;Message&gt; of all messages in this Conversation's destination file
      */
     public ArrayList<Message> readFile() {
         ArrayList<Message> readMessages = new ArrayList<>();
-        try (BufferedReader bfr = new BufferedReader(new FileReader(this.fileName))) {
+        try (BufferedReader bfr = new BufferedReader(new FileReader(this.FILE_NAME))) {
             Message message = null;
             String messageLine = bfr.readLine();
             if (messageLine != null) {
@@ -255,12 +262,14 @@ public class Conversation {
     }
 
     /**
-     * writes messages to a file (overwrites)
-     * @param messages the arraylist of messages
-     * @return true if works
+     * Overwrites the all Message objects in parameter messages into the destination file ASIDE FROM those deleted by
+     * both Seller and Customer
+     *
+     * @param messages The ArrayList&lt;Message&gt; of messages to write into the file
+     * @return Returns whether the file was overwritten successfully
      */
     public boolean writeFile(ArrayList<Message> messages) {
-        try (PrintWriter pw = new PrintWriter(new FileOutputStream(this.fileName, false))) {
+        try (PrintWriter pw = new PrintWriter(new FileOutputStream(this.FILE_NAME, false))) {
             for (Message message : messages) {
                 if (message.isSenderVisibility() || message.isRecipientVisibility()) {
                     pw.println(message);
@@ -273,28 +282,37 @@ public class Conversation {
     }
 
     /**
-     * appends messages to file
-     * @param stringMessage the msg
-     * @param sender sender
-     * @param recipient the recipient
+     * Appends a new Message object String to the destination file. Inherently calls the Message constructor
+     * {@link Message#Message(String messageString)}
+     *
+     * @param stringMessage The new message's content
+     * @param sender        The sender of the new message
+     * @param recipient     the recipient of the new message
+     * @return Returns whether the new message was appended to the file successfully
      */
-    public void appendToFile(String stringMessage, User sender, User recipient) {
-        try (PrintWriter pw = new PrintWriter(new FileOutputStream(this.fileName, true))) {
+    public boolean appendToFile(String stringMessage, User sender, User recipient) {
+        try (PrintWriter pw = new PrintWriter(new FileOutputStream(this.FILE_NAME, true))) {
             Message message = new Message(stringMessage, sender, recipient);
             pw.println(message);
+            return true;
         } catch (IOException e) {
-            System.out.println("Error: Could not Send Message");
+            return false;
         }
     }
 
     /**
-     * imports a txt file into a message
-     * @param filePath the file
-     * @param sender sender
-     * @param recipient recipient
-     * @return true if works
+     * Reads the file at the parameter filePath to compile a String message and appends it to this Conversation's
+     * destination file. Indirectly calls {@link Conversation#appendToFile(String stringMessage, User sender,
+     * User recipient)}
+     *
+     * @param reader    The BufferedReader object to be used to read network responses
+     * @param writer    The PrintWriter object to be used to send the network request
+     * @param filePath  The path of the input .txt file to be read
+     * @param sender    The sender (active user) of the message
+     * @param recipient The recipient of the message. Taken from the Conversation depending on the active user's role
+     * @return Returns whether the message was sent successfully
      */
-    public boolean importTXT(String filePath, User sender, User recipient) {
+    public boolean importTXT(BufferedReader reader, PrintWriter writer, String filePath, User sender, User recipient) {
         StringBuilder readContents = new StringBuilder();
         try (BufferedReader bfr = new BufferedReader(new FileReader(filePath))) {
             String readLine = bfr.readLine();
@@ -302,36 +320,44 @@ public class Conversation {
                 readContents.append(readLine).append(" ");
                 readLine = bfr.readLine();
             }
-            appendToFile(readContents.toString(), sender, recipient);
-            return true;
+
+            String appendRequest = "[FILE.APPEND]" + this + ";" + readContents + ";" + sender + ";" + recipient;
+            MessengerClient.sendRequest(writer, appendRequest);
+            return Boolean.parseBoolean(MessengerClient.readResponse(reader));
         } catch (Exception e) {
             return false;
         }
     }
 
     /**
-     * equals
-     * @param o the object to be compared
-     * @return true if same
+     * Checks the equality of two Conversation objects. Compares all class fields ASIDE FROM boolean customerUnread and
+     * boolean sellerUnread.
+     *
+     * @param o Object to be compared with
+     * @return Returns whether the equality condition was met
      */
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Conversation that = (Conversation) o;
-        return conversationID.equals(that.conversationID) && fileName.equals(that.fileName) &&
-                seller.equals(that.seller) && customer.equals(that.customer);
+        return conversationID.equals(that.conversationID) && FILE_NAME.equals(that.FILE_NAME) &&
+                SELLER.equals(that.SELLER) && CUSTOMER.equals(that.CUSTOMER);
     }
 
     /**
-     * to-string converting conversation to string format
+     * Generates a formatted String of the Conversation containing all details.
+     * <br> <br>
+     * General format: <br>
+     * Conversation&lt;conversationID, FILE_NAME, SELLER.detailedToStringWithoutStores(), customer.detailedToString(),
+     * sellerUnread, customerUnread&gt;
      *
-     * @return string of conv values
+     * @return Returns the Message object's String
      */
     @Override
     public String toString() {
-        return String.format("Conversation<%s, %s, %s, %s, %b, %b>", this.conversationID, this.fileName,
-                this.seller.detailedToStringWithoutStores(), this.customer.detailedToString(), this.sellerUnread,
+        return String.format("Conversation<%s, %s, %s, %s, %b, %b>", this.conversationID, this.FILE_NAME,
+                this.SELLER.detailedToStringWithoutStores(), this.CUSTOMER.detailedToString(), this.sellerUnread,
                 this.customerUnread);
     }
 }

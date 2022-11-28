@@ -1,105 +1,103 @@
 import java.util.Objects;
-/**
- * Store
- *
- * The Store class behaves as a template
- * for any stores that can be created, edited,
- * or deleted by a Seller. It holds the
- * elementary details about a store: store
- * name, the owner (a Seller object).
- *
- * @author Akshara Joshipura, Raymond Wang, Kevin Tang, Yejin Oh
- *
- * @version 11/14/22
- *
- */
-public class Store {
-    private String storeName;
-    private Seller seller;
-    
-/*
- * public Store(String storeString)
- * Constructor that converts a Store
- * object String into a Store object.
- * This is used while reading Users and
- * Conversations from memory.
- *
- * @param storeString the String to be converted into a Store object.
- */
-    public Store(String storeString) {
-        storeString = storeString.substring(storeString.indexOf("<") + 1, storeString.lastIndexOf(">"));
-        String[] splitStoreString = storeString.split(", ");
-        this.storeName = splitStoreString[0];
 
+/**
+ * Template class for all stores that can be created, edited, or deleted by a Seller. Stores elementary details about
+ * a store.
+ *
+ * @author Akshara Joshipura
+ * @version 27 November 2022
+ */
+
+public class Store {
+
+    /**
+     * The name of the store
+     */
+    private String storeName;
+
+    /**
+     * The seller details of the owner of the store
+     */
+    private Seller seller;
+
+    /**
+     * Parses a Store object's String and converts it into a Store object. Used while reading User(s) and
+     * Conversation(s) from memory. Inherently calls {@link Seller#Seller(String sellerString, boolean hasDetails,
+     * boolean hasStores)}
+     *
+     * @param storeString A Store String
+     * @see Store#toString() Store toString()
+     */
+    public Store(String storeString) {
+        // Strips the header from the Store object String to help in parsing
+        storeString = storeString.substring(storeString.indexOf("<") + 1, storeString.lastIndexOf(">"));
+        String[] storeElements = storeString.split(", ");
+
+        this.storeName = storeElements[0];
+
+        // Parses storeElements[] to build a Seller object String that can be passed to the Seller constructor
         StringBuilder sellerString = new StringBuilder();
-        for (int i = 1; i < splitStoreString.length; i++) {
-            sellerString.append(splitStoreString[i]).append(", ");
+        for (int i = 1; i < storeElements.length; i++) {
+            sellerString.append(storeElements[i]).append(", ");
         }
         this.seller = new Seller(sellerString.toString(), true, false);
     }
-    
-/*
- * public Store(String storeName, Seller seller)
- * Constructor that creates a new Store object
- * based on input. This is used while creating
- * new Stores before adding to Seller strings
- * in passwords.txt and conversations.txt.
- * 
- * @param storeName the name of the Store object to be created
- * @param seller the user owning the store
- */
+
+    /**
+     * Creates a new Store object with provided parameters. Used when creating a new Store(s) before adding to
+     * Seller strings in passwords.txt and conversations.txt.
+     *
+     * @param storeName The name of the Store object to be created
+     * @param seller    The owner's Seller object
+     */
     public Store(String storeName, Seller seller) {
         this.storeName = storeName;
         this.seller = seller;
     }
 
     /**
-     * public String getStoreName()
-     * Getter for the store name.
+     * Accessor method for String storeName
      *
-     * @return storeName
+     * @return Returns the store's name
      */
     public String getStoreName() {
         return this.storeName;
     }
 
     /**
-     * public void setStoreName(String storeName)
-     * Sets the store name with the passed in String.
+     * Mutator method for String storeName.
      *
-     * @param storeName the String for the store's new name
+     * @param storeName The new name for the store. Used during editing.
      */
     public void setStoreName(String storeName) {
         this.storeName = storeName;
     }
 
     /**
-     * public Seller getSeller()
-     * Returns the seller.
+     * Accessor method for Seller seller
      *
-     * @return seller
+     * @return Returns the store's owner
      */
     public Seller getSeller() {
         return seller;
     }
 
     /**
-     * public void setSeller(Seller seller)
-     * Sets seller as the Seller object passed in.
+     * Mutator method for Seller seller.
      *
-     * @param seller the new seller
+     * @param seller The new owner for the store.
      */
     public void setSeller(Seller seller) {
         this.seller = seller;
     }
 
     /**
-     * public boolean equals(Object o)
-     * Checks whether or not two sellers are equal based on the seller and their store names.
+     * Checks the equality of two Store objects. Compares all class fields.
      *
-     * @param o the object to be compared for equality
-     * @return whether or not the two objects are equal
+     * @param o Object to be compared with
+     * @return Returns whether the equality condition was met
      */
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
@@ -108,12 +106,14 @@ public class Store {
     }
 
     /**
-     * public String toString()
-     * Returns the formatted String representing the store.
-     * Includes its name and the owner, the seller.
+     * Generates a formatted String of the Store containing all details.
+     * <br> <br>
+     * General format: <br>
+     * Store&lt;storeName, sender.detailedToStringWithoutStores()&gt;
      *
-     * @return the formatted String containing store name and seller information
+     * @return Returns the Store object's String
      */
+    @Override
     public String toString() {
         return String.format("Store<%s, %s>", this.storeName, this.seller.detailedToStringWithoutStores());
     }

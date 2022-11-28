@@ -1,51 +1,59 @@
+import java.io.PrintWriter;
 import java.util.ArrayList;
+
 /**
- * Seller
+ * Template class (extends User) for Sellers. Stores elementary details about a Seller. Holds a list of Stores owned by
+ * the Seller in addition to the set of information in User.
+ * <br>
+ * instanceOf Seller is used to provide a Seller their customized permissions where required.
  *
- * The Seller class extends User to behave as a
- * specific template for customers. It holds a list of
- * Stores owned by the Seller in addition to the
- * set of information in User. instanceOf Seller
- * is used to provide a Seller their customized
- * permissions where required.
- *
- * @author Akshara Joshipura, Raymond Wang, Kevin Tang, Yejin Oh
- *
- * @version 11/14/22
- *
+ * @author Akshara Joshipura
+ * @version 27 November 2022
  */
 public class Seller extends User {
+
+    /**
+     * The stores owned by the Seller
+     */
     private ArrayList<Store> stores;
-    
-/*
- * public Seller(String sellerString, boolean hasDetails,
- * boolean hasStores) Constructor that inherently calls
- * super(String userString, boolean hasDetails) to instantiate
- * Seller fields to their values. It parses the deepToString()
- * or super.toString() version of the class written in memory
- * according to hasDetails. Additionally, if hasStores, it
- * updates this.stores by calling the Store constructor
- * public Store(String storeString).
- *
- * @param sellerString the String for the seller
- * @param hasDetails whether or not the String should be a detailed version
- * @param hasStores the property of having stores or not
- */
+
+    /**
+     * Parses a Seller object's String and converts it into a Seller object. Used while reading Seller(s)
+     * from memory. Inherently calls {@link User#User(String userString, boolean hasDetails)} to instantiate inherited
+     * fields to their values.
+     * <br> <br>
+     * Possible sellerString values dependent on memory: <br>
+     * hasDetails == false => {@link User#toString()} <br>
+     * hasDetails == true and hasStores == false => {@link Seller#detailedToStringWithoutStores()} <br>
+     * hasDetails == true and hasStores == true => {@link Seller#detailedToString()}
+     *
+     * @param sellerString A Seller String
+     * @param hasDetails   Whether the Seller String is detailed (i.e. it contains blocked user, invisible user,
+     *                     and censored words)
+     * @param hasStores    Whether the Seller String is detailed and has stores (e.g. in Store object strings Seller(s)
+     *                     DO NOT contain stores)
+     * @see User#toString()
+     * @see Seller#detailedToStringWithoutStores()
+     * @see Seller#detailedToString()
+     */
     public Seller(String sellerString, boolean hasDetails, boolean hasStores) {
         super(sellerString, hasDetails);
         if (hasStores) {
+            this.stores = new ArrayList<>();
+
+            // Strips sellerString to a String containing only Store object Strings
             for (int i = 0; i < 3; i++) {
                 sellerString = sellerString.substring(sellerString.indexOf("]") + 3);
             }
-            this.stores = new ArrayList<>();
             String storesString = sellerString.substring(sellerString.indexOf("[") + 1,
                     sellerString.lastIndexOf("]"));
+
             if (storesString.length() > 0) {
+                // Parses the Store object String to pass each individual String to the Store constructor
                 while (!storesString.isEmpty()) {
                     String singularStore = storesString.substring(0, storesString.indexOf("]>>") + 3);
                     int nextIndex = Math.min(storesString.indexOf("]>>") + 5, storesString.length());
                     storesString = storesString.substring(nextIndex);
-
                     this.stores.add(new Store(singularStore));
                 }
             }
@@ -53,58 +61,54 @@ public class Seller extends User {
             this.stores = new ArrayList<>();
         }
     }
-    
-/*
- * public Seller(String name, String email, String password)
- * Constructor that inherently calls super(String name,
- * String email, String password) to create a new Seller.
- *
- * @param name the name of the new seller
- * @param email the email of the new seller
- * @param password the password of the new seller
- */
-    public Seller(String name, String email, String password) {
-        super(name, email, password);
+
+    /**
+     * Creates a new Seller object with provided parameters. Inherently calls {@link User#User(String username,
+     * String email, String password)} Used when creating a new Seller account.
+     *
+     * @param username The username of the seller
+     * @param email    The email of the seller
+     * @param password The password of the seller
+     */
+    public Seller(String username, String email, String password) {
+        super(username, email, password);
         this.stores = new ArrayList<>();
     }
 
     /**
-     * public ArrayList<Store> getStores()
-     * Returns an ArrayList of Store objects.
+     * Accessor method for ArrayList&lt;Store&gt; stores
      *
-     * @return the user's list of stores
+     * @return Returns the seller's owned Store(s)
      */
     public ArrayList<Store> getStores() {
         return this.stores;
     }
 
     /**
-     * public void addStore(Store store)
-     * Adds the Store object passed in to the list of already existing stores for the user.
-     * Writes the updated result to the files for later retrieval.
+     * Adds the parameter store to ArrayList&lt;Store&gt; stores.
+     * Sends request to update passwords.txt for later retrieval.
      *
-     * @param store the store to be added to the user's list
+     * @param writer The PrintWriter object to be used to send the network request
+     * @param store  The new store to be added
      */
-    public void addStore(Store store) {
-        String oldUserString;
-        String newUserString;
-
-        oldUserString = this.detailedToString();
+    public void addStore(PrintWriter writer, Store store) {
+        String oldUserString = this.detailedToString();
         this.stores.add(store);
-        newUserString = this.detailedToString();
+        String newUserString = this.detailedToString();
 
-        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
-        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
+        String updateAccountsRequest = "[FILE.UPDATE]" + MessengerClient.PASSWORD_FILE_PATH + ";" + oldUserString +
+                ";" + newUserString;
+        MessengerClient.sendRequest(writer, updateAccountsRequest);
     }
 
     /**
-     * public void removeStore(Store store)
-     * Removes the Store object passed in from the list of existing stores for the user.
-     * Writes the updated result to the files for later retrieval.
+     * Removes the parameter store from ArrayList&lt;Store&gt; stores.
+     * Sends request to update passwords.txt for later retrieval.
      *
-     * @param store the store to be removed from the user's list
+     * @param writer The PrintWriter object to be used to send the network request
+     * @param store  The new store to be removed
      */
-    public void removeStore(Store store) {
+    public void removeStore(PrintWriter writer, Store store) {
         String oldUserString;
         String newUserString;
 
@@ -112,37 +116,35 @@ public class Seller extends User {
         this.stores.remove(store);
         newUserString = this.detailedToString();
 
-        AccountsMaster.replaceStringInFile(Main.passwordFilePath, oldUserString, newUserString);
-        AccountsMaster.replaceStringInFile(Main.conversationsFilePath, oldUserString, newUserString);
+        String updateAccountsRequest = "[FILE.UPDATE]" + MessengerClient.PASSWORD_FILE_PATH + ";" + oldUserString +
+                ";" + newUserString;
+        MessengerClient.sendRequest(writer, updateAccountsRequest);
     }
-    
-/*
- * public String detailedToString() Method that returns
- * a String containing: username, email, password, requestsCensorship,
- * blockedUsers, InvisibleUsers, censoredWords, and stores.
- * This is used in writing into a Seller object String
- * in passwords.txt to store censoring toggle, blocked users,
- * invisible to users, censored word pairs, and owned stores
- * for the next log-in.
- *
- * @return formatted String object with more detailed information
- */
+
+    /**
+     * Generates a formatted String of the Seller containing all details.
+     * <br> <br>
+     * General format: <br>
+     * Seller&lt;username, email, password, this.getBlockedUsers(), this.getInvisibleUsers(), this.getCensoredWords(),
+     * this.stores&gt;
+     *
+     * @return Returns the Seller object's String
+     */
     public String detailedToString() {
         return String.format("Seller<%s, %s, %s, %b, %s, %s, %s, %s>", this.getUsername(), this.getEmail(),
                 this.getPassword(), this.isRequestsCensorship(), this.getBlockedUsers(), this.getInvisibleUsers(),
                 this.getCensoredWords(), this.stores);
     }
-    
-/*
- * public String detailedToStringWithoutStores() Method
- * that returns a String containing ONLY: username,
- * email, password, requestsCensorship, blockedUsers,
- * InvisibleUsers, and censoredWords. This is used in
- * writing into a Store object String in passwords.txt
- * to prevent an infinite nested loop of detailedToString() calls.
- *
- * @return formatted String object with more details, without store information
- */
+
+    /**
+     * Generates a formatted String of the Seller containing all details ASIDE FROM ArrayList&lt;Store&gt; stores.
+     * <br> <br>
+     * General format: <br>
+     * Seller&lt;username, email, password, this.getBlockedUsers(), this.getInvisibleUsers(),
+     * this.getCensoredWords()&gt;
+     *
+     * @return Returns the Seller object's String
+     */
     public String detailedToStringWithoutStores() {
         return String.format("Seller<%s, %s, %s, %b, %s, %s, %s>", this.getUsername(), this.getEmail(),
                 this.getPassword(), this.isRequestsCensorship(), this.getBlockedUsers(), this.getInvisibleUsers(),
@@ -150,11 +152,11 @@ public class Seller extends User {
     }
 
     /**
-     * public String toString()
-     * Returns the formatted String.
+     * Generates a formatted String of the Seller as a User object String by inherently calling {@link User#toString()}
      *
-     * @return formatted String object
+     * @return Returns the Seller object's User object String
      */
+    @Override
     public String toString() {
         return super.toString();
     }

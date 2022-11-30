@@ -10,6 +10,7 @@ import java.util.ArrayList;
  * @author Akshara Joshipura
  * @version 27 November 2022
  */
+@SuppressWarnings("EnhancedSwitchMigration")
 public class MessengerServer implements Runnable {
 
     /**
@@ -487,53 +488,95 @@ public class MessengerServer implements Runnable {
                         switch (primaryTag) {
                             case "FILE":
                                 switch (requestHeaderTags[1]) {
-                                    case "UPDATE" -> updateFile(requestBody);
-                                    case "APPEND" -> appendToFile(writer, requestBody);
-                                    case "REWRITE" -> rewriteFile(writer, requestBody);
-                                    default -> System.out.println("Error: Invalid Request");
+                                    case "UPDATE":
+                                        updateFile(requestBody);
+                                        break;
+                                    case "APPEND":
+                                        appendToFile(writer, requestBody);
+                                        break;
+                                    case "REWRITE":
+                                        rewriteFile(writer, requestBody);
+                                        break;
+                                    default:
+                                        System.out.println("Error: Invalid Request");
                                 }
                                 break;
                             case "CHECK":
                                 switch (requestHeaderTags[1]) {
-                                    case "USERNAME" -> checkUsername(writer, accountsMaster, requestBody);
-                                    case "EMAIL" -> checkEmail(writer, accountsMaster, requestBody);
-                                    case "RECIPIENT_ACTIVE" -> checkRecipientActive(writer, requestBody);
-                                    default -> System.out.println("Error: Invalid Request");
+                                    case "USERNAME":
+                                        checkUsername(writer, accountsMaster, requestBody);
+                                        break;
+                                    case "EMAIL":
+                                        checkEmail(writer, accountsMaster, requestBody);
+                                        break;
+                                    case "RECIPIENT_ACTIVE":
+                                        checkRecipientActive(writer, requestBody);
+                                        break;
+                                    default:
+                                        System.out.println("Error: Invalid Request");
                                 }
                                 break;
                             case "CREATE":
                                 switch (requestHeaderTags[1]) {
-                                    case "USER" -> createUser(writer, accountsMaster, requestBody);
-                                    case "CONVERSATION" -> createConversation(writer, accountsMaster, requestBody);
-                                    default -> System.out.println("Error: Invalid Request");
+                                    case "USER":
+                                        createUser(writer, accountsMaster, requestBody);
+                                        break;
+                                    case "CONVERSATION":
+                                        createConversation(writer, accountsMaster, requestBody);
+                                        break;
+                                    default:
+                                        System.out.println("Error: Invalid Request");
                                 }
                                 break;
                             case "FETCH":
                                 switch (requestHeaderTags[1]) {
-                                    case "USER" -> fetchUser(writer, accountsMaster, requestBody);
-                                    case "UNREAD" -> fetchUnread(writer, accountsMaster, requestBody, isSeller);
-                                    case "CONVERSATION" -> fetchConversation(writer, accountsMaster, requestBody);
-                                    default -> System.out.println("Error: Invalid Request");
+                                    case "USER":
+                                        fetchUser(writer, accountsMaster, requestBody);
+                                        break;
+                                    case "UNREAD":
+                                        fetchUnread(writer, accountsMaster, requestBody, isSeller);
+                                        break;
+                                    case "CONVERSATION":
+                                        fetchConversation(writer, accountsMaster, requestBody);
+                                        break;
+                                    default:
+                                        System.out.println("Error: Invalid Request");
                                 }
                                 break;
                             case "LIST":
                                 switch (requestHeaderTags[1]) {
-                                    case "VISIBLE_MESSAGES" -> listVisibleMessages(writer, requestBody);
-                                    case "VISIBLE_CONVERSATIONS" ->
-                                            listVisibleConversations(writer, accountsMaster, requestBody, isSeller);
-                                    case "VISIBLE_STORES" -> listVisibleStores(writer, accountsMaster, requestBody);
-                                    case "VISIBLE_CUSTOMERS" ->
-                                            listVisibleCustomers(writer, accountsMaster, requestBody);
-                                    case "MESSAGES" -> listAllMessages(writer, requestBody);
-                                    case "CONVERSATIONS" -> listAllConversations(writer, accountsMaster);
-                                    default -> System.out.println("Error: Invalid Request");
+                                    case "VISIBLE_MESSAGES":
+                                        listVisibleMessages(writer, requestBody);
+                                        break;
+                                    case "VISIBLE_CONVERSATIONS":
+                                        listVisibleConversations(writer, accountsMaster, requestBody, isSeller);
+                                        break;
+                                    case "VISIBLE_STORES":
+                                        listVisibleStores(writer, accountsMaster, requestBody);
+                                        break;
+                                    case "VISIBLE_CUSTOMERS":
+                                        listVisibleCustomers(writer, accountsMaster, requestBody);
+                                        break;
+                                    case "MESSAGES":
+                                        listAllMessages(writer, requestBody);
+                                        break;
+                                    case "CONVERSATIONS":
+                                        listAllConversations(writer, accountsMaster);
+                                        break;
+                                    default:
+                                        System.out.println("Error: Invalid Request");
                                 }
                                 break;
                             case "SEARCH":
                                 switch (requestHeaderTags[1]) {
-                                    case "SELLER" -> searchSeller(writer, accountsMaster, requestBody);
-                                    case "CUSTOMER" -> searchCustomer(writer, accountsMaster, requestBody);
-                                    default -> System.out.println("Error: Invalid Request");
+                                    case "SELLER":
+                                        searchSeller(writer, accountsMaster, requestBody);
+                                        break;
+                                    case "CUSTOMER":
+                                        searchCustomer(writer, accountsMaster, requestBody);
+                                        break;
+                                    default:
+                                        System.out.println("Error: Invalid Request");
                                 }
                                 break;
                             default:

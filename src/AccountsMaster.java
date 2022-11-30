@@ -13,7 +13,7 @@ public class AccountsMaster {
     /**
      * Synchronization object for write/read
      */
-    private static String synch = "better";
+    private static String synch = "synchronized";
 
     /**
      * The constant password/account file path: passwords.txt

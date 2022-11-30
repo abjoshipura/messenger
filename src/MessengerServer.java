@@ -455,13 +455,14 @@ public class MessengerServer implements Runnable {
      * Runs the interface between a thread of the server and a connected client.
      */
     public void run() {
-        AccountsMaster accountsMaster = new AccountsMaster(PASSWORD_FILE_PATH, CONVERSATIONS_FILE_PATH);
+
 
         try {
             PrintWriter writer = new PrintWriter(clientSocket.getOutputStream());
             BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
             while (true) {
+                AccountsMaster accountsMaster = new AccountsMaster(PASSWORD_FILE_PATH, CONVERSATIONS_FILE_PATH);
                 String request = reader.readLine();
                 String requestHeader = getRequestHeader(request);
                 String requestBody = getRequestBody(request);

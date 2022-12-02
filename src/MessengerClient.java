@@ -1,5 +1,7 @@
 import java.io.*;
 import java.net.Socket;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.*;
 
 public class MessengerClient {
@@ -45,27 +47,27 @@ public class MessengerClient {
      * destinationPath
      *
      * @param exportingConversations The ArrayList&lt;Conversation&gt; of conversations to be exported
-     * @param destinationPath        The destination of all .csv files
      * @return Returns whether the .csv conversion and export succeeded
      * @throws IOException in the case of a conversion failure
      */
-    public static boolean convertConversationsToCSV(ArrayList<Conversation> exportingConversations, String destinationPath)
+    public static boolean convertConversationsToCSV(BufferedReader reader, PrintWriter writer,
+                                                    ArrayList<Conversation> exportingConversations, User loggedOnUser)
             throws IOException {
+        Files.createDirectories(Paths.get("src/exports")); // Creates the subfolder exports if it does not exist
+        File destination = new File("src/exports");
 
-        File dest = new File(destinationPath);
-        dest.getParentFile().mkdirs();
+        for (Conversation conversation : exportingConversations) {
+            File tempTXTFile = new File(destination, String.format("%s.txt", conversation.getConversationID()));
+            tempTXTFile.createNewFile(); // Creates a new .txt file for the Message object csv Strings
+            PrintWriter pw = new PrintWriter(new FileWriter(tempTXTFile, true));
 
-        for (Conversation conv : exportingConversations) {
-            File c = new File(dest, String.format("%s.txt", conv.getConversationID()));
-            c.createNewFile();
-            File act = new File(dest, String.format("%s.csv", conv.getConversationID()));
-            PrintWriter bw = new PrintWriter(new FileWriter(c, true));
-            ArrayList<Message> temp = conv.readFile();
+            File csvFile = new File(destination, String.format("%s.csv", conversation.getConversationID()));
+            ArrayList<Message> temp = refreshVisibleMessages(reader, writer, conversation, loggedOnUser);
             for (Message msg : temp) {
-                bw.println(msg.csvToString());
+                pw.println(msg.csvToString()); // Writes each each csv String into the file
             }
-            bw.close();
-            c.renameTo(act);
+            pw.close();
+            return tempTXTFile.renameTo(csvFile); // Converts new .txt file to a .csv file
         }
         return true;
     }
@@ -558,8 +560,6 @@ public class MessengerClient {
                 } else if (conversationNumber == conversations.size() + 1) {
                     System.out.println("Enter Conversations to Export Separated by Commas (eg. 1,3,4):");
                     String exportingIndexes = scan.nextLine();
-                    System.out.println("Enter .csv Destination (eg. folder/subfolder)");
-                    String CSVDestination = scan.nextLine();
 
                     try {
                         ArrayList<Conversation> exportingConversations = new ArrayList<>();
@@ -570,15 +570,15 @@ public class MessengerClient {
                             }
                         }
 
-                        if (convertConversationsToCSV(exportingConversations, CSVDestination)) {
-                            System.out.println("Successfully Converted to CSV!");
+                        if (convertConversationsToCSV(reader, writer, exportingConversations, loggedOnUser)) {
+                            System.out.println("Exported .csv file(s) to the src/exports folder!");
                         } else {
                             System.out.println("Conversion Failed");
                         }
                     } catch (NumberFormatException e) {
                         System.out.println("Invalid Conversations");
                     } catch (NullPointerException e) {
-                        System.out.println("Conversion Failed. No File Destination Inputted");
+                        System.out.println("Conversion Failed. Invalid File Destination");
                     } catch (IOException e) {
                         System.out.println("Conversion Failed");
                     }

@@ -42,7 +42,7 @@ public class MessengerClient {
 
     /**
      * Converts the chosen Conversation objects to exportable .csv files and exports them to the parameter
-     * destinationPath.
+     * destinationPath
      *
      * @param exportingConversations The ArrayList&lt;Conversation&gt; of conversations to be exported
      * @param destinationPath        The destination of all .csv files
@@ -65,10 +65,176 @@ public class MessengerClient {
                 bw.println(msg.csvToString());
             }
             bw.close();
-
             c.renameTo(act);
         }
         return true;
+    }
+
+    /**
+     * Client sends a request to the server and refresh the local variable for the ArrayList&lt;Conversation&gt; to
+     * implement live blocking, invisibility, and refreshing conversation titles
+     *
+     * @param reader       The BufferedReader object to be used to read network responses
+     * @param writer       The PrintWriter object to be used to send the network request
+     * @param loggedOnUser The active user
+     * @return Returns the updated ArrayList&lt;Conversation&gt; conversations
+     */
+    public static ArrayList<Conversation> refreshVisibleConversations(BufferedReader reader, PrintWriter writer,
+                                                                      User loggedOnUser) {
+        ArrayList<Conversation> conversations = new ArrayList<>();
+
+        String userString = (loggedOnUser instanceof Seller) ? ((Seller) loggedOnUser).detailedToString() :
+                ((Customer) loggedOnUser).detailedToString();
+        String listConversationsRequest = "[LIST.VISIBLE_CONVERSATIONS]" + userString;
+        sendRequest(writer, listConversationsRequest);
+        String stringListOfConversations = readResponse(reader);
+
+        if (stringListOfConversations != null && stringListOfConversations.length() > 0) {
+            String[] listOfConversationStrings = stringListOfConversations.split(";");
+            for (String conversationString : listOfConversationStrings) {
+                conversations.add(new Conversation(conversationString));
+            }
+        }
+
+        return conversations;
+    }
+
+    /**
+     * Client sends a request to the server and refresh the local variable for the ArrayList&lt;Message&gt; to
+     * implement refreshing
+     *
+     * @param reader       The BufferedReader object to be used to read network responses
+     * @param writer       The PrintWriter object to be used to send the network request
+     * @param conversation The Conversation object of the currently opened conversation
+     * @param loggedOnUser The active user
+     * @return Returns the updated ArrayList&lt;Message&gt; messages
+     */
+    public static ArrayList<Message> refreshVisibleMessages(BufferedReader reader, PrintWriter writer,
+                                                            Conversation conversation, User loggedOnUser) {
+        ArrayList<Message> messages = new ArrayList<>();
+
+        String listMessagesRequest = "[LIST.VISIBLE_MESSAGES]" + conversation + ";" + loggedOnUser;
+        sendRequest(writer, listMessagesRequest);
+        String stringListOfMessages = readResponse(reader);
+
+        if (stringListOfMessages != null && stringListOfMessages.length() > 0) {
+            String[] listOfMessageStrings = stringListOfMessages.split(";");
+            for (String messageString : listOfMessageStrings) {
+                messages.add(new Message(messageString));
+            }
+        }
+
+        return messages;
+    }
+
+    /**
+     * Client sends a request to the server and refresh the local variable for the ArrayList&lt;Customer&gt; to
+     * implement live blocking and invisibility
+     *
+     * @param reader       The BufferedReader object to be used to read network responses
+     * @param writer       The PrintWriter object to be used to send the network request
+     * @param loggedOnUser The active user
+     * @return Returns the updated ArrayList&lt;Customer&gt; customer
+     */
+    public static ArrayList<Customer> refreshCustomers(BufferedReader reader, PrintWriter writer, User loggedOnUser) {
+        ArrayList<Customer> customers = new ArrayList<>();
+
+        String userString = ((Seller) loggedOnUser).detailedToString();
+        String listCustomersRequest = "[LIST.VISIBLE_CUSTOMERS]" + userString;
+        sendRequest(writer, listCustomersRequest);
+        String stringListOfCustomers = readResponse(reader);
+
+        if (stringListOfCustomers != null && stringListOfCustomers.length() > 0) {
+            String[] listOfCustomerStrings = stringListOfCustomers.split(";");
+            for (String customerString : listOfCustomerStrings) {
+                customers.add(new Customer(customerString, true));
+            }
+        }
+
+        return customers;
+    }
+
+    /**
+     * Client sends a request to the server and refresh the local variable for the ArrayList&lt;Store&gt; to
+     * implement live blocking and invisibility
+     *
+     * @param reader       The BufferedReader object to be used to read network responses
+     * @param writer       The PrintWriter object to be used to send the network request
+     * @param loggedOnUser The active user
+     * @return Returns the updated ArrayList&lt;Store&gt; stores
+     */
+    public static ArrayList<Store> refreshStores(BufferedReader reader, PrintWriter writer, User loggedOnUser) {
+        ArrayList<Store> stores = new ArrayList<>();
+
+        String userString = ((Customer) loggedOnUser).detailedToString();
+        String listStoresRequest = "[LIST.VISIBLE_STORES]" + userString;
+        sendRequest(writer, listStoresRequest);
+        String stringListOfStores = readResponse(reader);
+
+        if (stringListOfStores != null && stringListOfStores.length() > 0) {
+            String[] listOfStoreStrings = stringListOfStores.split(";");
+            for (String storeString : listOfStoreStrings) {
+                stores.add(new Store(storeString));
+            }
+        }
+
+        return stores;
+    }
+
+    /**
+     * Client sends a request to the server and refresh the local variable for the ArrayList&lt;Customer&gt; to
+     * implement live blocking and invisibility
+     *
+     * @param reader       The BufferedReader object to be used to read network responses
+     * @param writer       The PrintWriter object to be used to send the network request
+     * @param loggedOnUser The active user
+     * @return Returns the updated ArrayList&lt;Customer&gt; customers
+     */
+    public static ArrayList<Customer> refreshSearchCustomers(BufferedReader reader, PrintWriter writer,
+                                                             User loggedOnUser, String searchKeyword) {
+        ArrayList<Customer> customers = new ArrayList<>();
+
+        String userString = ((Seller) loggedOnUser).detailedToString();
+        String listCustomersRequest = "[SEARCH.CUSTOMER]" + searchKeyword + ";" + userString;
+        sendRequest(writer, listCustomersRequest);
+        String stringListOfCustomers = readResponse(reader);
+
+        if (stringListOfCustomers != null && stringListOfCustomers.length() > 0) {
+            String[] listOfCustomerStrings = stringListOfCustomers.split(";");
+            for (String customerString : listOfCustomerStrings) {
+                customers.add(new Customer(customerString, true));
+            }
+        }
+
+        return customers;
+    }
+
+    /**
+     * Client sends a request to the server and refresh the local variable for the ArrayList&lt;Seller&gt; to
+     * implement live blocking and invisibility
+     *
+     * @param reader       The BufferedReader object to be used to read network responses
+     * @param writer       The PrintWriter object to be used to send the network request
+     * @param loggedOnUser The active user
+     * @return Returns the updated ArrayList&lt;Seller&gt; sellers
+     */
+    public static ArrayList<Seller> refreshSearchSeller(BufferedReader reader, PrintWriter writer, User loggedOnUser,
+                                                        String searchKeyword) {
+        ArrayList<Seller> sellers = new ArrayList<>();
+
+        String userString = ((Customer) loggedOnUser).detailedToString();
+        String listCustomersRequest = "[SEARCH.SELLER]" + searchKeyword + ";" + userString;
+        sendRequest(writer, listCustomersRequest);
+        String stringListOfSellers = readResponse(reader);
+
+        if (stringListOfSellers != null && stringListOfSellers.length() > 0) {
+            String[] listOfSellerStrings = stringListOfSellers.split(";");
+            for (String sellerString : listOfSellerStrings) {
+                sellers.add(new Seller(sellerString, true, true));
+            }
+        }
+
+        return sellers;
     }
 
     public static void main(String[] args) {
@@ -347,23 +513,20 @@ public class MessengerClient {
     }
 
     private static void runConversationsMenu(Scanner scan, BufferedReader reader, PrintWriter writer, User loggedOnUser) {
-        ArrayList<Conversation> conversations = new ArrayList<>();
-
-        String userString = (loggedOnUser instanceof Seller) ? ((Seller) loggedOnUser).detailedToString() :
-                ((Customer) loggedOnUser).detailedToString();
-        String listConversationsRequest = "[LIST.VISIBLE_CONVERSATIONS]" + userString;
-        sendRequest(writer, listConversationsRequest);
-        String stringListOfConversations = readResponse(reader);
-
-        if (stringListOfConversations != null && stringListOfConversations.length() > 0) {
-            String[] listOfConversationStrings = stringListOfConversations.split(";");
-            for (String conversationString : listOfConversationStrings) {
-                conversations.add(new Conversation(conversationString));
-            }
-        }
+        ArrayList<Conversation> conversations = refreshVisibleConversations(reader, writer, loggedOnUser);
 
         if (conversations.size() > 0) {
             while (true) {
+                conversations = refreshVisibleConversations(reader, writer, loggedOnUser);
+
+                if (conversations.size() == 0) {
+                    System.out.println("----Your Conversations----");
+                    System.out.println("[No Conversations]");
+                    System.out.println("[Hit Enter to Continue]");
+                    scan.nextLine();
+                    break;
+                }
+
                 System.out.println("----Your Conversations----");
                 if (conversations.size() > 0) {
                     System.out.println("[To Open, Enter Conversation No.]");
@@ -416,7 +579,7 @@ public class MessengerClient {
                         System.out.println("Invalid Conversations");
                     } catch (NullPointerException e) {
                         System.out.println("Conversion Failed. No File Destination Inputted");
-                    } catch(IOException e) {
+                    } catch (IOException e) {
                         System.out.println("Conversion Failed");
                     }
 
@@ -440,20 +603,9 @@ public class MessengerClient {
 
     private static void runConversationActions(Scanner scan, BufferedReader reader, PrintWriter writer,
                                                User loggedOnUser, Conversation conversation) {
-        ArrayList<Message> messages = new ArrayList<>();
+        ArrayList<Message> messages = refreshVisibleMessages(reader, writer, conversation, loggedOnUser);
         User recipient = (loggedOnUser instanceof Seller) ? conversation.getCustomer() :
                 conversation.getSeller();
-
-        String listMessagesRequest = "[LIST.VISIBLE_MESSAGES]" + conversation + ";" + loggedOnUser;
-        sendRequest(writer, listMessagesRequest);
-        String stringListOfMessages = readResponse(reader);
-
-        if (stringListOfMessages != null && stringListOfMessages.length() > 0) {
-            String[] listOfMessageStrings = stringListOfMessages.split(";");
-            for (String messageString : listOfMessageStrings) {
-                messages.add(new Message(messageString));
-            }
-        }
 
         String recipientActiveRequest = "[CHECK.RECIPIENT_ACTIVE]" + recipient;
         sendRequest(writer, recipientActiveRequest);
@@ -474,6 +626,7 @@ public class MessengerClient {
             scan.nextLine();
         } else {
             System.out.println("--------");
+            System.out.println("0. Refresh");
             System.out.println("1. Load All Messages");
             System.out.println("2. Import .txt File");
             System.out.println("3. Send Message");
@@ -497,6 +650,15 @@ public class MessengerClient {
 
             while (true) {
                 String conversationAction = scan.nextLine();
+
+                ArrayList<Conversation> refreshedConversations = refreshVisibleConversations(reader, writer, loggedOnUser);
+                for (Conversation refreshedConversation : refreshedConversations) {
+                    if (refreshedConversation.getFileName().equals(conversation.getFileName())) {
+                        conversation = refreshedConversation;
+                    }
+                }
+                recipient = (loggedOnUser instanceof Seller) ? conversation.getCustomer() :
+                        conversation.getSeller();
 
                 if (conversationAction.contains(".")) {
                     String[] messageActions = conversationAction.split("\\.");
@@ -549,7 +711,20 @@ public class MessengerClient {
                         }
                     }
 
-                    if (action == 1) {
+                    if (action == 0) {
+                        messages = refreshVisibleMessages(reader, writer, conversation, loggedOnUser);
+
+                        lowerLimit = Math.min(messages.size(), 20);
+                        for (int i = messages.size() - lowerLimit; i < messages.size(); i++) {
+                            String message;
+                            if (loggedOnUser.isRequestsCensorship()) {
+                                message = messages.get(i).getCensoredMessage(loggedOnUser);
+                            } else {
+                                message = messages.get(i).getMessage();
+                            }
+                            System.out.printf("[%d] %s: %s\n", i, messages.get(i).getSender().getUsername(), message);
+                        }
+                    } else if (action == 1) {
                         for (int i = 0; i < messages.size(); i++) {
                             System.out.printf("[%d] %s: %s\n", i, messages.get(i).getSender().getUsername(),
                                     messages.get(i).getMessage());
@@ -595,19 +770,7 @@ public class MessengerClient {
     private static void runListMenu(Scanner scan, BufferedReader reader, PrintWriter writer, User loggedOnUser) {
         if (loggedOnUser instanceof Seller) {
             while (true) {
-                ArrayList<Customer> customers = new ArrayList<>();
-
-                String userString = ((Seller) loggedOnUser).detailedToString();
-                String listCustomersRequest = "[LIST.VISIBLE_CUSTOMERS]" + userString;
-                sendRequest(writer, listCustomersRequest);
-                String stringListOfCustomers = readResponse(reader);
-
-                if (stringListOfCustomers != null && stringListOfCustomers.length() > 0) {
-                    String[] listOfCustomerStrings = stringListOfCustomers.split(";");
-                    for (String customerString : listOfCustomerStrings) {
-                        customers.add(new Customer(customerString, true));
-                    }
-                }
+                ArrayList<Customer> customers = refreshCustomers(reader, writer, loggedOnUser);
 
                 System.out.println("----All Customers----");
                 if (customers.size() > 0) {
@@ -667,6 +830,13 @@ public class MessengerClient {
                                 }
                             } catch (NumberFormatException e) {
                                 System.out.println("Invalid Option");
+                            }
+                        }
+
+                        customers = refreshCustomers(reader, writer, loggedOnUser);
+                        for (Customer customer : customers) {
+                            if (customer.equals(selectedCustomer)) {
+                                selectedCustomer = customer;
                             }
                         }
 
@@ -774,8 +944,9 @@ public class MessengerClient {
                     if (selectedStoreSeller.getBlockedUsers().contains(loggedOnUser)) {
                         System.out.println("Sorry! You cannot view this store");
                     } else {
-                        loggedOnUser.sendMessageToUser(reader, writer, loggedOnUser.getUsername() + " looked up the Store: "
-                                + stores.get(storeNumber - 1).getStoreName(), selectedStoreSeller);
+                        loggedOnUser.sendMessageToUser(reader, writer, loggedOnUser.getUsername() +
+                                        " looked up the Store: " + stores.get(storeNumber - 1).getStoreName(),
+                                selectedStoreSeller);
 
                         while (true) {
                             printUserActionMenu(loggedOnUser, selectedStoreSeller);
@@ -791,6 +962,13 @@ public class MessengerClient {
                                     }
                                 } catch (NumberFormatException e) {
                                     System.out.println("Invalid Option");
+                                }
+                            }
+
+                            stores = refreshStores(reader, writer, loggedOnUser);
+                            for (Store store : stores) {
+                                if (store.getSeller().equals(selectedStoreSeller)) {
+                                    selectedStoreSeller = store.getSeller();
                                 }
                             }
 
@@ -852,19 +1030,7 @@ public class MessengerClient {
 
         if (loggedOnUser instanceof Seller) {
             while (true) {
-                ArrayList<Customer> customers = new ArrayList<>();
-
-                String userString = ((Seller) loggedOnUser).detailedToString();
-                String listCustomersRequest = "[SEARCH.CUSTOMER]" + searchKeyword + ";" + userString;
-                sendRequest(writer, listCustomersRequest);
-                String stringListOfCustomers = readResponse(reader);
-
-                if (stringListOfCustomers != null && stringListOfCustomers.length() > 0) {
-                    String[] listOfCustomerStrings = stringListOfCustomers.split(";");
-                    for (String customerString : listOfCustomerStrings) {
-                        customers.add(new Customer(customerString, true));
-                    }
-                }
+                ArrayList<Customer> customers = refreshSearchCustomers(reader, writer, loggedOnUser, searchKeyword);
 
                 System.out.println("----Search Result----");
                 if (customers.size() > 0) {
@@ -927,6 +1093,13 @@ public class MessengerClient {
                             }
                         }
 
+                        customers = refreshSearchCustomers(reader, writer, loggedOnUser, searchKeyword);
+                        for (Customer customer : customers) {
+                            if (customer.equals(selectedCustomer)) {
+                                selectedCustomer = customer;
+                            }
+                        }
+
                         if (userChoice == 1) {
                             if (!selectedCustomer.getBlockedUsers().contains(loggedOnUser) &&
                                     !loggedOnUser.getBlockedUsers().contains(selectedCustomer)) {
@@ -971,19 +1144,7 @@ public class MessengerClient {
             }
         } else {
             while (true) {
-                ArrayList<Seller> sellers = new ArrayList<>();
-
-                String userString = ((Customer) loggedOnUser).detailedToString();
-                String listCustomersRequest = "[SEARCH.SELLER]" + searchKeyword + ";" + userString;
-                sendRequest(writer, listCustomersRequest);
-                String stringListOfSellers = readResponse(reader);
-
-                if (stringListOfSellers != null && stringListOfSellers.length() > 0) {
-                    String[] listOfSellerStrings = stringListOfSellers.split(";");
-                    for (String sellerString : listOfSellerStrings) {
-                        sellers.add(new Seller(sellerString, true, true));
-                    }
-                }
+                ArrayList<Seller> sellers = refreshSearchSeller(reader, writer, loggedOnUser, searchKeyword);
 
                 System.out.println("----Search Result----");
                 if (sellers.size() > 0) {
@@ -1026,9 +1187,9 @@ public class MessengerClient {
                 if (sellerNumber == sellers.size() + 1) {
                     break;
                 } else if (sellerNumber <= sellers.size()) {
-                    Seller seller = sellers.get(sellerNumber - 1);
+                    Seller selectedSeller = sellers.get(sellerNumber - 1);
                     while (true) {
-                        printUserActionMenu(loggedOnUser, seller);
+                        printUserActionMenu(loggedOnUser, selectedSeller);
 
                         int userChoice;
                         while (true) {
@@ -1044,13 +1205,20 @@ public class MessengerClient {
                             }
                         }
 
+                        sellers = refreshSearchSeller(reader, writer, loggedOnUser, searchKeyword);
+                        for (Seller seller : sellers) {
+                            if (seller.equals(selectedSeller)) {
+                                selectedSeller = seller;
+                            }
+                        }
+
                         if (userChoice == 1) {
-                            if (!seller.getBlockedUsers().contains(loggedOnUser) &&
-                                    !loggedOnUser.getBlockedUsers().contains(seller)) {
+                            if (!selectedSeller.getBlockedUsers().contains(loggedOnUser) &&
+                                    !loggedOnUser.getBlockedUsers().contains(selectedSeller)) {
                                 System.out.print("Your Message: ");
                                 String message = scan.nextLine();
 
-                                if (loggedOnUser.sendMessageToUser(reader, writer, message, seller)) {
+                                if (loggedOnUser.sendMessageToUser(reader, writer, message, selectedSeller)) {
                                     System.out.println("Sent!");
                                 } else {
                                     System.out.println("Message Failed!");
@@ -1060,21 +1228,21 @@ public class MessengerClient {
                             }
                         } else if (userChoice == 2) {
                             ArrayList<User> blockedUsers = loggedOnUser.getBlockedUsers();
-                            if (blockedUsers.contains(seller)) {
-                                loggedOnUser.removeBlockedUser(writer, seller);
+                            if (blockedUsers.contains(selectedSeller)) {
+                                loggedOnUser.removeBlockedUser(writer, selectedSeller);
                                 System.out.println("Unblocked Seller");
                             } else {
-                                loggedOnUser.addBlockedUser(writer, seller);
+                                loggedOnUser.addBlockedUser(writer, selectedSeller);
                                 System.out.println("Blocked Seller");
                             }
                             break;
                         } else if (userChoice == 3) {
                             ArrayList<User> invisibleUsers = loggedOnUser.getInvisibleUsers();
-                            if (invisibleUsers.contains(seller)) {
-                                loggedOnUser.removeInvisibleUser(writer, seller);
+                            if (invisibleUsers.contains(selectedSeller)) {
+                                loggedOnUser.removeInvisibleUser(writer, selectedSeller);
                                 System.out.println("Now Visible to Seller");
                             } else {
-                                loggedOnUser.addInvisibleUser(writer, seller);
+                                loggedOnUser.addInvisibleUser(writer, selectedSeller);
                                 System.out.println("Now Invisible Seller");
                             }
                             break;

@@ -53,21 +53,26 @@ public class MessengerClient {
     public static boolean convertConversationsToCSV(BufferedReader reader, PrintWriter writer,
                                                     ArrayList<Conversation> exportingConversations, User loggedOnUser)
             throws IOException {
+
         Files.createDirectories(Paths.get("src/exports")); // Creates the subfolder exports if it does not exist
-        File destination = new File("src/exports");
+        File destinationFile = new File("src/exports");
 
         for (Conversation conversation : exportingConversations) {
-            File tempTXTFile = new File(destination, String.format("%s.txt", conversation.getConversationID()));
+            File tempTXTFile = new File(destinationFile, String.format("%s.txt", conversation.getConversationID()));
             tempTXTFile.createNewFile(); // Creates a new .txt file for the Message object csv Strings
             PrintWriter pw = new PrintWriter(new FileWriter(tempTXTFile, true));
 
-            File csvFile = new File(destination, String.format("%s.csv", conversation.getConversationID()));
             ArrayList<Message> temp = refreshVisibleMessages(reader, writer, conversation, loggedOnUser);
             for (Message msg : temp) {
-                pw.println(msg.csvToString()); // Writes each each csv String into the file
+                pw.println(msg.csvToString()); // Writes each csv String into the file
             }
             pw.close();
-            return tempTXTFile.renameTo(csvFile); // Converts new .txt file to a .csv file
+
+            File csvFile = new File(destinationFile, String.format("%s.csv", conversation.getConversationID()));
+            if (csvFile.exists()) {
+                csvFile.delete(); // Deletes the existing file
+            }
+            tempTXTFile.renameTo(csvFile); // Converts new .txt file to a .csv file
         }
         return true;
     }
@@ -571,7 +576,7 @@ public class MessengerClient {
                         }
 
                         if (convertConversationsToCSV(reader, writer, exportingConversations, loggedOnUser)) {
-                            System.out.println("Exported .csv file(s) to the src/exports folder!");
+                            System.out.println("Exported CSV file(s) to the folder src/exports");
                         } else {
                             System.out.println("Conversion Failed");
                         }

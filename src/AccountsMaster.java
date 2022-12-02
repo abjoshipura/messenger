@@ -10,6 +10,10 @@ import java.util.regex.Pattern;
  */
 
 public class AccountsMaster {
+    /**
+     * Synchronization object for write/read
+     */
+    private static String synch = "synchronized";
 
     /**
      * The constant password/account file path: passwords.txt
@@ -90,20 +94,22 @@ public class AccountsMaster {
      * @return Returns whether the username has been taken
      */
     public boolean usernameAlreadyTaken(String username) {
-        try (BufferedReader bfr = new BufferedReader(new FileReader(this.PASSWORD_FILE))) {
-            String userString = bfr.readLine();
-            while (userString != null) {
-                String strippedMessage = userString.substring(userString.indexOf("<") + 1,
-                        userString.lastIndexOf(">"));
-                String[] userDetails = strippedMessage.split(", ");
-                if (username.equalsIgnoreCase(userDetails[0])) {
-                    return true;
+        synchronized (synch) {
+            try (BufferedReader bfr = new BufferedReader(new FileReader(this.PASSWORD_FILE))) {
+                String userString = bfr.readLine();
+                while (userString != null) {
+                    String strippedMessage = userString.substring(userString.indexOf("<") + 1,
+                            userString.lastIndexOf(">"));
+                    String[] userDetails = strippedMessage.split(", ");
+                    if (username.equalsIgnoreCase(userDetails[0])) {
+                        return true;
+                    }
+                    userString = bfr.readLine();
                 }
-                userString = bfr.readLine();
+                return false;
+            } catch (IOException e) {
+                return false;
             }
-            return false;
-        } catch (IOException e) {
-            return false;
         }
     }
 
@@ -114,20 +120,22 @@ public class AccountsMaster {
      * @return Returns whether the email is already registered
      */
     public boolean emailAlreadyRegistered(String email) {
-        try (BufferedReader bfr = new BufferedReader(new FileReader(this.PASSWORD_FILE))) {
-            String userString = bfr.readLine();
-            while (userString != null) {
-                String strippedMessage = userString.substring(userString.indexOf("<") + 1,
-                        userString.lastIndexOf(">"));
-                String[] userDetails = strippedMessage.split(", ");
-                if (email.equalsIgnoreCase(userDetails[1])) {
-                    return true;
+        synchronized (synch) {
+            try (BufferedReader bfr = new BufferedReader(new FileReader(this.PASSWORD_FILE))) {
+                String userString = bfr.readLine();
+                while (userString != null) {
+                    String strippedMessage = userString.substring(userString.indexOf("<") + 1,
+                            userString.lastIndexOf(">"));
+                    String[] userDetails = strippedMessage.split(", ");
+                    if (email.equalsIgnoreCase(userDetails[1])) {
+                        return true;
+                    }
+                    userString = bfr.readLine();
                 }
-                userString = bfr.readLine();
+                return false;
+            } catch (IOException e) {
+                return false;
             }
-            return false;
-        } catch (IOException e) {
-            return false;
         }
     }
 
@@ -163,21 +171,23 @@ public class AccountsMaster {
      * @return Returns the newly created User
      */
     public User createAccount(String username, String email, String password, String role) {
-        try (PrintWriter pw = new PrintWriter(new FileWriter(PASSWORD_FILE, true))) {
-            if (role.equalsIgnoreCase("SELLER")) {
-                Seller newSeller = new Seller(username, email, password);
-                sellerArrayList.add(newSeller);
-                pw.println(newSeller.detailedToString());
-                return newSeller;
-            } else {
-                Customer newCustomer = new Customer(username, email, password);
-                customerArrayList.add(newCustomer);
-                pw.println(newCustomer.detailedToString());
-                return newCustomer;
+        synchronized (synch) {
+            try (PrintWriter pw = new PrintWriter(new FileWriter(PASSWORD_FILE, true))) {
+                if (role.equalsIgnoreCase("SELLER")) {
+                    Seller newSeller = new Seller(username, email, password);
+                    sellerArrayList.add(newSeller);
+                    pw.println(newSeller.detailedToString());
+                    return newSeller;
+                } else {
+                    Customer newCustomer = new Customer(username, email, password);
+                    customerArrayList.add(newCustomer);
+                    pw.println(newCustomer.detailedToString());
+                    return newCustomer;
+                }
+            } catch (Exception e) {
+                System.out.println("We hit an error! :|");
+                return null;
             }
-        } catch (Exception e) {
-            System.out.println("We hit an error! :|");
-            return null;
         }
     }
 
@@ -188,21 +198,23 @@ public class AccountsMaster {
      * @param deletedUser The user to be deleted
      */
     public void deleteAccount(User deletedUser) {
-        try (PrintWriter pw = new PrintWriter(new FileWriter(PASSWORD_FILE, false))) {
-            if (deletedUser instanceof Seller) {
-                sellerArrayList.remove(deletedUser);
-            } else if (deletedUser instanceof Customer) {
-                customerArrayList.remove(deletedUser);
-            }
+        synchronized (synch) {
+            try (PrintWriter pw = new PrintWriter(new FileWriter(PASSWORD_FILE, false))) {
+                if (deletedUser instanceof Seller) {
+                    sellerArrayList.remove(deletedUser);
+                } else if (deletedUser instanceof Customer) {
+                    customerArrayList.remove(deletedUser);
+                }
 
-            for (Seller seller : sellerArrayList) {
-                pw.println(seller.detailedToString());
+                for (Seller seller : sellerArrayList) {
+                    pw.println(seller.detailedToString());
+                }
+                for (Customer customer : customerArrayList) {
+                    pw.println(customer.detailedToString());
+                }
+            } catch (Exception e) {
+                System.out.println("We hit an error! :|");
             }
-            for (Customer customer : customerArrayList) {
-                pw.println(customer.detailedToString());
-            }
-        } catch (Exception e) {
-            System.out.println("We hit an error! :|");
         }
     }
 
@@ -295,18 +307,20 @@ public class AccountsMaster {
      * @return Returns the newly created Conversation
      */
     public Conversation createConversation(Seller seller, Customer customer) {
-        try (PrintWriter pw = new PrintWriter(new FileWriter(CONVERSATIONS_FILE, true))) {
-            String conversationID = customer.getUsername() + "TO" + seller.getUsername();
-            String conversationFilePath = customer.getEmail().replace(".", "") + "_" +
-                    seller.getEmail().replace(".", "") + ".txt";
+        synchronized (synch) {
+            try (PrintWriter pw = new PrintWriter(new FileWriter(CONVERSATIONS_FILE, true))) {
+                String conversationID = customer.getUsername() + "TO" + seller.getUsername();
+                String conversationFilePath = customer.getEmail().replace(".", "") + "_" +
+                        seller.getEmail().replace(".", "") + ".txt";
 
-            Conversation conversation = new Conversation(conversationID, conversationFilePath, seller, customer);
-            AccountsMaster.conversationArrayList.add(conversation);
-            pw.println(conversation);
-            return conversation;
-        } catch (Exception e) {
-            System.out.println("We hit an error! :|");
-            return null;
+                Conversation conversation = new Conversation(conversationID, conversationFilePath, seller, customer);
+                AccountsMaster.conversationArrayList.add(conversation);
+                pw.println(conversation);
+                return conversation;
+            } catch (Exception e) {
+                System.out.println("We hit an error! :|");
+                return null;
+            }
         }
     }
 
@@ -395,24 +409,26 @@ public class AccountsMaster {
      * @param newString The new object String
      */
     public void replaceStringInFile(String filePath, String oldString, String newString) {
-        ArrayList<String> strings = new ArrayList<>();
-        try (BufferedReader bfr = new BufferedReader(new FileReader(filePath))) {
-            String string = bfr.readLine();
-            while (string != null) {
-                string = string.replaceAll(Pattern.quote(oldString), newString);
-                strings.add(string);
-                string = bfr.readLine();
+        synchronized (synch) {
+            ArrayList<String> strings = new ArrayList<>();
+            try (BufferedReader bfr = new BufferedReader(new FileReader(filePath))) {
+                String string = bfr.readLine();
+                while (string != null) {
+                    string = string.replaceAll(Pattern.quote(oldString), newString);
+                    strings.add(string);
+                    string = bfr.readLine();
+                }
+            } catch (Exception e) {
+                System.out.println("Error: Could Not Update Values in Files");
             }
-        } catch (Exception e) {
-            System.out.println("Error: Could Not Update Values in Files");
-        }
 
-        try (PrintWriter pw = new PrintWriter(new FileOutputStream(filePath, false))) {
-            for (String string : strings) {
-                pw.println(string);
+            try (PrintWriter pw = new PrintWriter(new FileOutputStream(filePath, false))) {
+                for (String string : strings) {
+                    pw.println(string);
+                }
+            } catch (Exception e) {
+                System.out.println("Error: Could Not Update Values in Files");
             }
-        } catch (Exception e) {
-            System.out.println("Error: Could Not Update Values in Files");
         }
     }
 }

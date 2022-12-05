@@ -400,9 +400,9 @@ public class AccountsMaster {
     }
 
     /**
-     * Replaces an old User / Conversation / Message object String its updated String in the file at the provided path.
-     * Indirectly used in multiple mutator methods to change values in files for later retrieval of information from
-     * memory.
+     * Replaces an old User / Conversation / Message object String with its updated String in the file at the provided
+     * path. Indirectly used in multiple mutator methods to change values in files for later retrieval of information
+     * from memory.
      *
      * @param filePath  The path to the file where changes are to be made
      * @param oldString The old object String

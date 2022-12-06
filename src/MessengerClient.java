@@ -519,82 +519,129 @@ public class MessengerClient {
 
     private static void runConversationsMenu(Scanner scan, BufferedReader reader, PrintWriter writer, User loggedOnUser) {
         ArrayList<Conversation> conversations = refreshVisibleConversations(reader, writer, loggedOnUser);
-
-        if (conversations.size() > 0) {
-            while (true) {
-                conversations = refreshVisibleConversations(reader, writer, loggedOnUser);
-
-                if (conversations.size() == 0) {
-                    JOptionPane.showMessageDialog(null, "[No Conversations]", "Your Conversations", JOptionPane.INFORMATION_MESSAGE);
-                    break;
-                }
-
-                System.out.println("----Your Conversations----");
-                if (conversations.size() > 0) {
-                    System.out.println("[To Open, Enter Conversation No.]");
-                    String[] options = new String[conversations.size()];
-                    for (int i = 0; i < conversations.size(); i++) {
-                        options[i] = String.format("%d. %s\n", i + 1, conversations.get(i).getConversationID());
-                        // System.out.printf("%d. %s\n", i + 1, conversations.get(i).getConversationID());
-                    }
-                    System.out.printf("%d. Export Conversations\n", conversations.size() + 1);
-                } else {
-                    JOptionPane.showMessageDialog(null, "[No Conversations]", "Your Conversations", JOptionPane.INFORMATION_MESSAGE);
-                }
-                System.out.printf("%d. Back to Main Menu\n", conversations.size() + 2);
-
-                int conversationNumber;
-                // conversationNumber must be from 1 to conversations.size() + 2
-                while (true) {
-                    conversationNumber = Integer.parseInt(scan.nextLine());
-                    if (conversationNumber <= 0 || conversationNumber > conversations.size() + 2) {
-                        System.out.println("Invalid Option");
-                    } else {
-                        break;
-                    }
-                }
-
-                if (conversationNumber == conversations.size() + 2) {
-                    break;
-                } else if (conversationNumber == conversations.size() + 1) {
-                    String exportingIndexes = JOptionPane.showInputDialog(null, "Enter Conversations to Export " +
-                            "Separated by Commas (eg. 1,3,4):");
-                    // TODO: Would be better as checkboxes?
-
-                    try {
-                        ArrayList<Conversation> exportingConversations = new ArrayList<>();
-                        for (String stringIndex : exportingIndexes.split(",")) {
-                            int index = Integer.parseInt(stringIndex) - 1;
-                            if (index >= 0 && index < conversations.size()) {
-                                exportingConversations.add(conversations.get(index));
-                            }
-                        }
-
-                        if (convertConversationsToCSV(reader, writer, exportingConversations, loggedOnUser)) {
-                            JOptionPane.showMessageDialog(null, "Exported CSV file(s) to the folder src/exports");
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Conversion Failed");
-                        }
-                    } catch (NumberFormatException e) {
-                        JOptionPane.showMessageDialog(null, "Invalid Conversations");
-                    } catch (NullPointerException e) {
-                        JOptionPane.showMessageDialog(null, "Conversion Failed. Invalid File Destination");
-                    } catch (IOException e) {
-                        JOptionPane.showMessageDialog(null, "Conversion Failed");
-                    }
-
-                } else if (conversationNumber <= conversations.size()) {
-                    Conversation conversation = conversations.get(conversationNumber - 1);
-                    if (loggedOnUser instanceof Seller) {
-                        conversation.setSellerUnread(false, writer);
-                    } else {
-                        conversation.setCustomerUnread(writer, false);
-                    }
-                    runConversationActions(scan, reader, writer, loggedOnUser, conversation);
-                }
-            }
+        if (conversations.size() < 1) {
+            JOptionPane.showMessageDialog(null, "You have no active conversations");
         } else {
-            JOptionPane.showMessageDialog(null, "[No Conversations]", "Your Conversations", JOptionPane.INFORMATION_MESSAGE);
+            JFrame frame = new JFrame();
+
+
+            String[] conversationName = new String[conversations.size()];
+            for (int i = 0; i < conversations.size(); i++) {
+                conversationName[i] = conversations.get(i).getConversationID();
+            }
+            JList converseList = new JList(conversationName);
+
+            frame.setSize(600, 400);
+            frame.setLocationRelativeTo(null);
+
+            // Overall panel menu containing CardLayout
+            JPanel conversationMenu = new JPanel();
+            conversationMenu.setLayout(new CardLayout());
+            CardLayout card = (CardLayout) conversationMenu.getLayout();
+
+
+            // Panel for conversation selection
+            JPanel viewConversationList = new JPanel();
+            viewConversationList.setLayout(new FlowLayout());
+            viewConversationList.setAlignmentX(100);
+            viewConversationList.setBorder(new EmptyBorder(new Insets(50, 200, 50, 200)));
+
+            JButton okButton = new JButton("Select");
+            JButton cancelButton = new JButton("Cancel");
+            JScrollPane selectList = new JScrollPane(converseList);
+            selectList.setBounds(200, 200, 200, 200);
+            viewConversationList.add(selectList);
+            JPanel panel = new JPanel(new GridLayout(1, 2));
+            panel.add(okButton);
+            panel.add(cancelButton);
+            viewConversationList.add(panel);
+
+            conversationMenu.add(viewConversationList, "Listing");
+            card.show(conversationMenu, "Listing");
+
+
+            JPanel messagePanel = new JPanel();
+            conversationMenu.add(messagePanel, "messages");
+            JPanel messageOption = new JPanel();
+            messageOption.setLayout(new GridLayout(2, 9));
+            JButton sendMessage = new JButton("Send");
+            JButton editMessage = new JButton("Edit");
+            JButton deleteMessage = new JButton("Delete");
+            JButton exitMessage = new JButton("Exit");
+            ArrayList<Message> messageArrayList = new ArrayList<>();
+
+
+            okButton.addActionListener(ok -> {
+                JList messageHistory;
+                String[] messageList;
+
+                int selectedIndex = converseList.getSelectedIndex();
+                Conversation selectedConversation = conversations.get(selectedIndex);
+                ArrayList<Message> messageReading = selectedConversation.readFileAsPerUser(loggedOnUser);
+
+                for(int i = 0; i < messageReading.size(); i++) {
+                    messageArrayList.add(messageReading.get(i));
+                }
+                messageList = new String[messageArrayList.size()];
+                for (int i = 0; i < messageList.length; i++) {
+                    messageList[i] = messageArrayList.get(i).getSender().getUsername() + ": " + messageArrayList.get(i).getMessage();
+                }
+                messageHistory = new JList(messageList);
+                messageHistory.setBounds(1000, 1000, 1000, 1000);
+                JScrollPane messageDisplay = new JScrollPane(messageHistory);
+                messageOption.add(messageDisplay);
+                JPanel flowMessage = new JPanel(new FlowLayout());
+
+                flowMessage.add(sendMessage);
+                sendMessage.addActionListener(send -> {
+                    String messageString = JOptionPane.showInputDialog(null, "Enter new message.",
+                            "Send", JOptionPane.PLAIN_MESSAGE);
+                    if (messageString != null) {
+                        if (loggedOnUser instanceof Customer) {
+                            loggedOnUser.sendMessageToUser(reader, writer, messageString, selectedConversation.getSeller());
+                        }
+                        if (loggedOnUser instanceof Seller) {
+                            System.out.println("Message sending");
+                            loggedOnUser.sendMessageToUser(reader, writer, messageString, selectedConversation.getCustomer());
+                        }
+                        System.out.println("Reloading");
+                        messageDisplay.remove(messageHistory);
+
+                        JList newHistory;
+                        String[] newList;
+                        ArrayList<Message> newMessageList = selectedConversation.readFileAsPerUser(loggedOnUser);
+                        ArrayList<Message> newMessageArrayList = new ArrayList<>();
+
+                        for(int i = 0; i < newMessageList.size(); i++) {
+                            newMessageArrayList.add(newMessageList.get(i));
+                        }
+                        newList = new String[newMessageArrayList.size()];
+                        for (int i = 0; i < newList.length; i++) {
+                            newList[i] = newMessageArrayList.get(i).getSender().getUsername() + ": " + newMessageArrayList.get(i).getMessage();
+                        }
+                        //newHistory = new JList(newList);
+                        System.out.println(Arrays.toString(newList));
+                        //messageDisplay.add(newHistory);
+                        card.show(conversationMenu, "messages");
+                    } else {
+                        System.out.println("Message failed");
+                    }
+                });
+                flowMessage.add(editMessage);
+                flowMessage.add(deleteMessage);
+                flowMessage.add(exitMessage);
+                exitMessage.addActionListener(exit -> {
+                    card.show(conversationMenu, "Listing");
+                });
+                messageOption.add(flowMessage);
+
+                messagePanel.add(messageOption);
+
+                card.show(conversationMenu, "messages");
+            });
+
+            frame.add(conversationMenu);
+            frame.setVisible(true);
         }
     }
 

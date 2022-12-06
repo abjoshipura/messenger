@@ -444,60 +444,52 @@ public class MessengerClient {
             if (selectedOption == 0 && loggedOnUser instanceof Seller) {
                 ArrayList<Store> stores = ((Seller) loggedOnUser).getStores();
                 while (true) {
-                    System.out.println("----Your Stores----");
-                    if (stores.size() > 0) {
-                        System.out.println("[To See its Details, Enter the Store Number]");
-                    } else {
-                        JOptionPane.showMessageDialog(null, "[No Stores]", "Your Stores", JOptionPane.INFORMATION_MESSAGE);
-                    }
+                    String[] storeArray = new String[stores.size()];
                     for (int i = 0; i < stores.size(); i++) {
-                        System.out.printf("%d. %s\n", i + 1, stores.get(i).getStoreName());
+                        storeArray[i] = stores.get(i).getStoreName();
                     }
-                    System.out.printf("%d. Add Store\n", stores.size() + 1);
-                    System.out.printf("%d. Delete a Store\n", stores.size() + 2);
-                    // TODO: Infinite loop when there are no stores and user tries to delete a store...
-                    System.out.printf("%d. Back to Main Menu\n", stores.size() + 3);
 
-                    int storeOption;
-                    while (true) {
-                        storeOption = Integer.parseInt(scan.nextLine());
-                        if (storeOption <= 0 || storeOption > stores.size() + 3) {
-                            System.out.println("Invalid Option");
+                    String[] storeOptions = {"Create Store", "View Stores", "Cancel"};
+                    String[] editOptions = {"Rename", "Delete", "Cancel"};
+
+                    int storeMenu = JOptionPane.showOptionDialog(null, "Select an Option",
+                            "Manage Stores", JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE,
+                            null, storeOptions, storeOptions[0]);
+                    if (storeMenu == 0) {
+                        String newStore = JOptionPane.showInputDialog(null, "Enter the new Store's name", "Create Store", JOptionPane.PLAIN_MESSAGE);
+                        ((Seller) loggedOnUser).addStore(new Store(newStore, (Seller) loggedOnUser));
+                    } else if (storeMenu == 1) {
+                        if (stores.size() < 1) {
+                            JOptionPane.showMessageDialog(null, "No Stores Exist", "Warning: No Stores", JOptionPane.ERROR_MESSAGE);
                         } else {
-                            break;
-                        }
-                    }
-
-                    if (storeOption == stores.size() + 1) {
-                        String newStoreName = JOptionPane.showInputDialog(null, "Enter New Store Name:");
-                        // TODO: Store name cannot be blank... What about duplicate stores from the same seller?
-
-                        ((Seller) loggedOnUser).addStore(writer, new Store(newStoreName, (Seller) loggedOnUser));
-                    } else if (storeOption == stores.size() + 2) {
-                        System.out.println("Enter Store Number:");
-                        int storeNumber;
-                        while (true) {
-                                storeNumber = Integer.parseInt(scan.nextLine());
-                                if (storeNumber <= 0 || storeNumber > stores.size()) {
-                                    System.out.println("Invalid Option");
-                                } else {
-                                    break;
+                            String chooseStore = (String) JOptionPane.showInputDialog(null, "Choose a Store", "View Store", JOptionPane.PLAIN_MESSAGE, null, storeArray, storeArray[0]);
+                            int chosenStore = 0;
+                            for (int i = 0; i < stores.size();i++ ) {
+                                if (stores.get(i).getStoreName().equals(chooseStore)) {
+                                    chosenStore = i;
                                 }
+                            }
+                            // Store not changing name's, check for this in final project
+                            int editStore = JOptionPane.showOptionDialog(null, "Select an Option",
+                                    stores.get(chosenStore).getStoreName(),JOptionPane.DEFAULT_OPTION,
+                                    JOptionPane.PLAIN_MESSAGE, null, editOptions, editOptions[0]);
+                            if (editStore == 0) {
+                                String newStoreName = JOptionPane.showInputDialog(null, "Enter The New Name", stores.get(chosenStore).getStoreName(), JOptionPane.PLAIN_MESSAGE);
+                                stores.get(chosenStore).setStoreName(newStoreName);
+                            } else if (editStore == 1) {
+                                int deleteConfirm = JOptionPane.showOptionDialog(null,
+                                        "Are you sure \n you want to delete this message?",
+                                        stores.get(chosenStore).getStoreName(), JOptionPane.YES_NO_OPTION,
+                                        JOptionPane.QUESTION_MESSAGE, null, null, null);
+                                if (deleteConfirm == 0) {
+                                    ((Seller) loggedOnUser).removeStore(stores.get(chosenStore));
+                                }
+                            } else {
+                                break;
+                            }
                         }
-                        selectedOption = JOptionPane.showConfirmDialog(null, "Are you sure?", "Store Deletion " +
-                                "Confirmation", JOptionPane.YES_NO_OPTION);
-                        boolean deleteStore = selectedOption == JOptionPane.YES_OPTION;
-                        if (deleteStore) {
-                            ((Seller) loggedOnUser).removeStore(writer, stores.get(storeNumber - 1));
-                        }
-                    } else if (storeOption == stores.size() + 3) {
+                    } else if (storeMenu == 2) {
                         break;
-                    } else if (storeOption <= stores.size()) {
-                        JOptionPane.showMessageDialog(null, "Name: " + stores.get(storeOption - 1).getStoreName() +
-                                "\nSeller: " + stores.get(storeOption - 1).getSeller().getUsername(), "Store Details"
-                                , JOptionPane.INFORMATION_MESSAGE);
-                    } else {
-                        System.out.println("Invalid Option");
                     }
                 }
             } else if ((selectedOption == 0 && loggedOnUser instanceof Customer) || (selectedOption == 1 && loggedOnUser instanceof Seller)) {
@@ -517,84 +509,154 @@ public class MessengerClient {
         }
     }
 
-    private static void runConversationsMenu(Scanner scan, BufferedReader reader, PrintWriter writer, User loggedOnUser) {
-        ArrayList<Conversation> conversations = refreshVisibleConversations(reader, writer, loggedOnUser);
-
-        if (conversations.size() > 0) {
-            while (true) {
-                conversations = refreshVisibleConversations(reader, writer, loggedOnUser);
-
-                if (conversations.size() == 0) {
-                    JOptionPane.showMessageDialog(null, "[No Conversations]", "Your Conversations", JOptionPane.INFORMATION_MESSAGE);
-                    break;
-                }
-
-                System.out.println("----Your Conversations----");
-                if (conversations.size() > 0) {
-                    System.out.println("[To Open, Enter Conversation No.]");
-                    String[] options = new String[conversations.size()];
-                    for (int i = 0; i < conversations.size(); i++) {
-                        options[i] = String.format("%d. %s\n", i + 1, conversations.get(i).getConversationID());
-                        // System.out.printf("%d. %s\n", i + 1, conversations.get(i).getConversationID());
-                    }
-                    System.out.printf("%d. Export Conversations\n", conversations.size() + 1);
-                } else {
-                    JOptionPane.showMessageDialog(null, "[No Conversations]", "Your Conversations", JOptionPane.INFORMATION_MESSAGE);
-                }
-                System.out.printf("%d. Back to Main Menu\n", conversations.size() + 2);
-
-                int conversationNumber;
-                // conversationNumber must be from 1 to conversations.size() + 2
-                while (true) {
-                    conversationNumber = Integer.parseInt(scan.nextLine());
-                    if (conversationNumber <= 0 || conversationNumber > conversations.size() + 2) {
-                        System.out.println("Invalid Option");
-                    } else {
-                        break;
-                    }
-                }
-
-                if (conversationNumber == conversations.size() + 2) {
-                    break;
-                } else if (conversationNumber == conversations.size() + 1) {
-                    String exportingIndexes = JOptionPane.showInputDialog(null, "Enter Conversations to Export " +
-                            "Separated by Commas (eg. 1,3,4):");
-                    // TODO: Would be better as checkboxes?
-
-                    try {
-                        ArrayList<Conversation> exportingConversations = new ArrayList<>();
-                        for (String stringIndex : exportingIndexes.split(",")) {
-                            int index = Integer.parseInt(stringIndex) - 1;
-                            if (index >= 0 && index < conversations.size()) {
-                                exportingConversations.add(conversations.get(index));
-                            }
-                        }
-
-                        if (convertConversationsToCSV(reader, writer, exportingConversations, loggedOnUser)) {
-                            JOptionPane.showMessageDialog(null, "Exported CSV file(s) to the folder src/exports");
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Conversion Failed");
-                        }
-                    } catch (NumberFormatException e) {
-                        JOptionPane.showMessageDialog(null, "Invalid Conversations");
-                    } catch (NullPointerException e) {
-                        JOptionPane.showMessageDialog(null, "Conversion Failed. Invalid File Destination");
-                    } catch (IOException e) {
-                        JOptionPane.showMessageDialog(null, "Conversion Failed");
-                    }
-
-                } else if (conversationNumber <= conversations.size()) {
-                    Conversation conversation = conversations.get(conversationNumber - 1);
-                    if (loggedOnUser instanceof Seller) {
-                        conversation.setSellerUnread(false, writer);
-                    } else {
-                        conversation.setCustomerUnread(writer, false);
-                    }
-                    runConversationActions(scan, reader, writer, loggedOnUser, conversation);
-                }
-            }
+    private static void runConversationsMenu(Scanner scan, BufferedReader reader, PrintWriter writer, AccountMaster accountsMaster, User loggedOnUser) {
+        ArrayList<Conversation> conversations = accountsMaster.listConversations(loggedOnUser);
+        if (conversations.size() < 1) {
+            JOptionPane.showMessageDialog(null, "You have no active conversations");
         } else {
-            JOptionPane.showMessageDialog(null, "[No Conversations]", "Your Conversations", JOptionPane.INFORMATION_MESSAGE);
+            JFrame frame = new JFrame();
+
+            ArrayList<Conversation> userConvo = accountsMaster.listConversations(loggedOnUser);
+            Conversation[] conversationArray = new Conversation[userConvo.size()];
+            String[] conversationName = new String[userConvo.size()];
+            for (int i = 0; i < userConvo.size(); i++) {
+                conversationArray[i] = userConvo.get(i);
+                conversationName[i] = userConvo.get(i).getConversationID();
+            }
+            JList converseList = new JList(conversationName);
+
+            frame.setSize(600, 400);
+            frame.setLocationRelativeTo(null);
+
+            JPanel viewConversationList = new JPanel();
+            viewConversationList.setLayout(new FlowLayout());
+            viewConversationList.setAlignmentX(100);
+            viewConversationList.setBorder(new EmptyBorder(new Insets(50, 300, 50, 300)));
+
+
+            JScrollPane selectList = new JScrollPane(converseList);
+            selectList.setBounds(200, 200, 200, 200);
+            viewConversationList.add(selectList);
+            JPanel panel = new JPanel(new GridLayout(1, 2));
+
+            panel.add(okButton);
+            panel.add(cancelButton);
+
+            okButton.addActionListener(selectConversation -> {
+                frame.dispose();
+                int selectedIndex = converseList.getSelectedIndex();
+                int secondIndexValueBecauseWhy = selectedIndex;
+                if (secondIndexValueBecauseWhy < 0 || secondIndexValueBecauseWhy > userConvo.size() - 1) {
+                    JOptionPane.showMessageDialog(null, "Please choose a conversation");
+                } else {
+                    Conversation selectedConvo = userConvo.get(secondIndexValueBecauseWhy);
+                    System.out.println(secondIndexValueBecauseWhy);
+                    String[] messageHistory = new String[selectedConvo.readFileAsPerUser(loggedOnUser).size()];
+                    ArrayList<Message> messages = selectedConvo.readFileAsPerUser(loggedOnUser);
+                    for (int i = 0; i < selectedConvo.readFileAsPerUser(loggedOnUser).size(); i++) {
+                        messageHistory[i] = messages.get(i).getSender().getUsername() + ": " + messages.get(i).getMessage();
+                    }
+                    JFrame messageFrame = new JFrame();
+                    messageFrame.setSize(400, 400);
+                    messageFrame.setLocationRelativeTo(null);
+
+                    JPanel messagePanel = new JPanel();
+                    messagePanel.setLayout(new GridLayout(2, 9));
+
+
+                    JList messageJList = new JList(messageHistory);
+                    JScrollPane messageList = new JScrollPane(messageJList);
+                    messageList.setBounds(1000, 1000, 1000, 1000);
+                    messagePanel.add(messageList);
+
+                    JButton editMessage = new JButton("Edit");
+                    JButton deleteMessage = new JButton("Delete");
+                    JButton sendMessage = new JButton("Send");
+                    JButton cancelMessage = new JButton("Cancel");
+                    JPanel flowMessage = new JPanel(new FlowLayout());
+                    flowMessage.add(sendMessage);
+                    flowMessage.add(editMessage);
+                    flowMessage.add(deleteMessage);
+                    flowMessage.add(cancelMessage);
+                    messagePanel.add(flowMessage);
+
+                    sendMessage.addActionListener(send -> {
+                        String sending = JOptionPane.showInputDialog(null, "Enter a message",
+                                "Send Message", JOptionPane.PLAIN_MESSAGE);
+                        if (loggedOnUser instanceof Seller) {
+                            loggedOnUser.sendMessageToUser(sending, selectedConvo.getCustomer(), accountsMaster);
+                        }
+                        if (loggedOnUser instanceof Customer) {
+                            loggedOnUser.sendMessageToUser(sending, selectedConvo.getSeller(), accountsMaster);
+                        }
+                        String[] newMessageHistory = new String[selectedConvo.readFileAsPerUser(loggedOnUser).size()];
+                        ArrayList<Message> addNewMessage = selectedConvo.readFileAsPerUser(loggedOnUser);
+                        for (int i = 0; i < selectedConvo.readFileAsPerUser(loggedOnUser).size(); i++) {
+                            newMessageHistory[i] = addNewMessage.get(i).getSender().getUsername() + ": " + addNewMessage.get(i).getMessage();
+                        }
+                        messageFrame.dispose();
+                        messageBoard(scan, selectedConvo, newMessageHistory, addNewMessage, loggedOnUser, accountsMaster);
+
+                    });
+
+                    editMessage.addActionListener(edit -> {
+                        String replacement = "";
+                        try {
+                            Message editingMessage = messages.get(messageJList.getSelectedIndex());
+                            if (!editingMessage.getSender().equals(loggedOnUser)) {
+                                JOptionPane.showMessageDialog(null, "You cannot edit this message");
+                            } else {
+                                replacement = JOptionPane.showInputDialog(null, "Enter your edited message", editingMessage.getMessage());
+                                if (!(replacement == null)) {
+                                    loggedOnUser.editMessage(messages.get(messageJList.getSelectedIndex()), selectedConvo, replacement);
+                                }
+                            }
+                        } catch (IndexOutOfBoundsException exception) {
+                            JOptionPane.showMessageDialog(null, "Please select a message");
+                        }
+                        messageFrame.repaint();
+                    });
+
+                    deleteMessage.addActionListener(delete -> {
+                        try {
+                            Message editingMessage = messages.get(messageJList.getSelectedIndex());
+                            if (!editingMessage.getSender().equals(loggedOnUser)) {
+                                JOptionPane.showMessageDialog(null, "You cannot delete this message");
+                            } else {
+                                int deleteOption = JOptionPane.showOptionDialog(null,
+                                        "Are you sure you want to delete this message?",
+                                        "Warning", JOptionPane.YES_NO_OPTION,
+                                        JOptionPane.ERROR_MESSAGE, null, null, null);
+                                if (deleteOption == 0) {
+                                    loggedOnUser.deleteMessage(messages.get(messageJList.getSelectedIndex()), selectedConvo);
+                                }
+                            }
+                        } catch (IndexOutOfBoundsException exception) {
+                            JOptionPane.showMessageDialog(null, "Please select a message");
+                        }
+                        messageFrame.repaint();
+                    });
+
+                    cancelMessage.addActionListener(cancel -> {
+                        messageFrame.remove(messageFrame);
+                        messageFrame.dispose();
+                        runConversationsMenu(scan, reader, writer, accountsMaster, loggedOnUser);
+                    });
+                    messageFrame.add(messagePanel);
+                    messageFrame.setVisible(true);
+                }
+            });
+
+            cancelButton.addActionListener(close -> {
+                frame.dispose();
+                //runMainMenu(scan, accountsMaster, loggedOnUser);
+            });
+
+
+            viewConversationList.add(panel);
+
+            frame.add(viewConversationList);
+            frame.setVisible(true);
         }
     }
 
@@ -778,232 +840,145 @@ public class MessengerClient {
         }
     }
 
-    private static void runListMenu(Scanner scan, BufferedReader reader, PrintWriter writer, User loggedOnUser) {
-        if (loggedOnUser instanceof Seller) {
-            while (true) {
-                ArrayList<Customer> customers = refreshCustomers(reader, writer, loggedOnUser);
+    private static void runListMenu(Scanner scan, BufferedReader reader, PrintWriter writer, AccountMaster accountsMaster, User loggedOnUser) {
+        ArrayList<User> userSearchList = new ArrayList<User>();
+        ArrayList<Store> storeSearchList = new ArrayList<Store>();
+        JFrame frame = new JFrame();
+        JList nameList = new JList();
 
-                System.out.println("----All Customers----");
-                if (customers.size() > 0) {
-                    System.out.println("[To Select a Customer, Enter their No.]");
-                } else {
-                    JOptionPane.showMessageDialog(null, "[No Customers]", "All Customers", JOptionPane.INFORMATION_MESSAGE);
+
+        if (loggedOnUser instanceof Customer) {
+            ArrayList <Store> storeListing = accountsMaster.listStores((Customer) loggedOnUser);
+            for (int i = 0; i < storeListing.size(); i++){
+                if (storeListing.get(i).getSeller().getInvisibleUsers().contains(loggedOnUser)) {
+                    continue;
                 }
-
-                for (int i = 0; i < customers.size(); i++) {
-                    String extraInformation = "";
-
-                    if (loggedOnUser.getBlockedUsers().contains(customers.get(i))) {
-                        extraInformation += "BLOCKED";
-                    }
-                    if (loggedOnUser.getInvisibleUsers().contains(customers.get(i))) {
-                        if (extraInformation.length() > 0) {
-                            extraInformation += " & ";
-                        }
-                        extraInformation += "INVISIBLE TO";
-                    }
-
-                    System.out.printf("%d. %s | %s%s\n", i + 1, customers.get(i).getUsername(),
-                            customers.get(i).getEmail(), (extraInformation.length() > 0) ? " | Currently: " +
-                                    extraInformation : "");
-                }
-                System.out.printf("%d. Back to Main Menu\n", customers.size() + 1);
-
-                int customerNumber;
-                while (true) {
-                        customerNumber = Integer.parseInt(scan.nextLine());
-                        if (customerNumber <= 0 || customerNumber > customers.size() + 1) {
-                            System.out.println("Invalid Option");
-                        } else {
-                            break;
-                        }
-                }
-
-                if (customerNumber == customers.size() + 1) {
-                    break;
-                } else if (customerNumber <= customers.size()) {
-                    Customer selectedCustomer = customers.get(customerNumber - 1);
-                    while (true) {
-                        int userChoice = printUserActionMenu(loggedOnUser, selectedCustomer);
-
-                        customers = refreshCustomers(reader, writer, loggedOnUser);
-                        for (Customer customer : customers) {
-                            if (customer.equals(selectedCustomer)) {
-                                selectedCustomer = customer;
-                            }
-                        }
-
-                        if (userChoice == 0) {
-                            if (!selectedCustomer.getBlockedUsers().contains(loggedOnUser) &&
-                                    !loggedOnUser.getBlockedUsers().contains(selectedCustomer)) {
-                                String message = JOptionPane.showInputDialog(null, "Your Message: ");
-
-                                while (message != null && message.equals("")) {
-                                    JOptionPane.showMessageDialog(null, "Message Cannot Be Blank!");
-                                    message = JOptionPane.showInputDialog(null, "Your Message: ");
-                                }
-
-                                if (message != null) {
-                                    if (loggedOnUser.sendMessageToUser(reader, writer, message, selectedCustomer)) {
-                                        JOptionPane.showMessageDialog(null, "Sent!");
-                                    } else {
-                                        JOptionPane.showMessageDialog(null, "Message Failed!");
-                                    }
-                                }
-                            } else {
-                                JOptionPane.showMessageDialog(null, "Sorry! You cannot message this user.");
-                            }
-                        } else if (userChoice == 1) {
-                            ArrayList<User> blockedUsers = loggedOnUser.getBlockedUsers();
-                            if (blockedUsers.contains(selectedCustomer)) {
-                                loggedOnUser.removeBlockedUser(writer, selectedCustomer);
-                                JOptionPane.showMessageDialog(null, "Unblocked Customer");
-                            } else {
-                                loggedOnUser.addBlockedUser(writer, selectedCustomer);
-                                JOptionPane.showMessageDialog(null, "Blocked Customer");
-                            }
-                            break;
-                        } else if (userChoice == 2) {
-                            ArrayList<User> invisibleUsers = loggedOnUser.getInvisibleUsers();
-                            if (invisibleUsers.contains(selectedCustomer)) {
-                                loggedOnUser.removeInvisibleUser(writer, selectedCustomer);
-                                JOptionPane.showMessageDialog(null, "Now Visible to Customer");
-                            } else {
-                                loggedOnUser.addInvisibleUser(writer, selectedCustomer);
-                                JOptionPane.showMessageDialog(null, "Now Invisible to Customer");
-                            }
-                            break;
-                        } else {
-                            break;
-                        }
-                    }
-                } else {
-                    System.out.println("Invalid Option");
-                }
+                storeSearchList.add(storeListing.get(i));
             }
-        } else {
-            while (true) {
-                ArrayList<Store> stores = new ArrayList<>();
-
-                String userString = ((Customer) loggedOnUser).detailedToString();
-                String listStoresRequest = "[LIST.VISIBLE_STORES]" + userString;
-                sendRequest(writer, listStoresRequest);
-                String stringListOfStores = readResponse(reader);
-
-                if (stringListOfStores != null && stringListOfStores.length() > 0) {
-                    String[] listOfStoreStrings = stringListOfStores.split(";");
-                    for (String storeString : listOfStoreStrings) {
-                        stores.add(new Store(storeString));
-                    }
-                }
-
-                System.out.println("----All Stores----");
-                if (stores.size() > 0) {
-                    System.out.println("[To Select a Store, Enter its No.]");
-                } else {
-                    JOptionPane.showMessageDialog(null, "[No Stores]", "All Stores", JOptionPane.INFORMATION_MESSAGE);
-                }
-                for (int i = 0; i < stores.size(); i++) {
-                    String extraInformation = "";
-
-                    if (loggedOnUser.getBlockedUsers().contains(stores.get(i).getSeller())) {
-                        extraInformation += "BLOCKED";
-                    }
-                    if (loggedOnUser.getInvisibleUsers().contains(stores.get(i).getSeller())) {
-                        if (extraInformation.length() > 0) {
-                            extraInformation += " & ";
-                        }
-                        extraInformation += "INVISIBLE TO";
-                    }
-
-                    System.out.printf("%d. %s by %s%s\n", i + 1, stores.get(i).getStoreName(),
-                            stores.get(i).getSeller().getUsername(), (extraInformation.length() > 0) ? " | Currently: "
-                                    + extraInformation : "");
-                }
-                System.out.printf("%d. Back to Main Menu\n", stores.size() + 1);
-
-                int storeNumber;
-                while (true) {
-                        storeNumber = Integer.parseInt(scan.nextLine());
-                        if (storeNumber <= 0 || storeNumber > stores.size() + 1) {
-                            System.out.println("Invalid Option");
-                        } else {
-                            break;
-                        }
-                }
-
-                if (storeNumber == stores.size() + 1) {
-                    break;
-                } else if (storeNumber <= stores.size()) {
-                    Seller selectedStoreSeller = stores.get(storeNumber - 1).getSeller();
-                    if (selectedStoreSeller.getBlockedUsers().contains(loggedOnUser)) {
-                        JOptionPane.showMessageDialog(null, "Sorry! You cannot view this store");
-                    } else {
-                        loggedOnUser.sendMessageToUser(reader, writer, loggedOnUser.getUsername() +
-                                        " looked up the Store: " + stores.get(storeNumber - 1).getStoreName(),
-                                selectedStoreSeller);
-
-                        while (true) {
-                            int userChoice = printUserActionMenu(loggedOnUser, selectedStoreSeller);
-
-                            stores = refreshStores(reader, writer, loggedOnUser);
-                            for (Store store : stores) {
-                                if (store.getSeller().equals(selectedStoreSeller)) {
-                                    selectedStoreSeller = store.getSeller();
-                                }
-                            }
-
-                            if (userChoice == 0) {
-                                if (!selectedStoreSeller.getBlockedUsers().contains(loggedOnUser) &&
-                                        !loggedOnUser.getBlockedUsers().contains(selectedStoreSeller)) {
-                                    String message = JOptionPane.showInputDialog(null, "Your Message: ");
-
-                                    while (message != null && message.equals("")) {
-                                        JOptionPane.showMessageDialog(null, "Message Cannot Be Blank!");
-                                        message = JOptionPane.showInputDialog(null, "Your Message: ");
-                                    }
-
-                                    if (message != null) {
-                                        if (loggedOnUser.sendMessageToUser(reader, writer, message, selectedStoreSeller)) {
-                                            JOptionPane.showMessageDialog(null, "Sent!");
-                                        } else {
-                                            JOptionPane.showMessageDialog(null, "Message Failed!");
-                                        }
-                                    }
-                                } else {
-                                    JOptionPane.showMessageDialog(null, "Sorry! You cannot message this user.");
-                                }
-                            } else if (userChoice == 1) {
-                                ArrayList<User> blockedUsers = loggedOnUser.getBlockedUsers();
-                                if (blockedUsers.contains(selectedStoreSeller)) {
-                                    loggedOnUser.removeBlockedUser(writer, selectedStoreSeller);
-                                    JOptionPane.showMessageDialog(null, "Unblocked Store Owner");
-                                } else {
-                                    loggedOnUser.addBlockedUser(writer, selectedStoreSeller);
-                                    JOptionPane.showMessageDialog(null, "Blocked Store Owner");
-                                }
-                                break;
-                            } else if (userChoice == 2) {
-                                ArrayList<User> invisibleUsers = loggedOnUser.getInvisibleUsers();
-                                if (invisibleUsers.contains(selectedStoreSeller)) {
-                                    loggedOnUser.removeInvisibleUser(writer, selectedStoreSeller);
-                                    JOptionPane.showMessageDialog(null, "Now Visible to Store Owner");
-                                } else {
-                                    loggedOnUser.addInvisibleUser(writer, selectedStoreSeller);
-                                    JOptionPane.showMessageDialog(null, "Now Invisible to Store Owner");
-                                }
-                                break;
-                            } else {
-                                // TODO: Let user go back
-                                break;
-                            }
-                        }
-                    }
-                } else {
-                    System.out.println("Invalid Option");
-                }
+            Store[] storeArray = new Store[storeSearchList.size()];
+            String[] storeStringArray = new String[storeSearchList.size()];
+            for (int i = 0; i < storeSearchList.size(); i++) {
+                storeArray[i] = storeSearchList.get(i);
+                storeStringArray[i] = storeSearchList.get(i).getStoreName();
             }
+            frame.setTitle("Store List");
+            nameList = new JList(storeStringArray);
         }
+        if (loggedOnUser instanceof Seller) {
+            ArrayList <Customer> customerListing = accountsMaster.listCustomers((Seller) loggedOnUser);
+            for (int i = 0; i < customerListing.size(); i++){
+                if (customerListing.get(i).getInvisibleUsers().contains(loggedOnUser)) {
+                    continue;
+                }
+                userSearchList.add(customerListing.get(i));
+            }
+            frame.setTitle("Customer List");
+            User[] userArray = new User[userSearchList.size()];
+            String[] userStringArray = new String[userSearchList.size()];
+            for (int i = 0; i < userArray.length; i++) {
+                userArray[i] = userSearchList.get(i);
+                userStringArray[i] = userSearchList.get(i).getUsername();
+            }
+            frame.setTitle("Store List");
+            nameList = new JList(userStringArray);
+        }
+        frame.setSize(600,400);
+        frame.setLocationRelativeTo(null);
+
+        JPanel viewUserList = new JPanel();
+        viewUserList.setLayout(new FlowLayout());
+        viewUserList.setAlignmentX(100);
+        viewUserList.setBorder(new EmptyBorder(new Insets(50, 300, 50, 300)));
+
+
+        JScrollPane selectList = new JScrollPane(nameList);
+        selectList.setSize(200,300);
+        viewUserList.add(selectList);
+        JPanel panel = new JPanel(new GridLayout(1,2));
+
+        panel.add(okButton);
+        panel.add(cancelButton);
+        okButton.putClientProperty("This logged in user", loggedOnUser);
+        cancelButton.putClientProperty("This logged in user cancel", loggedOnUser);
+        JList secNameList = nameList;
+
+        okButton.addActionListener(e->{
+            try {
+                int index = secNameList.getSelectedIndex();
+                frame.dispose();
+
+                User tempSelectedUser = null;
+                if (loggedOnUser instanceof Seller) {
+                    tempSelectedUser = userSearchList.get(index);
+                }
+                if (loggedOnUser instanceof Customer) {
+                    tempSelectedUser = storeSearchList.get(index).getSeller();
+                }
+                User selectedUser = tempSelectedUser;
+                JFrame optionFrame = new JFrame();
+                optionFrame.setSize(400, 400);
+                optionFrame.setLocationRelativeTo(null);
+
+                JPanel viewUserOp = new JPanel();
+                viewUserOp.setLayout(new BoxLayout(viewUserOp, BoxLayout.PAGE_AXIS));
+                viewUserOp.setBorder(new EmptyBorder(new Insets(100, 150, 100, 150)));
+
+                JButton messageUser = new JButton("Message");
+                JButton blockUser = new JButton("Block");
+                JButton invisibleUser = new JButton("Be Invisible");
+                invisibleUser.setSize(300,100);
+                JButton goBack = new JButton("Go Back");
+
+                messageUser.addActionListener(message -> {
+                    String newMessage = JOptionPane.showInputDialog(null, "Enter a message");
+                    loggedOnUser.sendMessageToUser(reader, writer, newMessage, loggedOnUser);
+                });
+
+                blockUser.addActionListener(blocking -> {
+                    int confirm = JOptionPane.showOptionDialog(null,
+                            "Are you sure you want to block this user?", "Blocking",
+                            JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE,
+                            null, null, null);
+                    if (confirm == 0) {
+                        loggedOnUser.addBlockedUser(selectedUser);
+                    }
+                });
+
+                invisibleUser.addActionListener(invisibility -> {
+                    int confirm = JOptionPane.showOptionDialog(null,
+                            "Are you sure you want to become invisible to this user?", "Invisibility",
+                            JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE,
+                            null, null, null);
+                    if (confirm == 0) {
+                        loggedOnUser.addInvisibleUser(selectedUser);
+                    }
+                });
+
+                goBack.addActionListener(goToPrev -> {
+                    optionFrame.dispose();
+                    runListMenu(scan, reader, writer, accountsMaster, loggedOnUser);
+                });
+                viewUserOp.add(messageUser);
+                viewUserOp.add(blockUser);
+                viewUserOp.add(invisibleUser);
+                viewUserOp.add(goBack);
+
+                viewUserOp.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+                optionFrame.add(viewUserOp);
+                optionFrame.setVisible(true);
+            } catch (IndexOutOfBoundsException a) {
+                JOptionPane.showMessageDialog(null, "No option was selected");
+                runListMenu(scan, reader, writer, accountsMaster, loggedOnUser);
+            }
+        });
+        cancelButton.addActionListener(e -> {
+            frame.dispose();
+            runMainMenu(scan, accountsMaster, loggedOnUser);
+        });
+        viewUserList.add(panel);
+        frame.add(viewUserList);
+        frame.setVisible(true);
     }
 
     /*

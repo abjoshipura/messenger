@@ -347,7 +347,7 @@ public class MessengerClient {
                         }
 
                         if (email != null) {
-                            String[] options = {"Seller", "Buyer"};
+                            String[] options = {"Seller", "Customer"};
                             String role = (String) JOptionPane.showInputDialog(null, "What is your role?", "Role " +
                                             "Selection",
                                     JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
@@ -507,7 +507,7 @@ public class MessengerClient {
             } else if ((selectedOption == 2 && loggedOnUser instanceof Customer) || (selectedOption == 3 && loggedOnUser instanceof Seller)) {
                 runSearchMenu(reader, writer, loggedOnUser);
             } else if ((selectedOption == 3 && loggedOnUser instanceof Customer) || (selectedOption == 4 && loggedOnUser instanceof Seller)) {
-                if (runAccountMenu(scan, reader, writer, loggedOnUser)) {
+                if (runAccountMenu(reader, writer, loggedOnUser)) {
                     break;
                 }
             } else {
@@ -994,7 +994,6 @@ public class MessengerClient {
                                 }
                                 break;
                             } else {
-                                // TODO: Let user go back
                                 break;
                             }
                         }
@@ -1155,7 +1154,7 @@ public class MessengerClient {
                         }
 
                         options[i] = String.format("%d. %s | %s%s\n", i + 1, sellers.get(i).getUsername(), sellers.get(i).getEmail(),
-                                (extraInformation.length() > 0) ? " | Currently:" + extraInformation : "");
+                                (extraInformation.length() > 0) ? " | Currently: " + extraInformation : "");
                     }
                     // options[customers.size()] = String.format("%d. Back to Main Menu", customers.size() + 1);
 
@@ -1259,12 +1258,6 @@ public class MessengerClient {
         return selectedOption;
     }
 
-    private static void printCensoredWords(ArrayList<String> censoredWordPairs) {
-        for (int i = 0; i < censoredWordPairs.size(); i++) {
-            System.out.printf("%d. %s\n", i + 1, censoredWordPairs.get(i).replace(":", " >>> "));
-        }
-    }
-
     private static int printUserActionMenu(User user, User selectedUser) {
         String keyword = (user instanceof Seller) ? "Customer" : "Seller";
         String[] options = {String.format("1. Message %s", keyword), String.format("2. %s %s", (user.getBlockedUsers().contains(selectedUser)) ?
@@ -1277,7 +1270,7 @@ public class MessengerClient {
         return selectedOption;
     }
 
-    private static boolean runAccountMenu(Scanner scan, BufferedReader reader, PrintWriter writer, User loggedOnUser) {
+    private static boolean runAccountMenu(BufferedReader reader, PrintWriter writer, User loggedOnUser) {
         boolean deleteUser = false;
         while (true) {
             int accountOption = printEditAccountMenu();
@@ -1409,50 +1402,64 @@ public class MessengerClient {
                     }
                 }
             } else if (accountOption == 4) {
-                // TODO: Edit Censoring
                 ArrayList<String> censoredWords = loggedOnUser.getCensoredWords();
                 while (true) {
-                    System.out.println("----Censor Pairs----");
-                    if (censoredWords.size() > 0) {
-                        System.out.println("[To Delete, Enter Censor Pair No.]");
-                        printCensoredWords(censoredWords);
-                    } else {
-                        JOptionPane.showMessageDialog(null, "[No Censor Pairs]", "Censor Pairs", JOptionPane.INFORMATION_MESSAGE);
-                    }
-                    System.out.printf("%d. Add Censor Pair\n", censoredWords.size() + 1);
-                    System.out.printf("%d. Toggle Censoring (ON/OFF) | Currently: %s\n", censoredWords.size() + 2,
-                            (loggedOnUser.isRequestsCensorship()) ? "ON" : "OFF");
-                    System.out.printf("%d. Back to Account Menu\n", censoredWords.size() + 3);
-                    int censorOption;
-                    while (true) {
-                            censorOption = Integer.parseInt(scan.nextLine());
-                            if (censorOption <= 0 || censorOption > censoredWords.size() + 3) {
-                                System.out.println("Invalid Option");
-                            } else {
-                                break;
-                            }
-                    }
+                    String[] options = new String[]{"1. Add Censor Pair", "2. Delete Censor Pair", String.format(
+                            "3. Toggle Censoring (ON/OFF) | Currently: %s", (loggedOnUser.isRequestsCensorship()) ?
+                                    "ON" : "OFF"), "4. Back to Account Menu"};
+                    int selectedOption = JOptionPane.showOptionDialog(null, "Select an action:", "Edit Censoring",
+                            JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options,
+                            options[0]);
 
-                    if (censorOption == censoredWords.size() + 1) {
-                        System.out.println("Enter new pair as \"Word:Replacement\" or only \"Word\"");
-                        String censorPair = scan.nextLine();
-                        if (!(censorPair.contains(",") || censorPair.contains(">") || censorPair.contains("<"))) {
-                            String[] newCensor = censorPair.split(":");
-                            if (newCensor.length == 1) {
-                                loggedOnUser.addCensoredWord(writer, newCensor[0] + ":" + "****");
+                    if (selectedOption == 0) {
+                        String censorPair = JOptionPane.showInputDialog(null, "Enter new pair as \"Word:Replacement\"" +
+                                " or only \"Word\"");
+
+                        if (censorPair != null) {
+                            if (censorPair.equals("") || censorPair.equals(":")) {
+                                JOptionPane.showMessageDialog(null, "Censor Pair Cannot Be Blank!");
+                            } else if (!(censorPair.contains(",") || censorPair.contains(">") || censorPair.contains(
+                                    "<"))) {
+                                String[] newCensor = censorPair.split(":");
+                                if (newCensor.length == 1) {
+                                    loggedOnUser.addCensoredWord(writer, newCensor[0] + ":" + "****");
+                                } else {
+                                    loggedOnUser.addCensoredWord(writer, newCensor[0] + ":" + newCensor[1]);
+                                }
                             } else {
-                                loggedOnUser.addCensoredWord(writer, newCensor[0] + ":" + newCensor[1]);
+                                JOptionPane.showMessageDialog(null, "You Cannot have Special Characters in Censoring!");
+                            }
+                        }
+                    } else if (selectedOption == 1) {
+                        if (censoredWords.size() > 0) {
+                            String[] censorOptions = new String[censoredWords.size()];
+                            for (int i = 0; i < censoredWords.size(); i++) {
+                                censorOptions[i] = String.format("%d. %s\n", i + 1, censoredWords.get(i).replace(":",
+                                        " >>> "));
+                            }
+                            String censorPair = (String) JOptionPane.showInputDialog(null, "Select censor pair to delete:",
+                                    "Censor Pairs", JOptionPane.QUESTION_MESSAGE, null, censorOptions,
+                                    censorOptions[0]);
+
+                            int censorOption = -1;
+                            for (int i = 0; i < censoredWords.size(); i++) {
+                                if (censorPair != null && censorPair.equals(censorOptions[i])) {
+                                    censorOption = i + 1;
+                                }
+                            }
+
+                            if (censorOption != -1) {
+                                loggedOnUser.removeCensoredWord(writer, censorOption - 1,
+                                        loggedOnUser.getCensoredWords().get(censorOption - 1));
+                                JOptionPane.showMessageDialog(null, "Censor Pair Deleted!");
                             }
                         } else {
-                            JOptionPane.showMessageDialog(null, "You Cannot have Special Characters in Censoring!");
+                            JOptionPane.showMessageDialog(null, "[No Censor Pairs]", "Censor Pairs", JOptionPane.INFORMATION_MESSAGE);
                         }
-                    } else if (censorOption == censoredWords.size() + 2) {
+                    } else if (selectedOption == 2) {
                         loggedOnUser.toggleRequestsCensorship(writer);
-                    } else if (censorOption == censoredWords.size() + 3) {
-                        break;
                     } else {
-                        loggedOnUser.removeCensoredWord(writer, censorOption - 1,
-                                loggedOnUser.getCensoredWords().get(censorOption - 1));
+                        break;
                     }
                 }
             } else if (accountOption == 5) {

@@ -539,7 +539,6 @@ public class MessengerClient {
             conversationMenu.setLayout(new CardLayout());
             CardLayout card = (CardLayout) conversationMenu.getLayout();
 
-
             // Panel for conversation selection
             JPanel viewConversationList = new JPanel();
             viewConversationList.setLayout(new FlowLayout());
@@ -560,84 +559,80 @@ public class MessengerClient {
             card.show(conversationMenu, "Listing");
 
 
-            JPanel messagePanel = new JPanel();
-            conversationMenu.add(messagePanel, "messages");
-            JPanel messageOption = new JPanel();
-            messageOption.setLayout(new GridLayout(2, 9));
+            JPanel messageOptions = new JPanel();
+            conversationMenu.add(messageOptions, "Options");
+
             JButton sendMessage = new JButton("Send");
             JButton editMessage = new JButton("Edit");
             JButton deleteMessage = new JButton("Delete");
             JButton exitMessage = new JButton("Exit");
-            ArrayList<Message> messageArrayList = new ArrayList<>();
 
+            JPanel flow = new JPanel(new FlowLayout());
+            flow.add(sendMessage);
+            flow.add(editMessage);
+            flow.add(deleteMessage);
+            flow.add(exitMessage);
+            messageOptions.add(flow);
+
+
+            DefaultListModel listModel = new DefaultListModel();
+            JList messageHistory = new JList(listModel);
 
             okButton.addActionListener(ok -> {
-                JList messageHistory;
-                String[] messageList;
+                try {
+                    int index = converseList.getSelectedIndex();
+                    Conversation selectedConversation = conversations.get(index);
+                    messageOptions.setLayout(new GridLayout(2, 9));
+                    ArrayList<Message> messageList = selectedConversation.readFileAsPerUser(loggedOnUser);
 
-                int selectedIndex = converseList.getSelectedIndex();
-                Conversation selectedConversation = conversations.get(selectedIndex);
-                ArrayList<Message> messageReading = selectedConversation.readFileAsPerUser(loggedOnUser);
+                    // Populates an Array List with appropriate message displays
+                    ArrayList<String> messageDisplay = new ArrayList<>();
+                    for (int i = 0; i < messageList.size(); i++) {
+                        messageDisplay.add(messageList.get(i).getSender().getUsername() + ": " + messageList.get(i).getMessage());
+                    }
 
-                for(int i = 0; i < messageReading.size(); i++) {
-                    messageArrayList.add(messageReading.get(i));
-                }
-                messageList = new String[messageArrayList.size()];
-                for (int i = 0; i < messageList.length; i++) {
-                    messageList[i] = messageArrayList.get(i).getSender().getUsername() + ": " + messageArrayList.get(i).getMessage();
-                }
-                messageHistory = new JList(messageList);
-                messageHistory.setBounds(1000, 1000, 1000, 1000);
-                JScrollPane messageDisplay = new JScrollPane(messageHistory);
-                messageOption.add(messageDisplay);
-                JPanel flowMessage = new JPanel(new FlowLayout());
+                    DefaultListModel model = new DefaultListModel();
+                    for (int i = 0; i < messageList.size(); i++) {
+                        model.addElement(messageDisplay.get(i));
+                    }
+                    JList list = new JList(model);
+                    JScrollPane history = new JScrollPane(list);
 
-                flowMessage.add(sendMessage);
-                sendMessage.addActionListener(send -> {
-                    String messageString = JOptionPane.showInputDialog(null, "Enter new message.",
-                            "Send", JOptionPane.PLAIN_MESSAGE);
-                    if (messageString != null) {
+                    messageOptions.add(history);
+
+
+                    sendMessage.addActionListener(send -> {
+                        String sending = JOptionPane.showInputDialog(null, "Enter a new message",
+                                "Send Message", JOptionPane.PLAIN_MESSAGE);
                         if (loggedOnUser instanceof Customer) {
-                            loggedOnUser.sendMessageToUser(reader, writer, messageString, selectedConversation.getSeller());
+                            loggedOnUser.sendMessageToUser(reader, writer, sending, selectedConversation.getSeller());
                         }
                         if (loggedOnUser instanceof Seller) {
-                            System.out.println("Message sending");
-                            loggedOnUser.sendMessageToUser(reader, writer, messageString, selectedConversation.getCustomer());
+                            loggedOnUser.sendMessageToUser(reader, writer, sending, selectedConversation.getCustomer());
                         }
-                        System.out.println("Reloading");
-                        messageDisplay.remove(messageHistory);
+                        sendMessage.removeActionListener(null);
 
-                        JList newHistory;
-                        String[] newList;
-                        ArrayList<Message> newMessageList = selectedConversation.readFileAsPerUser(loggedOnUser);
-                        ArrayList<Message> newMessageArrayList = new ArrayList<>();
+                    });
 
-                        for(int i = 0; i < newMessageList.size(); i++) {
-                            newMessageArrayList.add(newMessageList.get(i));
+                    exitMessage.addActionListener(exit -> {
+                        for (int i = 0; i < model.getSize(); i++) {
+                            model.remove(i);
                         }
-                        newList = new String[newMessageArrayList.size()];
-                        for (int i = 0; i < newList.length; i++) {
-                            newList[i] = newMessageArrayList.get(i).getSender().getUsername() + ": " + newMessageArrayList.get(i).getMessage();
+                        try {
+                            sendMessage.removeActionListener(sendMessage.getActionListeners()[0]);
+                            //deleteMessage.removeActionListener(deleteMessage.getActionListeners()[0]);
+                            //editMessage.removeActionListener(editMessage.getActionListeners()[0]);
+                            exitMessage.removeActionListener(exitMessage.getActionListeners()[0]);
+                            card.show(conversationMenu, "Listing");
+                            messageOptions.remove(history);
+                        } catch (ArrayIndexOutOfBoundsException exception) {
+                            System.out.println("EAT JAVA");
                         }
-                        //newHistory = new JList(newList);
-                        System.out.println(Arrays.toString(newList));
-                        //messageDisplay.add(newHistory);
-                        card.show(conversationMenu, "messages");
-                    } else {
-                        System.out.println("Message failed");
-                    }
-                });
-                flowMessage.add(editMessage);
-                flowMessage.add(deleteMessage);
-                flowMessage.add(exitMessage);
-                exitMessage.addActionListener(exit -> {
-                    card.show(conversationMenu, "Listing");
-                });
-                messageOption.add(flowMessage);
-
-                messagePanel.add(messageOption);
-
-                card.show(conversationMenu, "messages");
+                    });
+                    card.show(conversationMenu, "Options");
+                } catch (IndexOutOfBoundsException indexException) {
+                    JOptionPane.showMessageDialog(null, "Please select a conversation");
+                }
             });
 
             frame.add(conversationMenu);

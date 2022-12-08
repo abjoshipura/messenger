@@ -1,4 +1,9 @@
 import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -6,6 +11,14 @@ import java.nio.file.Paths;
 import java.util.*;
 
 public class MessengerClient {
+
+    private JFrame jFrame;
+
+    private Container container;
+
+    private CardLayout cardLayout = new CardLayout();
+
+    private User loggedOnUser = null;
     /**
      * The constant password/account file path: passwords.txt
      */
@@ -15,6 +28,15 @@ public class MessengerClient {
      * The constant conversations file path: conversations.txt
      */
     public static final String CONVERSATIONS_FILE_PATH = "conversations.txt";
+
+    public MessengerClient() {
+        jFrame = new JFrame("Messenger");
+        jFrame.setSize(400, 200);
+        jFrame.setLocationRelativeTo(null);
+        container = jFrame.getContentPane();
+        container.setLayout(cardLayout);
+        jFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+    }
 
     /**
      * Sends a network request to the server
@@ -50,9 +72,7 @@ public class MessengerClient {
      * @return Returns whether the .csv conversion and export succeeded
      * @throws IOException in the case of a conversion failure
      */
-    public static boolean convertConversationsToCSV(BufferedReader reader, PrintWriter writer,
-                                                    ArrayList<Conversation> exportingConversations, User loggedOnUser)
-            throws IOException {
+    public static boolean convertConversationsToCSV(BufferedReader reader, PrintWriter writer, ArrayList<Conversation> exportingConversations, User loggedOnUser) throws IOException {
 
         Files.createDirectories(Paths.get("src/exports")); // Creates the subfolder exports if it does not exist
         File destinationFile = new File("src/exports");
@@ -86,12 +106,10 @@ public class MessengerClient {
      * @param loggedOnUser The active user
      * @return Returns the updated ArrayList&lt;Conversation&gt; conversations
      */
-    public static ArrayList<Conversation> refreshVisibleConversations(BufferedReader reader, PrintWriter writer,
-                                                                      User loggedOnUser) {
+    public static ArrayList<Conversation> refreshVisibleConversations(BufferedReader reader, PrintWriter writer, User loggedOnUser) {
         ArrayList<Conversation> conversations = new ArrayList<>();
 
-        String userString = (loggedOnUser instanceof Seller) ? ((Seller) loggedOnUser).detailedToString() :
-                ((Customer) loggedOnUser).detailedToString();
+        String userString = (loggedOnUser instanceof Seller) ? ((Seller) loggedOnUser).detailedToString() : ((Customer) loggedOnUser).detailedToString();
         String listConversationsRequest = "[LIST.VISIBLE_CONVERSATIONS]" + userString;
         sendRequest(writer, listConversationsRequest);
         String stringListOfConversations = readResponse(reader);
@@ -116,8 +134,7 @@ public class MessengerClient {
      * @param loggedOnUser The active user
      * @return Returns the updated ArrayList&lt;Message&gt; messages
      */
-    public static ArrayList<Message> refreshVisibleMessages(BufferedReader reader, PrintWriter writer,
-                                                            Conversation conversation, User loggedOnUser) {
+    public static ArrayList<Message> refreshVisibleMessages(BufferedReader reader, PrintWriter writer, Conversation conversation, User loggedOnUser) {
         ArrayList<Message> messages = new ArrayList<>();
 
         String listMessagesRequest = "[LIST.VISIBLE_MESSAGES]" + conversation + ";" + loggedOnUser;
@@ -197,8 +214,7 @@ public class MessengerClient {
      * @param loggedOnUser The active user
      * @return Returns the updated ArrayList&lt;Customer&gt; customers
      */
-    public static ArrayList<Customer> refreshSearchCustomers(BufferedReader reader, PrintWriter writer,
-                                                             User loggedOnUser, String searchKeyword) {
+    public static ArrayList<Customer> refreshSearchCustomers(BufferedReader reader, PrintWriter writer, User loggedOnUser, String searchKeyword) {
         ArrayList<Customer> customers = new ArrayList<>();
 
         String userString = ((Seller) loggedOnUser).detailedToString();
@@ -225,8 +241,7 @@ public class MessengerClient {
      * @param loggedOnUser The active user
      * @return Returns the updated ArrayList&lt;Seller&gt; sellers
      */
-    public static ArrayList<Seller> refreshSearchSellers(BufferedReader reader, PrintWriter writer, User loggedOnUser,
-                                                        String searchKeyword) {
+    public static ArrayList<Seller> refreshSearchSellers(BufferedReader reader, PrintWriter writer, User loggedOnUser, String searchKeyword) {
         ArrayList<Seller> sellers = new ArrayList<>();
 
         String userString = ((Customer) loggedOnUser).detailedToString();
@@ -244,126 +259,121 @@ public class MessengerClient {
         return sellers;
     }
 
-    public static void main(String[] args) {
-        User loggedOnUser = null;
-        Scanner scan = new Scanner(System.in); // TODO: Remove Scanner
+    public static void exitApplication(MessengerClient messengerClient, PrintWriter writer) {
+        sendRequest(writer, "[LOGOUT]");
 
+        JPanel holder = new JPanel(new GridLayout(3, 1));
+        holder.add(new JPanel());
+
+        JPanel titlePanel = new JPanel();
+        JLabel title = new JLabel("Thank you for using Messenger! Goodbye!");
+        title.setFont(new Font("Open Sans", Font.PLAIN, 14));
+        title.setHorizontalAlignment(SwingConstants.CENTER);
+        title.setVerticalAlignment(SwingConstants.CENTER);
+        titlePanel.add(title);
+        holder.add(titlePanel);
+
+        holder.add(new JPanel());
+        messengerClient.container.add("Goodbye", holder);
+        messengerClient.cardLayout.show(messengerClient.container, "Goodbye");
+    }
+
+    public static void main(String[] args) {
         try (Socket socket = new Socket("localhost", 8080)) {
             PrintWriter writer = new PrintWriter(socket.getOutputStream());
             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+            MessengerClient messengerClient = new MessengerClient();
 
-            JOptionPane.showMessageDialog(null, "Welcome to Messenger (not Facebook)!");
+            JPanel holder = new JPanel(new GridLayout(4, 1));
+            holder.add(new JPanel());
 
-            String usernameOrEmail = JOptionPane.showInputDialog(null, "Log in (or Sign Up) with Username or Email:");
+            JPanel titlePanel = new JPanel();
+            JLabel title = new JLabel("Welcome to Messenger!");
+            title.setFont(new Font("Open Sans", Font.PLAIN, 16));
+            title.setHorizontalAlignment(SwingConstants.CENTER);
+            title.setVerticalAlignment(SwingConstants.CENTER);
+            titlePanel.add(title);
+            holder.add(titlePanel);
 
-            while (usernameOrEmail != null && usernameOrEmail.equals("")) {
-                JOptionPane.showMessageDialog(null, "Username/Email Cannot Be Blank!");
-                usernameOrEmail = JOptionPane.showInputDialog(null, "Log in (or Sign Up) with Username or Email:");
-            }
+            holder.add(new JPanel());
 
-            String checkUsernameRequest = "[CHECK.USERNAME]" + usernameOrEmail;
-            sendRequest(writer, checkUsernameRequest);
-            boolean isUsernameTaken = Boolean.parseBoolean(readResponse(reader));
-            String checkEmailRequest = "[CHECK.EMAIL]" + usernameOrEmail;
-            sendRequest(writer, checkEmailRequest);
-            boolean isEmailRegistered = Boolean.parseBoolean(readResponse(reader));
+            JPanel buttonPanel = new JPanel();
+            JButton signUpButton = new JButton("Sign Up");
+            signUpButton.setPreferredSize(new Dimension(150, 30));
+            signUpButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    messengerClient.jFrame.setTitle("Create Account");
+                    messengerClient.jFrame.setSize(400, 250);
+                    JPanel holder = new JPanel(new GridLayout(5, 1));
 
-            if (usernameOrEmail == null) { // User chooses to exit application
-                JOptionPane.showMessageDialog(null, "Sorry to see you go :( Have a great day!");
-            } else if (!(isUsernameTaken || isEmailRegistered)) {
-                JOptionPane.showMessageDialog(null, "Seems like you don't have an account yet!");
-                int selectedOption = JOptionPane.showConfirmDialog(null, "Would you like to make an account?",
-                        "Create New Account", JOptionPane.YES_NO_OPTION);
-                boolean createAccount = selectedOption == JOptionPane.YES_OPTION;
+                    JPanel usernamePanel = new JPanel();
+                    JLabel usernamePrompt = new JLabel("Create a Username:");
+                    usernamePrompt.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                    usernamePanel.add(usernamePrompt);
+                    JTextField usernameTextField = new JTextField(20);
+                    usernamePanel.add(usernameTextField);
+                    holder.add(usernamePanel);
 
-                if (createAccount) {
-                    JOptionPane.showMessageDialog(null, "Great! Let's get you set up!");
+                    JPanel emailPanel = new JPanel();
+                    JLabel emailPrompt = new JLabel("Register an Email ID:");
+                    emailPrompt.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                    emailPanel.add(emailPrompt);
+                    JTextField emailTextField = new JTextField(20);
+                    emailPanel.add(emailTextField);
+                    holder.add(emailPanel);
 
-                    String username;
-                    while (true) {
-                        username = JOptionPane.showInputDialog(null, "Create your new username (,<>; change to _):");
+                    JPanel passwordPanel = new JPanel();
+                    JLabel passwordPrompt = new JLabel("Set a Password:");
+                    passwordPrompt.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                    passwordPanel.add(passwordPrompt);
+                    JTextField passwordTextField = new JTextField(20);
+                    passwordPanel.add(passwordTextField);
+                    holder.add(passwordPanel);
 
-                        while (username != null && username.equals("")) {
-                            JOptionPane.showMessageDialog(null, "Username Cannot Be Blank!");
-                            username = JOptionPane.showInputDialog(null, "Create your new username (,<>; change to _):");
-                        }
+                    JPanel rolePanel = new JPanel();
+                    JLabel rolePrompt = new JLabel("Choose a Role:");
+                    rolePrompt.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                    rolePanel.add(rolePrompt);
 
-                        if (username != null) {
-                            username = username.replaceAll("[,<>;]", "_");
-                        }
+                    ButtonGroup buttonGroup = new ButtonGroup();
+                    JRadioButton sellerOption = new JRadioButton("Seller");
+                    sellerOption.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                    buttonGroup.add(sellerOption);
+                    JRadioButton customerOption = new JRadioButton("Customer");
+                    customerOption.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                    buttonGroup.add(customerOption);
 
-                        checkUsernameRequest = "[CHECK.USERNAME]" + username;
-                        sendRequest(writer, checkUsernameRequest);
-                        isUsernameTaken = Boolean.parseBoolean(readResponse(reader));
+                    rolePanel.add(sellerOption);
+                    rolePanel.add(customerOption);
+                    holder.add(rolePanel);
 
-                        if (username == null) { // User chooses to exit application
-                            JOptionPane.showMessageDialog(null, "Sorry to see you go :( Have a great day!");
-                            break;
-                        } else if (isUsernameTaken) {
-                            selectedOption = JOptionPane.showConfirmDialog(null, "Sorry! That username is already" +
-                                    " taken.\nTry again?", "Duplicate Username", JOptionPane.YES_NO_OPTION);
-                            boolean tryAgain = selectedOption == JOptionPane.YES_OPTION;
+                    JPanel buttonPanel = new JPanel();
+                    JButton createButton = new JButton("Create");
+                    createButton.setPreferredSize(new Dimension(150, 30));
+                    createButton.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            String username = usernameTextField.getText();
+                            String email = emailTextField.getText();
+                            String password = passwordTextField.getText();
 
-                            if (!tryAgain) {
-                                username = null;
-                                JOptionPane.showMessageDialog(null, "Sorry to see you go :( Have a great day!");
-                                break;
-                            }
-                        } else {
-                            break;
-                        }
-                    }
-
-                    if (username != null) {
-                        String email;
-                        while (true) {
-                            email = JOptionPane.showInputDialog(null, "Register with your email ID:");
-
-                            while (email != null && email.equals("")) {
-                                JOptionPane.showMessageDialog(null, "Email Cannot Be Blank!");
-                                email = JOptionPane.showInputDialog(null, "Register with your email ID:");
-                            }
-
-                            checkEmailRequest = "[CHECK.EMAIL]" + email;
-                            sendRequest(writer, checkEmailRequest);
-                            isEmailRegistered = Boolean.parseBoolean(readResponse(reader));
-
-                            if (email == null) {
-                                JOptionPane.showMessageDialog(null, "Sorry to see you go :( Have a great day!");
-                                break;
-                            } else if (isEmailRegistered) {
-                                selectedOption = JOptionPane.showConfirmDialog(null, "Sorry! That email is " +
-                                        "already registered.\nTry again?", "Duplicate Email", JOptionPane.YES_NO_OPTION);
-                                boolean tryAgain = selectedOption == JOptionPane.YES_OPTION;
-
-                                if (!tryAgain) {
-                                    email = null;
-                                    JOptionPane.showMessageDialog(null, "Sorry to see you go :( Have a great day!");
-                                    break;
-                                }
+                            if (username.isEmpty() || email.isEmpty() || password.isEmpty() ||
+                                    (!sellerOption.isSelected() && !customerOption.isSelected())) {
+                                JOptionPane.showMessageDialog(null,
+                                        "Cannot Submit Incomplete Form", "Messenger",
+                                        JOptionPane.ERROR_MESSAGE);
                             } else {
-                                break;
-                            }
-                        }
+                                String role = (sellerOption.isSelected()) ? "Seller" : "Customer";
+                                String checkUsernameRequest = "[CHECK.USERNAME]" + usernameTextField.getText();
+                                sendRequest(writer, checkUsernameRequest);
+                                boolean isUsernameTaken = Boolean.parseBoolean(readResponse(reader));
 
-                        if (email != null) {
-                            String[] options = {"Seller", "Customer"};
-                            String role = (String) JOptionPane.showInputDialog(null, "What is your role?", "Role " +
-                                            "Selection",
-                                    JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
+                                String checkEmailRequest = "[CHECK.EMAIL]" + emailTextField.getText();
+                                sendRequest(writer, checkEmailRequest);
+                                boolean isEmailRegistered = Boolean.parseBoolean(readResponse(reader));
 
-                            if (role != null) {
-                                String password = JOptionPane.showInputDialog(null, "Create a password:");
-
-                                while (password != null && password.equals("")) {
-                                    JOptionPane.showMessageDialog(null, "Password Cannot Be Blank!");
-                                    password = JOptionPane.showInputDialog(null, "Create a password:");
-                                }
-
-                                if (password == null) {
-                                    JOptionPane.showMessageDialog(null, "Sorry to see you go :( Have a great day!");
-                                    sendRequest(writer, "[LOGOUT]");
-                                } else {
+                                if (!(isUsernameTaken || isEmailRegistered)) {
                                     String createAccountRequest = String.format("[CREATE.USER]%s, %s, %s, %s",
                                             username, email, password, role);
                                     sendRequest(writer, createAccountRequest);
@@ -371,1173 +381,349 @@ public class MessengerClient {
 
                                     if (response != null && response.substring(0, response.indexOf("<"))
                                             .equalsIgnoreCase("Seller")) {
-                                        loggedOnUser = new Seller(response, true, true);
+                                        messengerClient.loggedOnUser = new Seller(response, true,
+                                                true);
                                     } else {
-                                        loggedOnUser = new Customer(response, true);
+                                        messengerClient.loggedOnUser = new Customer(response, true);
                                     }
 
-                                    JOptionPane.showMessageDialog(null, "You're all set!");
+                                    JPanel holder = new JPanel(new GridLayout(4, 1));
+                                    holder.add(new JPanel());
+
+                                    JPanel usernamePanel = new JPanel();
+                                    JLabel usernamePrompt = new JLabel("You're All Set!");
+                                    usernamePrompt.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                                    usernamePanel.add(usernamePrompt);
+                                    holder.add(usernamePanel);
+
+                                    holder.add(new JPanel());
+
+                                    showMainMenu(messengerClient, writer);
+                                } else if (isUsernameTaken) {
+                                    JOptionPane.showMessageDialog(null,
+                                            "Username already Taken", "Messenger",
+                                            JOptionPane.ERROR_MESSAGE);
+                                    usernameTextField.setText("");
+                                } else {
+                                    JOptionPane.showMessageDialog(null,
+                                            "Email already Registered", "Messenger",
+                                            JOptionPane.ERROR_MESSAGE);
+                                    emailTextField.setText("");
                                 }
-                            } else {
-                                JOptionPane.showMessageDialog(null, "Sorry to see you go :( Have a great day!");
-                                sendRequest(writer, "[LOGOUT]");
                             }
                         }
-                    }
-                } else {
-                    JOptionPane.showMessageDialog(null, "Sorry to see you go :( Have a great day!");
-                    sendRequest(writer, "[LOGOUT]");
+                    });
+
+                    JButton backButton = new JButton("Back");
+                    backButton.setPreferredSize(new Dimension(150, 30));
+                    backButton.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            messengerClient.cardLayout.show(messengerClient.container, "Onboard");
+                        }
+                    });
+
+                    buttonPanel.add(backButton);
+                    buttonPanel.add(createButton);
+                    holder.add(buttonPanel);
+                    messengerClient.container.add("Sign-up", holder);
+                    messengerClient.cardLayout.show(messengerClient.container, "Sign-up");
                 }
-            } else { // User already exists
-                String fetchAccountRequest = "[FETCH.USER]" + usernameOrEmail;
-                sendRequest(writer, fetchAccountRequest);
-                String fetchResponse = readResponse(reader);
+            });
 
-                if (fetchResponse != null && fetchResponse.substring(0, fetchResponse.indexOf("<"))
-                        .equalsIgnoreCase("Seller")) {
-                    loggedOnUser = new Seller(fetchResponse, true, true);
-                } else {
-                    loggedOnUser = new Customer(fetchResponse, true);
+            JButton logInButton = new JButton("Log In");
+            logInButton.setPreferredSize(new Dimension(150, 30));
+            logInButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    messengerClient.jFrame.setTitle("Log In");
+                    messengerClient.jFrame.setSize(400, 250);
+                    JPanel holder = new JPanel(new GridLayout(4, 1));
+                    holder.add(new JPanel());
+
+                    JPanel usernamePanel = new JPanel();
+                    JLabel usernamePrompt = new JLabel("Username or Email ID:");
+                    usernamePrompt.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                    usernamePanel.add(usernamePrompt);
+                    JTextField usernameTextField = new JTextField(20);
+                    usernamePanel.add(usernameTextField);
+                    holder.add(usernamePanel);
+
+                    JPanel passwordPanel = new JPanel();
+                    JLabel passwordPrompt = new JLabel("Password:");
+                    passwordPrompt.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                    passwordPanel.add(passwordPrompt);
+                    JTextField passwordTextField = new JTextField(20);
+                    passwordPanel.add(passwordTextField);
+                    holder.add(passwordPanel);
+
+                    JPanel buttonPanel = new JPanel();
+                    JButton logInButton = new JButton("Log In");
+                    logInButton.setPreferredSize(new Dimension(150, 30));
+                    logInButton.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            String username = usernameTextField.getText();
+                            String password = passwordTextField.getText();
+
+                            if (username.isEmpty() || password.isEmpty()) {
+                                JOptionPane.showMessageDialog(null,
+                                        "Cannot Submit Incomplete Form", "Messenger",
+                                        JOptionPane.ERROR_MESSAGE);
+                            } else {
+                                String fetchAccountRequest = "[FETCH.USER]" + username;
+                                sendRequest(writer, fetchAccountRequest);
+                                String fetchResponse = readResponse(reader);
+
+                                if (fetchResponse != null && fetchResponse.substring(0, fetchResponse.indexOf("<"))
+                                        .equalsIgnoreCase("Seller")) {
+                                    messengerClient.loggedOnUser = new Seller(fetchResponse, true, true);
+                                } else {
+                                    messengerClient.loggedOnUser = new Customer(fetchResponse, true);
+                                }
+
+                                if (messengerClient.loggedOnUser.getPassword().equals(password)) {
+                                    JOptionPane.showMessageDialog(null, String.format("Welcome back %s!",
+                                            messengerClient.loggedOnUser.getUsername().toUpperCase()));
+
+                                    String fetchNumUnreadRequest;
+                                    if (messengerClient.loggedOnUser instanceof Seller) {
+                                        fetchNumUnreadRequest = "[FETCH.UNREAD]" +
+                                                ((Seller) messengerClient.loggedOnUser).detailedToString();
+                                    } else {
+                                        fetchNumUnreadRequest = "[FETCH.UNREAD]" +
+                                                ((Customer) messengerClient.loggedOnUser).detailedToString();
+                                    }
+                                    sendRequest(writer, fetchNumUnreadRequest);
+                                    fetchResponse = readResponse(reader);
+
+                                    if (fetchResponse != null && Integer.parseInt(fetchResponse) > 0) {
+                                        JOptionPane.showMessageDialog(null,
+                                                String.format("You have %d new unread conversation%s",
+                                                        Integer.parseInt(fetchResponse),
+                                                        (Integer.parseInt(fetchResponse) != 1) ? "s" : ""));
+                                    }
+                                    showMainMenu(messengerClient, writer);
+                                } else {
+                                    JOptionPane.showMessageDialog(null,
+                                            "Incorrect Password", "Messenger",
+                                            JOptionPane.ERROR_MESSAGE);
+                                    exitApplication(messengerClient, writer);
+                                }
+                            }
+                        }
+                    });
+
+                    JButton backButton = new JButton("Back");
+                    backButton.setPreferredSize(new Dimension(150, 30));
+                    backButton.addActionListener(new ActionListener() {
+                        @Override
+                        public void actionPerformed(ActionEvent e) {
+                            messengerClient.cardLayout.show(messengerClient.container, "Onboard");
+                        }
+                    });
+
+                    buttonPanel.add(backButton);
+                    buttonPanel.add(logInButton);
+                    holder.add(buttonPanel);
+                    messengerClient.container.add("Sign-in", holder);
+                    messengerClient.cardLayout.show(messengerClient.container, "Sign-in");
                 }
+            });
 
-                String password = JOptionPane.showInputDialog(null, "Enter password:");
+            buttonPanel.add(signUpButton);
+            buttonPanel.add(logInButton);
+            holder.add(buttonPanel);
 
-                if (password != null && password.equals(loggedOnUser.getPassword())) {
-                    JOptionPane.showMessageDialog(null, String.format("Welcome back %s!",
-                            loggedOnUser.getUsername().toUpperCase()));
-
-                    String fetchNumUnreadRequest;
-                    if (loggedOnUser instanceof Seller) {
-                        fetchNumUnreadRequest = "[FETCH.UNREAD]" + ((Seller) loggedOnUser).detailedToString();
-                    } else {
-                        fetchNumUnreadRequest = "[FETCH.UNREAD]" + ((Customer) loggedOnUser).detailedToString();
-                    }
-                    sendRequest(writer, fetchNumUnreadRequest);
-                    fetchResponse = readResponse(reader);
-
-                    if (fetchResponse != null && Integer.parseInt(fetchResponse) > 0) {
-                        JOptionPane.showMessageDialog(null, String.format("You have %d new unread conversation%s",
-                                Integer.parseInt(fetchResponse), (Integer.parseInt(fetchResponse) != 1) ? "s" : ""));
-                    }
-
-                } else {
-                    loggedOnUser = null;
-                    sendRequest(writer, "[LOGOUT]");
-                    JOptionPane.showMessageDialog(null, "Incorrect Password");
-                }
-            }
-
-            if (loggedOnUser != null) {
-                runMainMenu(scan, reader, writer, loggedOnUser);
-                sendRequest(writer, "[LOGOUT]");
-                JOptionPane.showMessageDialog(null, "Goodbye!");
-            }
+            messengerClient.container.add("Onboard", holder);
+            messengerClient.cardLayout.show(messengerClient.container, "Onboard");
+            messengerClient.jFrame.setVisible(true);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static void runMainMenu(Scanner scan, BufferedReader reader, PrintWriter writer, User loggedOnUser) {
-        while (true) {
-            int selectedOption = printMainMenu(loggedOnUser);
+    public static void showMainMenu(MessengerClient messengerClient, PrintWriter writer) {
+        messengerClient.jFrame.setTitle("Messenger: Main");
+        JPanel holder = new JPanel(new GridLayout(0, 3));
+        holder.add(new JPanel());
 
-            if (selectedOption == 0 && loggedOnUser instanceof Seller) {
-                ArrayList<Store> stores = ((Seller) loggedOnUser).getStores();
-                while (true) {
-                    System.out.println("----Your Stores----");
-                    if (stores.size() > 0) {
-                        System.out.println("[To See its Details, Enter the Store Number]");
+        if (messengerClient.loggedOnUser instanceof Seller) {
+            String[] options = {"Manage Stores", "View Conversations", "View All Customers", "Search Customers",
+                    "Edit Account", "Log Out"};
+            JList list = new JList(options);
+            list.addListSelectionListener(new ListSelectionListener() {
+                @Override
+                public void valueChanged(ListSelectionEvent e) {
+                    int selectedOption = list.getSelectedIndex();
+                    if (selectedOption == 0) {
+
+                    } else if (selectedOption == 1) {
+
+                    } else if (selectedOption == 2) {
+
+                    } else if (selectedOption == 3) {
+
+                    } else if (selectedOption == 4) {
+
+                    } else if (selectedOption == 5) {
+                        exitApplication(messengerClient, writer);
                     } else {
-                        JOptionPane.showMessageDialog(null, "[No Stores]", "Your Stores", JOptionPane.INFORMATION_MESSAGE);
+                        JOptionPane.showMessageDialog(null, "Select an Option",
+                                "Messenger", JOptionPane.ERROR_MESSAGE);
                     }
-                    for (int i = 0; i < stores.size(); i++) {
-                        System.out.printf("%d. %s\n", i + 1, stores.get(i).getStoreName());
-                    }
-                    System.out.printf("%d. Add Store\n", stores.size() + 1);
-                    System.out.printf("%d. Delete a Store\n", stores.size() + 2);
-                    // TODO: Infinite loop when there are no stores and user tries to delete a store...
-                    System.out.printf("%d. Back to Main Menu\n", stores.size() + 3);
-
-                    int storeOption;
-                    while (true) {
-                        storeOption = Integer.parseInt(scan.nextLine());
-                        if (storeOption <= 0 || storeOption > stores.size() + 3) {
-                            System.out.println("Invalid Option");
-                        } else {
-                            break;
-                        }
-                    }
-
-                    if (storeOption == stores.size() + 1) {
-                        String newStoreName = JOptionPane.showInputDialog(null, "Enter New Store Name:");
-                        // TODO: Store name cannot be blank... What about duplicate stores from the same seller?
-
-                        ((Seller) loggedOnUser).addStore(writer, new Store(newStoreName, (Seller) loggedOnUser));
-                    } else if (storeOption == stores.size() + 2) {
-                        System.out.println("Enter Store Number:");
-                        int storeNumber;
-                        while (true) {
-                                storeNumber = Integer.parseInt(scan.nextLine());
-                                if (storeNumber <= 0 || storeNumber > stores.size()) {
-                                    System.out.println("Invalid Option");
-                                } else {
-                                    break;
-                                }
-                        }
-                        selectedOption = JOptionPane.showConfirmDialog(null, "Are you sure?", "Store Deletion " +
-                                "Confirmation", JOptionPane.YES_NO_OPTION);
-                        boolean deleteStore = selectedOption == JOptionPane.YES_OPTION;
-                        if (deleteStore) {
-                            ((Seller) loggedOnUser).removeStore(writer, stores.get(storeNumber - 1));
-                        }
-                    } else if (storeOption == stores.size() + 3) {
-                        break;
-                    } else if (storeOption <= stores.size()) {
-                        JOptionPane.showMessageDialog(null, "Name: " + stores.get(storeOption - 1).getStoreName() +
-                                "\nSeller: " + stores.get(storeOption - 1).getSeller().getUsername(), "Store Details"
-                                , JOptionPane.INFORMATION_MESSAGE);
-                    } else {
-                        System.out.println("Invalid Option");
-                    }
-                }
-            } else if ((selectedOption == 0 && loggedOnUser instanceof Customer) || (selectedOption == 1 && loggedOnUser instanceof Seller)) {
-                runConversationsMenu(scan, reader, writer, loggedOnUser);
-            } else if ((selectedOption == 1 && loggedOnUser instanceof Customer) || (selectedOption == 2 && loggedOnUser instanceof Seller)) {
-                runListMenu(scan, reader, writer, loggedOnUser);
-            } else if ((selectedOption == 2 && loggedOnUser instanceof Customer) || (selectedOption == 3 && loggedOnUser instanceof Seller)) {
-                runSearchMenu(reader, writer, loggedOnUser);
-            } else if ((selectedOption == 3 && loggedOnUser instanceof Customer) || (selectedOption == 4 && loggedOnUser instanceof Seller)) {
-                if (runAccountMenu(reader, writer, loggedOnUser)) {
-                    break;
-                }
-            } else {
-                JOptionPane.showMessageDialog(null, "Logging Out...");
-                break;
-            }
-        }
-    }
-
-    private static void runConversationsMenu(Scanner scan, BufferedReader reader, PrintWriter writer, User loggedOnUser) {
-        ArrayList<Conversation> conversations = refreshVisibleConversations(reader, writer, loggedOnUser);
-        if (conversations.size() < 1) {
-            JOptionPane.showMessageDialog(null, "You have no active conversations");
-        } else {
-            JFrame frame = new JFrame();
-
-
-            String[] conversationName = new String[conversations.size()];
-            for (int i = 0; i < conversations.size(); i++) {
-                conversationName[i] = conversations.get(i).getConversationID();
-            }
-            JList converseList = new JList(conversationName);
-
-            frame.setSize(600, 400);
-            frame.setLocationRelativeTo(null);
-
-            // Overall panel menu containing CardLayout
-            JPanel conversationMenu = new JPanel();
-            conversationMenu.setLayout(new CardLayout());
-            CardLayout card = (CardLayout) conversationMenu.getLayout();
-
-            // Panel for conversation selection
-            JPanel viewConversationList = new JPanel();
-            viewConversationList.setLayout(new FlowLayout());
-            viewConversationList.setAlignmentX(100);
-            viewConversationList.setBorder(new EmptyBorder(new Insets(50, 200, 50, 200)));
-
-            JButton okButton = new JButton("Select");
-            JButton cancelButton = new JButton("Cancel");
-            JScrollPane selectList = new JScrollPane(converseList);
-            selectList.setBounds(200, 200, 200, 200);
-            viewConversationList.add(selectList);
-            JPanel panel = new JPanel(new GridLayout(1, 2));
-            panel.add(okButton);
-            panel.add(cancelButton);
-            viewConversationList.add(panel);
-
-            conversationMenu.add(viewConversationList, "Listing");
-            card.show(conversationMenu, "Listing");
-
-
-            JPanel messageOptions = new JPanel();
-            conversationMenu.add(messageOptions, "Options");
-
-            JButton sendMessage = new JButton("Send");
-            JButton editMessage = new JButton("Edit");
-            JButton deleteMessage = new JButton("Delete");
-            JButton exitMessage = new JButton("Exit");
-
-            JPanel flow = new JPanel(new FlowLayout());
-            flow.add(sendMessage);
-            flow.add(editMessage);
-            flow.add(deleteMessage);
-            flow.add(exitMessage);
-            messageOptions.add(flow);
-
-
-            DefaultListModel listModel = new DefaultListModel();
-            JList messageHistory = new JList(listModel);
-
-            okButton.addActionListener(ok -> {
-                try {
-                    int index = converseList.getSelectedIndex();
-                    Conversation selectedConversation = conversations.get(index);
-                    messageOptions.setLayout(new GridLayout(2, 9));
-                    ArrayList<Message> messageList = selectedConversation.readFileAsPerUser(loggedOnUser);
-
-                    // Populates an Array List with appropriate message displays
-                    ArrayList<String> messageDisplay = new ArrayList<>();
-                    for (int i = 0; i < messageList.size(); i++) {
-                        messageDisplay.add(messageList.get(i).getSender().getUsername() + ": " + messageList.get(i).getMessage());
-                    }
-
-                    DefaultListModel model = new DefaultListModel();
-                    for (int i = 0; i < messageList.size(); i++) {
-                        model.addElement(messageDisplay.get(i));
-                    }
-                    JList list = new JList(model);
-                    JScrollPane history = new JScrollPane(list);
-
-                    messageOptions.add(history);
-
-
-                    sendMessage.addActionListener(send -> {
-                        String sending = JOptionPane.showInputDialog(null, "Enter a new message",
-                                "Send Message", JOptionPane.PLAIN_MESSAGE);
-                        if (loggedOnUser instanceof Customer) {
-                            loggedOnUser.sendMessageToUser(reader, writer, sending, selectedConversation.getSeller());
-                        }
-                        if (loggedOnUser instanceof Seller) {
-                            loggedOnUser.sendMessageToUser(reader, writer, sending, selectedConversation.getCustomer());
-                        }
-                        sendMessage.removeActionListener(null);
-
-                    });
-
-                    exitMessage.addActionListener(exit -> {
-                        for (int i = 0; i < model.getSize(); i++) {
-                            model.remove(i);
-                        }
-                        try {
-                            sendMessage.removeActionListener(sendMessage.getActionListeners()[0]);
-                            //deleteMessage.removeActionListener(deleteMessage.getActionListeners()[0]);
-                            //editMessage.removeActionListener(editMessage.getActionListeners()[0]);
-                            exitMessage.removeActionListener(exitMessage.getActionListeners()[0]);
-                            card.show(conversationMenu, "Listing");
-                            messageOptions.remove(history);
-                        } catch (ArrayIndexOutOfBoundsException exception) {
-                            System.out.println("EAT JAVA");
-                        }
-                    });
-                    card.show(conversationMenu, "Options");
-                } catch (IndexOutOfBoundsException indexException) {
-                    JOptionPane.showMessageDialog(null, "Please select a conversation");
                 }
             });
-
-            frame.add(conversationMenu);
-            frame.setVisible(true);
-        }
-    }
-
-    private static void runConversationActions(Scanner scan, BufferedReader reader, PrintWriter writer,
-                                               User loggedOnUser, Conversation conversation) {
-        ArrayList<Message> messages = refreshVisibleMessages(reader, writer, conversation, loggedOnUser);
-        User recipient = (loggedOnUser instanceof Seller) ? conversation.getCustomer() :
-                conversation.getSeller();
-
-        String recipientActiveRequest = "[CHECK.RECIPIENT_ACTIVE]" + recipient;
-        sendRequest(writer, recipientActiveRequest);
-        boolean isRecipientActive = Boolean.parseBoolean(readResponse(reader));
-
-        if (!isRecipientActive) {
-            for (int i = 0; i < messages.size(); i++) {
-                String message;
-                if (loggedOnUser.isRequestsCensorship()) {
-                    message = messages.get(i).getCensoredMessage(loggedOnUser);
-                } else {
-                    message = messages.get(i).getMessage();
-                }
-                System.out.printf("[%d] %s: %s\n", i, messages.get(i).getSender().getUsername(), message);
-            }
-            System.out.println("[Recipient has Deleted Their Account]");
-            System.out.println("[Hit Enter to Continue]");
-            scan.nextLine();
+            holder.add(list);
         } else {
-            System.out.println("--------");
-            System.out.println("0. Refresh");
-            System.out.println("1. Load All Messages");
-            System.out.println("2. Import .txt File");
-            System.out.println("3. Send Message");
-            System.out.println("4. Back to Conversation List");
-            System.out.println("---");
-            System.out.println("[To Execute the Below Actions, Enter MsgIndex.Action (eg. 3.5 to Edit Message 3)]");
-            System.out.println("---");
-            System.out.println("5. Edit Message");
-            System.out.println("6. Delete Message");
-
-            int lowerLimit = Math.min(messages.size(), 20);
-            for (int i = messages.size() - lowerLimit; i < messages.size(); i++) {
-                String message;
-                if (loggedOnUser.isRequestsCensorship()) {
-                    message = messages.get(i).getCensoredMessage(loggedOnUser);
-                } else {
-                    message = messages.get(i).getMessage();
-                }
-                System.out.printf("[%d] %s: %s\n", i, messages.get(i).getSender().getUsername(), message);
-            }
-
-            while (true) {
-                String conversationAction = scan.nextLine();
-
-                ArrayList<Conversation> refreshedConversations = refreshVisibleConversations(reader, writer, loggedOnUser);
-                for (Conversation refreshedConversation : refreshedConversations) {
-                    if (refreshedConversation.getFileName().equals(conversation.getFileName())) {
-                        conversation = refreshedConversation;
-                    }
-                }
-                recipient = (loggedOnUser instanceof Seller) ? conversation.getCustomer() :
-                        conversation.getSeller();
-
-                if (conversationAction.contains(".")) {
-                    String[] messageActions = conversationAction.split("\\.");
-
-                    int messageID = 0;
-                    int action = 0;
-                    try {
-                        messageID = Integer.parseInt(messageActions[0]);
-                        action = Integer.parseInt(messageActions[1]);
-                        if (messageID > messages.size() - 1 || messageID < 0) {
-                            JOptionPane.showMessageDialog(null, "Invalid Input. No Such Message Exists");
-                            break;
-                        }
-                    } catch (Exception e) {
-                        JOptionPane.showMessageDialog(null, "Invalid Input");
-                    }
-
-                    if (action == 5) {
-                        if (!recipient.getBlockedUsers().contains(loggedOnUser) &&
-                                !loggedOnUser.getBlockedUsers().contains(recipient)) {
-                            String updatedMessage = JOptionPane.showInputDialog(null, "Updated Message: ");
-
-                            while (updatedMessage != null && updatedMessage.equals("")) {
-                                JOptionPane.showMessageDialog(null, "Message Cannot Be Blank!");
-                                updatedMessage = JOptionPane.showInputDialog(null, "Updated Message: ");
-                            }
-
-                            if (updatedMessage != null) {
-                                if (loggedOnUser.editMessage(reader, writer,
-                                        messages.get(messageID),
-                                        conversation,
-                                        updatedMessage)) {
-                                    JOptionPane.showMessageDialog(null, "Edited Message");
-                                } else {
-                                    JOptionPane.showMessageDialog(null, "You Cannot Edit this Message");
-                                }
-                            }
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Sorry! You cannot message this user.");
-                        }
-                    } else if (action == 6) {
-                        if (loggedOnUser.deleteMessage(reader, writer, messages.get(messageID), conversation)) {
-                            JOptionPane.showMessageDialog(null, "Deleted Message");
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Sorry! Could not delete this message");
-                        }
-                    } else {
-                        System.out.println("Invalid Option");
-                    }
-                } else {
-                    int action;
-                    while (true) {
-                        try {
-                            action = Integer.parseInt(conversationAction);
-                            break;
-                        } catch (NumberFormatException e) {
-                            System.out.println("Invalid Option");
-                            conversationAction = scan.nextLine();
-                        }
-                    }
-
-                    if (action == 0) {
-                        messages = refreshVisibleMessages(reader, writer, conversation, loggedOnUser);
-
-                        lowerLimit = Math.min(messages.size(), 20);
-                        for (int i = messages.size() - lowerLimit; i < messages.size(); i++) {
-                            String message;
-                            if (loggedOnUser.isRequestsCensorship()) {
-                                message = messages.get(i).getCensoredMessage(loggedOnUser);
-                            } else {
-                                message = messages.get(i).getMessage();
-                            }
-                            System.out.printf("[%d] %s: %s\n", i, messages.get(i).getSender().getUsername(), message);
-                        }
-                    } else if (action == 1) {
-                        for (int i = 0; i < messages.size(); i++) {
-                            System.out.printf("[%d] %s: %s\n", i, messages.get(i).getSender().getUsername(),
-                                    messages.get(i).getMessage());
-                        }
-                    } else if (action == 2) {
-                        if (!recipient.getBlockedUsers().contains(loggedOnUser) &&
-                                !loggedOnUser.getBlockedUsers().contains(recipient)) {
-                            String txtPath = JOptionPane.showInputDialog(null, "Enter path to .txt file:");
-
-                            if (conversation.importTXT(reader, writer, txtPath, loggedOnUser, recipient)) {
-                                JOptionPane.showMessageDialog(null, "Message Sent Successfully!");
-                            } else {
-                                JOptionPane.showMessageDialog(null, "Error: Could not send message");
-                            }
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Sorry! You cannot message this user.");
-                        }
-                    } else if (action == 3) {
-                        if (!recipient.getBlockedUsers().contains(loggedOnUser) &&
-                                !loggedOnUser.getBlockedUsers().contains(recipient)) {
-                            String message = JOptionPane.showInputDialog(null, "Your Message: ");
-
-                            while (message != null && message.equals("")) {
-                                JOptionPane.showMessageDialog(null, "Message Cannot Be Blank!");
-                                message = JOptionPane.showInputDialog(null, "Your Message: ");
-                            }
-
-                            if (message != null) {
-                                if (loggedOnUser.sendMessageToUser(reader, writer, message, recipient)) {
-                                    JOptionPane.showMessageDialog(null, "Sent!");
-                                } else {
-                                    JOptionPane.showMessageDialog(null, "Message Failed!");
-                                }
-                            }
-                        } else {
-                            JOptionPane.showMessageDialog(null, "Sorry! You cannot message this user.");
-                        }
-                    } else if (action == 4) {
-                        break;
-                    } else {
-                        System.out.println("Invalid Option");
-                    }
-                }
-            }
-        }
-    }
-
-    private static void runListMenu(Scanner scan, BufferedReader reader, PrintWriter writer, User loggedOnUser) {
-        if (loggedOnUser instanceof Seller) {
-            while (true) {
-                ArrayList<Customer> customers = refreshCustomers(reader, writer, loggedOnUser);
-
-                System.out.println("----All Customers----");
-                if (customers.size() > 0) {
-                    System.out.println("[To Select a Customer, Enter their No.]");
-                } else {
-                    JOptionPane.showMessageDialog(null, "[No Customers]", "All Customers", JOptionPane.INFORMATION_MESSAGE);
-                }
-
-                for (int i = 0; i < customers.size(); i++) {
-                    String extraInformation = "";
-
-                    if (loggedOnUser.getBlockedUsers().contains(customers.get(i))) {
-                        extraInformation += "BLOCKED";
-                    }
-                    if (loggedOnUser.getInvisibleUsers().contains(customers.get(i))) {
-                        if (extraInformation.length() > 0) {
-                            extraInformation += " & ";
-                        }
-                        extraInformation += "INVISIBLE TO";
-                    }
-
-                    System.out.printf("%d. %s | %s%s\n", i + 1, customers.get(i).getUsername(),
-                            customers.get(i).getEmail(), (extraInformation.length() > 0) ? " | Currently: " +
-                                    extraInformation : "");
-                }
-                System.out.printf("%d. Back to Main Menu\n", customers.size() + 1);
-
-                int customerNumber;
-                while (true) {
-                        customerNumber = Integer.parseInt(scan.nextLine());
-                        if (customerNumber <= 0 || customerNumber > customers.size() + 1) {
-                            System.out.println("Invalid Option");
-                        } else {
-                            break;
-                        }
-                }
-
-                if (customerNumber == customers.size() + 1) {
-                    break;
-                } else if (customerNumber <= customers.size()) {
-                    Customer selectedCustomer = customers.get(customerNumber - 1);
-                    while (true) {
-                        int userChoice = printUserActionMenu(loggedOnUser, selectedCustomer);
-
-                        customers = refreshCustomers(reader, writer, loggedOnUser);
-                        for (Customer customer : customers) {
-                            if (customer.equals(selectedCustomer)) {
-                                selectedCustomer = customer;
-                            }
-                        }
-
-                        if (userChoice == 0) {
-                            if (!selectedCustomer.getBlockedUsers().contains(loggedOnUser) &&
-                                    !loggedOnUser.getBlockedUsers().contains(selectedCustomer)) {
-                                String message = JOptionPane.showInputDialog(null, "Your Message: ");
-
-                                while (message != null && message.equals("")) {
-                                    JOptionPane.showMessageDialog(null, "Message Cannot Be Blank!");
-                                    message = JOptionPane.showInputDialog(null, "Your Message: ");
-                                }
-
-                                if (message != null) {
-                                    if (loggedOnUser.sendMessageToUser(reader, writer, message, selectedCustomer)) {
-                                        JOptionPane.showMessageDialog(null, "Sent!");
-                                    } else {
-                                        JOptionPane.showMessageDialog(null, "Message Failed!");
-                                    }
-                                }
-                            } else {
-                                JOptionPane.showMessageDialog(null, "Sorry! You cannot message this user.");
-                            }
-                        } else if (userChoice == 1) {
-                            ArrayList<User> blockedUsers = loggedOnUser.getBlockedUsers();
-                            if (blockedUsers.contains(selectedCustomer)) {
-                                loggedOnUser.removeBlockedUser(writer, selectedCustomer);
-                                JOptionPane.showMessageDialog(null, "Unblocked Customer");
-                            } else {
-                                loggedOnUser.addBlockedUser(writer, selectedCustomer);
-                                JOptionPane.showMessageDialog(null, "Blocked Customer");
-                            }
-                            break;
-                        } else if (userChoice == 2) {
-                            ArrayList<User> invisibleUsers = loggedOnUser.getInvisibleUsers();
-                            if (invisibleUsers.contains(selectedCustomer)) {
-                                loggedOnUser.removeInvisibleUser(writer, selectedCustomer);
-                                JOptionPane.showMessageDialog(null, "Now Visible to Customer");
-                            } else {
-                                loggedOnUser.addInvisibleUser(writer, selectedCustomer);
-                                JOptionPane.showMessageDialog(null, "Now Invisible to Customer");
-                            }
-                            break;
-                        } else {
-                            break;
-                        }
-                    }
-                } else {
-                    System.out.println("Invalid Option");
-                }
-            }
-        } else {
-            while (true) {
-                ArrayList<Store> stores = new ArrayList<>();
-
-                String userString = ((Customer) loggedOnUser).detailedToString();
-                String listStoresRequest = "[LIST.VISIBLE_STORES]" + userString;
-                sendRequest(writer, listStoresRequest);
-                String stringListOfStores = readResponse(reader);
-
-                if (stringListOfStores != null && stringListOfStores.length() > 0) {
-                    String[] listOfStoreStrings = stringListOfStores.split(";");
-                    for (String storeString : listOfStoreStrings) {
-                        stores.add(new Store(storeString));
-                    }
-                }
-
-                System.out.println("----All Stores----");
-                if (stores.size() > 0) {
-                    System.out.println("[To Select a Store, Enter its No.]");
-                } else {
-                    JOptionPane.showMessageDialog(null, "[No Stores]", "All Stores", JOptionPane.INFORMATION_MESSAGE);
-                }
-                for (int i = 0; i < stores.size(); i++) {
-                    String extraInformation = "";
-
-                    if (loggedOnUser.getBlockedUsers().contains(stores.get(i).getSeller())) {
-                        extraInformation += "BLOCKED";
-                    }
-                    if (loggedOnUser.getInvisibleUsers().contains(stores.get(i).getSeller())) {
-                        if (extraInformation.length() > 0) {
-                            extraInformation += " & ";
-                        }
-                        extraInformation += "INVISIBLE TO";
-                    }
-
-                    System.out.printf("%d. %s by %s%s\n", i + 1, stores.get(i).getStoreName(),
-                            stores.get(i).getSeller().getUsername(), (extraInformation.length() > 0) ? " | Currently: "
-                                    + extraInformation : "");
-                }
-                System.out.printf("%d. Back to Main Menu\n", stores.size() + 1);
-
-                int storeNumber;
-                while (true) {
-                        storeNumber = Integer.parseInt(scan.nextLine());
-                        if (storeNumber <= 0 || storeNumber > stores.size() + 1) {
-                            System.out.println("Invalid Option");
-                        } else {
-                            break;
-                        }
-                }
-
-                if (storeNumber == stores.size() + 1) {
-                    break;
-                } else if (storeNumber <= stores.size()) {
-                    Seller selectedStoreSeller = stores.get(storeNumber - 1).getSeller();
-                    if (selectedStoreSeller.getBlockedUsers().contains(loggedOnUser)) {
-                        JOptionPane.showMessageDialog(null, "Sorry! You cannot view this store");
-                    } else {
-                        loggedOnUser.sendMessageToUser(reader, writer, loggedOnUser.getUsername() +
-                                        " looked up the Store: " + stores.get(storeNumber - 1).getStoreName(),
-                                selectedStoreSeller);
-
-                        while (true) {
-                            int userChoice = printUserActionMenu(loggedOnUser, selectedStoreSeller);
-
-                            stores = refreshStores(reader, writer, loggedOnUser);
-                            for (Store store : stores) {
-                                if (store.getSeller().equals(selectedStoreSeller)) {
-                                    selectedStoreSeller = store.getSeller();
-                                }
-                            }
-
-                            if (userChoice == 0) {
-                                if (!selectedStoreSeller.getBlockedUsers().contains(loggedOnUser) &&
-                                        !loggedOnUser.getBlockedUsers().contains(selectedStoreSeller)) {
-                                    String message = JOptionPane.showInputDialog(null, "Your Message: ");
-
-                                    while (message != null && message.equals("")) {
-                                        JOptionPane.showMessageDialog(null, "Message Cannot Be Blank!");
-                                        message = JOptionPane.showInputDialog(null, "Your Message: ");
-                                    }
-
-                                    if (message != null) {
-                                        if (loggedOnUser.sendMessageToUser(reader, writer, message, selectedStoreSeller)) {
-                                            JOptionPane.showMessageDialog(null, "Sent!");
-                                        } else {
-                                            JOptionPane.showMessageDialog(null, "Message Failed!");
-                                        }
-                                    }
-                                } else {
-                                    JOptionPane.showMessageDialog(null, "Sorry! You cannot message this user.");
-                                }
-                            } else if (userChoice == 1) {
-                                ArrayList<User> blockedUsers = loggedOnUser.getBlockedUsers();
-                                if (blockedUsers.contains(selectedStoreSeller)) {
-                                    loggedOnUser.removeBlockedUser(writer, selectedStoreSeller);
-                                    JOptionPane.showMessageDialog(null, "Unblocked Store Owner");
-                                } else {
-                                    loggedOnUser.addBlockedUser(writer, selectedStoreSeller);
-                                    JOptionPane.showMessageDialog(null, "Blocked Store Owner");
-                                }
-                                break;
-                            } else if (userChoice == 2) {
-                                ArrayList<User> invisibleUsers = loggedOnUser.getInvisibleUsers();
-                                if (invisibleUsers.contains(selectedStoreSeller)) {
-                                    loggedOnUser.removeInvisibleUser(writer, selectedStoreSeller);
-                                    JOptionPane.showMessageDialog(null, "Now Visible to Store Owner");
-                                } else {
-                                    loggedOnUser.addInvisibleUser(writer, selectedStoreSeller);
-                                    JOptionPane.showMessageDialog(null, "Now Invisible to Store Owner");
-                                }
-                                break;
-                            } else {
-                                break;
-                            }
-                        }
-                    }
-                } else {
-                    System.out.println("Invalid Option");
-                }
-            }
-        }
-    }
-
-    /*
-     * private static void runSearchMenu(BufferedReader reader, PrintWriter writer, User loggedOnUser)
-     * Method that lets user search for a username or email
-     * and lists corresponding users of the opposite role.
-     */
-    private static void runSearchMenu(BufferedReader reader, PrintWriter writer, User loggedOnUser) {
-        String searchKeyword = JOptionPane.showInputDialog(null, "Search by Username or Email (full or part):");
-
-        while (searchKeyword != null && searchKeyword.equals("")) {
-            JOptionPane.showMessageDialog(null, "Search Keyword Cannot Be Blank!");
-            searchKeyword = JOptionPane.showInputDialog(null, "Search by Username or Email (full or part):");
-        }
-
-        if (loggedOnUser instanceof Seller) {
-            while (true) {
-                ArrayList<Customer> customers = refreshSearchCustomers(reader, writer, loggedOnUser, searchKeyword);
-                String[] options = new String[customers.size()];
-                String selectedOption = "";
-
-                if (customers.size() > 0) {
-                    for (int i = 0; i < customers.size(); i++) {
-                        String extraInformation = "";
-
-                        if (loggedOnUser.getBlockedUsers().contains(customers.get(i))) {
-                            extraInformation += "BLOCKED";
-                        }
-                        if (loggedOnUser.getInvisibleUsers().contains(customers.get(i))) {
-                            if (extraInformation.length() > 0) {
-                                extraInformation += " & ";
-                            }
-                            extraInformation += "INVISIBLE TO";
-                        }
-
-                        options[i] = String.format("%d. %s | %s%s\n", i + 1, customers.get(i).getUsername(),
-                                customers.get(i).getEmail(), (extraInformation.length() > 0) ? " | Currently: " +
-                                        extraInformation : "");
-                    }
-                    // options[customers.size()] = String.format("%d. Back to Main Menu", customers.size() + 1);
-
-                    selectedOption = (String) JOptionPane.showInputDialog(null, "Select a customer:",
-                            "Search " +
-                                    "Results",
-                            JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
-                } else {
-                    // options = new String[]{"Back to Main Menu"};
-                    if (searchKeyword != null) {
-                        JOptionPane.showMessageDialog(null, "[No Matching Search Results]", "Search Results",
-                                JOptionPane.INFORMATION_MESSAGE);
-                        /*
-                        JOptionPane.showOptionDialog(null, "[No Matching Search Results]", "Search Results",
-                                JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE, null, new String[]{"Back " +
-                                        "to Main Menu"}, null);
-                         */
-                        /*
-                        selectedOption = (String) JOptionPane.showInputDialog(null, "[No Matching Search Results]",
-                                "Search Results",
-                                JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
-                         */
-                    }
-                }
-
-                int customerNumber = customers.size() + 1;
-                for (int i = 0; i < customers.size(); i++) {
-                    if (selectedOption != null && selectedOption.equals(options[i])) {
-                        customerNumber = i + 1;
-                    }
-                }
-
-                if (customerNumber == customers.size() + 1) {
-                    break;
-                } else { // if (customerNumber <= customers.size())
-                    Customer selectedCustomer = customers.get(customerNumber - 1);
-                    while (true) {
-                        int userChoice = printUserActionMenu(loggedOnUser, selectedCustomer);
-
-                        customers = refreshSearchCustomers(reader, writer, loggedOnUser, searchKeyword);
-                        for (Customer customer : customers) {
-                            if (customer.equals(selectedCustomer)) {
-                                selectedCustomer = customer;
-                            }
-                        }
-
-                        if (userChoice == 0) {
-                            if (!selectedCustomer.getBlockedUsers().contains(loggedOnUser) &&
-                                    !loggedOnUser.getBlockedUsers().contains(selectedCustomer)) {
-                                String message = JOptionPane.showInputDialog(null, "Your Message: ");
-
-                                while (message != null && message.equals("")) {
-                                    JOptionPane.showMessageDialog(null, "Message Cannot Be Blank!");
-                                    message = JOptionPane.showInputDialog(null, "Your Message: ");
-                                }
-
-                                if (message != null) {
-                                    if (loggedOnUser.sendMessageToUser(reader, writer, message, selectedCustomer)) {
-                                        JOptionPane.showMessageDialog(null, "Sent!");
-                                    } else {
-                                        JOptionPane.showMessageDialog(null, "Message Failed!");
-                                    }
-                                }
-                            } else {
-                                JOptionPane.showMessageDialog(null, "Sorry! You cannot message this user.");
-                            }
-                        } else if (userChoice == 1) {
-                            ArrayList<User> blockedUsers = loggedOnUser.getBlockedUsers();
-                            if (blockedUsers.contains(selectedCustomer)) {
-                                loggedOnUser.removeBlockedUser(writer, selectedCustomer);
-                                JOptionPane.showMessageDialog(null, "Unblocked Customer");
-                            } else {
-                                loggedOnUser.addBlockedUser(writer, selectedCustomer);
-                                JOptionPane.showMessageDialog(null, "Blocked Customer");
-                            }
-                            break;
-                        } else if (userChoice == 2) {
-                            ArrayList<User> invisibleUsers = loggedOnUser.getInvisibleUsers();
-                            if (invisibleUsers.contains(selectedCustomer)) {
-                                loggedOnUser.removeInvisibleUser(writer, selectedCustomer);
-                                JOptionPane.showMessageDialog(null, "Now Visible to Customer");
-                            } else {
-                                loggedOnUser.addInvisibleUser(writer, selectedCustomer);
-                                JOptionPane.showMessageDialog(null, "Now Invisible to Customer");
-                            }
-                            break;
-                        } else {
-                            break;
-                        }
-                    }
-                }
-            }
-        } else {
-            while (true) {
-                ArrayList<Seller> sellers = refreshSearchSellers(reader, writer, loggedOnUser, searchKeyword);
-                String[] options = new String[sellers.size()];
-                String selectedOption = "";
-
-                if (sellers.size() > 0) {
-                    for (int i = 0; i < sellers.size(); i++) {
-                        String extraInformation = "";
-
-                        if (loggedOnUser.getBlockedUsers().contains(sellers.get(i))) {
-                            extraInformation += "BLOCKED";
-                        }
-                        if (loggedOnUser.getInvisibleUsers().contains(sellers.get(i))) {
-                            if (extraInformation.length() > 0) {
-                                extraInformation += " & ";
-                            }
-                            extraInformation += "INVISIBLE TO";
-                        }
-
-                        options[i] = String.format("%d. %s | %s%s\n", i + 1, sellers.get(i).getUsername(), sellers.get(i).getEmail(),
-                                (extraInformation.length() > 0) ? " | Currently: " + extraInformation : "");
-                    }
-                    // options[customers.size()] = String.format("%d. Back to Main Menu", customers.size() + 1);
-
-                    selectedOption = (String) JOptionPane.showInputDialog(null, "Select a seller:",
-                            "Search " +
-                                    "Results",
-                            JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
-                } else {
-                    options = new String[]{"1. Back to Main Menu"};
-                    if (searchKeyword != null) {
-                        JOptionPane.showMessageDialog(null, "[No Matching Search Results]", "Search Results",
-                                JOptionPane.INFORMATION_MESSAGE);
-                        /*
-                        JOptionPane.showOptionDialog(null, "[No Matching Search Results]", "Search Results",
-                                JOptionPane.OK_OPTION, JOptionPane.INFORMATION_MESSAGE, null, new String[]{"Back " +
-                                        "to Main Menu"}, null);
-                         */
-                        /*
-                        selectedOption = (String) JOptionPane.showInputDialog(null, "[No Matching Search Results]",
-                                "Search Results",
-                                JOptionPane.INFORMATION_MESSAGE, null, options, options[0]);
-                         */
-                    }
-                }
-
-                int sellerNumber = sellers.size() + 1;
-                for (int i = 0; i < sellers.size(); i++) {
-                    if (selectedOption != null && selectedOption.equals(options[i])) {
-                        sellerNumber = i + 1;
-                    }
-                }
-                if (sellerNumber == sellers.size() + 1) {
-                    break;
-                } else { // if (sellerNumber <= sellers.size())
-                    Seller selectedSeller = sellers.get(sellerNumber - 1);
-                    while (true) {
-                        int userChoice = printUserActionMenu(loggedOnUser, selectedSeller);
-
-                        sellers = refreshSearchSellers(reader, writer, loggedOnUser, searchKeyword);
-                        for (Seller seller : sellers) {
-                            if (seller.equals(selectedSeller)) {
-                                selectedSeller = seller;
-                            }
-                        }
-
-                        if (userChoice == 0) {
-                            if (!selectedSeller.getBlockedUsers().contains(loggedOnUser) &&
-                                    !loggedOnUser.getBlockedUsers().contains(selectedSeller)) {
-                                String message = JOptionPane.showInputDialog(null, "Your Message: ");
-
-                                while (message != null && message.equals("")) {
-                                    JOptionPane.showMessageDialog(null, "Message Cannot Be Blank!");
-                                    message = JOptionPane.showInputDialog(null, "Your Message: ");
-                                }
-
-                                if (message != null) {
-                                    if (loggedOnUser.sendMessageToUser(reader, writer, message, selectedSeller)) {
-                                        JOptionPane.showMessageDialog(null, "Sent!");
-                                    } else {
-                                        JOptionPane.showMessageDialog(null, "Message Failed!");
-                                    }
-                                }
-                            } else {
-                                JOptionPane.showMessageDialog(null, "Sorry! You cannot message this user.");
-                            }
-                        } else if (userChoice == 1) {
-                            ArrayList<User> blockedUsers = loggedOnUser.getBlockedUsers();
-                            if (blockedUsers.contains(selectedSeller)) {
-                                loggedOnUser.removeBlockedUser(writer, selectedSeller);
-                                JOptionPane.showMessageDialog(null, "Unblocked Seller");
-                            } else {
-                                loggedOnUser.addBlockedUser(writer, selectedSeller);
-                                JOptionPane.showMessageDialog(null, "Blocked Seller");
-                            }
-                            break;
-                        } else if (userChoice == 2) {
-                            ArrayList<User> invisibleUsers = loggedOnUser.getInvisibleUsers();
-                            if (invisibleUsers.contains(selectedSeller)) {
-                                loggedOnUser.removeInvisibleUser(writer, selectedSeller);
-                                JOptionPane.showMessageDialog(null, "Now Visible to Seller");
-                            } else {
-                                loggedOnUser.addInvisibleUser(writer, selectedSeller);
-                                JOptionPane.showMessageDialog(null, "Now Invisible to Seller");
-                            }
-                            break;
-                        } else {
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // TODO: showOptionDialog --> showInputDialog. Too many buttons on one line
-    private static int printEditAccountMenu() {
-        String[] options = {"1. Change Username", "2. Change Password", "3. Manage Blocked Users", "4. Manage " +
-                "Invisible to Users", "5. Edit Censoring", "6. Delete Account", "7. Back to Main Menu"};
-        int selectedOption = JOptionPane.showOptionDialog(null, "Edit your account:", "Account Menu",
-                JOptionPane.DEFAULT_OPTION, JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
-        return selectedOption;
-    }
-
-    private static int printUserActionMenu(User user, User selectedUser) {
-        String keyword = (user instanceof Seller) ? "Customer" : "Seller";
-        String[] options = {String.format("1. Message %s", keyword), String.format("2. %s %s", (user.getBlockedUsers().contains(selectedUser)) ?
-                "Unblock" : "Block", keyword), String.format("3. Become %s to %s", (user.getInvisibleUsers().contains(selectedUser)) ?
-                "Visible" : "Invisible", keyword), String.format("4. Back to %s List", keyword)};
-        int selectedOption = JOptionPane.showOptionDialog(null, String.format("Selected: %s",
-                        selectedUser.getUsername()), "User " +
-                "Action Menu", JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options,
-                options[0]);
-        return selectedOption;
-    }
-
-    private static boolean runAccountMenu(BufferedReader reader, PrintWriter writer, User loggedOnUser) {
-        boolean deleteUser = false;
-        while (true) {
-            int accountOption = printEditAccountMenu();
-            if (accountOption == 0) {
-                while (true) {
-                    String username = JOptionPane.showInputDialog(null, "Enter new username:");
-
-                    while (username != null && username.equals("")) {
-                        JOptionPane.showMessageDialog(null, "Username Cannot Be Blank!");
-                        username = JOptionPane.showInputDialog(null, "Enter new username:");
-                    }
-
-                    if (username != null) {
-                        username = username.replaceAll("[,<>;]", "_");
-                    }
-
-                    String checkUsernameRequest = "[CHECK.USERNAME]" + username;
-                    sendRequest(writer, checkUsernameRequest);
-                    boolean isUsernameTaken = Boolean.parseBoolean(readResponse(reader));
-
-                    if (username == null) { // User goes back to Account Menu
-                        break;
-                    } else if (isUsernameTaken) {
-                        int selectedOption = JOptionPane.showConfirmDialog(null, "Sorry! That username is already " +
-                                "taken.\nTry again?", "Duplicate Username", JOptionPane.YES_NO_OPTION);
-
-                        boolean tryAgain = selectedOption == JOptionPane.YES_OPTION;
-                        if (!tryAgain) { // User goes back to Account Menu
-                            break;
-                        }
-                    } else {
-                        loggedOnUser.setUsername(reader, writer, username);
-                        JOptionPane.showMessageDialog(null, "Username Changed!");
-                        break;
-                    }
-                }
-            } else if (accountOption == 1) {
-                String currentPassword = JOptionPane.showInputDialog(null, "Enter current password:");
-
-                if (currentPassword != null) { // Else, return to Account Menu
-                    if (currentPassword.equals(loggedOnUser.getPassword())) {
-                        String newPassword = JOptionPane.showInputDialog(null, "Enter new password:");
-
-                        while (newPassword != null && newPassword.equals("")) {
-                            JOptionPane.showMessageDialog(null, "Password Cannot Be Blank!");
-                            newPassword = JOptionPane.showInputDialog(null, "Enter new password:");
-                        }
-
-                        if (newPassword != null) { // User did not cancel or exit
-                            String confirmPassword = JOptionPane.showInputDialog(null, "Confirm new password:");
-
-                            if (confirmPassword != null) { // User did not cancel or exit
-                                if (newPassword.equals(confirmPassword)) {
-                                    loggedOnUser.setPassword(reader, writer, confirmPassword);
-                                    JOptionPane.showMessageDialog(null, "Password Changed!");
-                                } else {
-                                    JOptionPane.showMessageDialog(null, "Did not match!");
-                                }
-                            }
-                        }
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Invalid Password");
-                    }
-                }
-            } else if (accountOption == 2) {
-                ArrayList<User> blockedUsers = loggedOnUser.getBlockedUsers();
-                while (true) {
-                    String selectedOption = "";
-                    String[] options = new String[blockedUsers.size()];
-                    if (blockedUsers.size() > 0) {
-                        for (int i = 0; i < blockedUsers.size(); i++) {
-                            options[i] = String.format("[%d] %s | %s\n", i + 1, blockedUsers.get(i).getUsername(),
-                                    blockedUsers.get(i).getEmail());
-                        }
-
-                        selectedOption = (String) JOptionPane.showInputDialog(null, "Select a user to unblock:",
-                                "Blocked Users",
-                                JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
-                    } else {
-                        JOptionPane.showMessageDialog(null, "[No Blocked Users]", "Blocked Users",
-                                JOptionPane.INFORMATION_MESSAGE);
-                    }
-
-                    int blockedOption = blockedUsers.size() + 1;
-                    for (int i = 0; i < blockedUsers.size(); i++) {
-                        if (selectedOption != null && selectedOption.equals(options[i])) {
-                            blockedOption = i + 1;
-                        }
-                    }
-                    if (blockedOption == blockedUsers.size() + 1) {
-                        break;
-                    } else {
-                        loggedOnUser.removeBlockedUser(writer, blockedUsers.get(blockedOption - 1));
-                        JOptionPane.showMessageDialog(null, "Unblocked User");
-                    }
-                }
-            } else if (accountOption == 3) {
-                ArrayList<User> invisibleUsers = loggedOnUser.getInvisibleUsers();
-                while (true) {
-                    String selectedOption = "";
-                    String[] options = new String[invisibleUsers.size()];
-
-                    if (invisibleUsers.size() > 0) {
-                        for (int i = 0; i < invisibleUsers.size(); i++) {
-                            options[i] = String.format("[%d] %s | %s\n", i + 1, invisibleUsers.get(i).getUsername(),
-                                    invisibleUsers.get(i).getEmail());
-                        }
-
-                        selectedOption = (String) JOptionPane.showInputDialog(null, "Select a user to become visible " +
-                                        "to:",
-                                "Invisible to Users",
-                                JOptionPane.PLAIN_MESSAGE, null, options, options[0]);
-                    } else {
-                        JOptionPane.showMessageDialog(null, "[No Invisible to Users]", "Invisible to Users",
-                                JOptionPane.INFORMATION_MESSAGE);
-                    }
-
-                    int visibleOption = invisibleUsers.size() + 1;
-                    for (int i = 0; i < invisibleUsers.size(); i++) {
-                        if (selectedOption != null && selectedOption.equals(options[i])) {
-                            visibleOption = i + 1;
-                        }
-                    }
-                    if (visibleOption == invisibleUsers.size() + 1) {
-                        break;
-                    } else {
-                        loggedOnUser.removeInvisibleUser(writer, invisibleUsers.get(visibleOption - 1));
-                        JOptionPane.showMessageDialog(null, "Now Visible to User");
-                    }
-                }
-            } else if (accountOption == 4) {
-                ArrayList<String> censoredWords = loggedOnUser.getCensoredWords();
-                while (true) {
-                    String[] options = new String[]{"1. Add Censor Pair", "2. Delete Censor Pair", String.format(
-                            "3. Toggle Censoring (ON/OFF) | Currently: %s", (loggedOnUser.isRequestsCensorship()) ?
-                                    "ON" : "OFF"), "4. Back to Account Menu"};
-                    int selectedOption = JOptionPane.showOptionDialog(null, "Select an action:", "Edit Censoring",
-                            JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options,
-                            options[0]);
-
+            String[] options = {"View Conversations", "View All Stores", "Search Sellers", "Edit Account", "Log Out"};
+            JList list = new JList(options);
+            list.addListSelectionListener(new ListSelectionListener() {
+                @Override
+                public void valueChanged(ListSelectionEvent e) {
+                    int selectedOption = list.getSelectedIndex();
                     if (selectedOption == 0) {
-                        String censorPair = JOptionPane.showInputDialog(null, "Enter new pair as \"Word:Replacement\"" +
-                                " or only \"Word\"");
 
-                        if (censorPair != null) {
-                            if (censorPair.equals("") || censorPair.equals(":")) {
-                                JOptionPane.showMessageDialog(null, "Censor Pair Cannot Be Blank!");
-                            } else if (!(censorPair.contains(",") || censorPair.contains(">") || censorPair.contains(
-                                    "<"))) {
-                                String[] newCensor = censorPair.split(":");
-                                if (newCensor.length == 1) {
-                                    loggedOnUser.addCensoredWord(writer, newCensor[0] + ":" + "****");
-                                } else {
-                                    loggedOnUser.addCensoredWord(writer, newCensor[0] + ":" + newCensor[1]);
-                                }
-                            } else {
-                                JOptionPane.showMessageDialog(null, "You Cannot have Special Characters in Censoring!");
-                            }
-                        }
                     } else if (selectedOption == 1) {
-                        if (censoredWords.size() > 0) {
-                            String[] censorOptions = new String[censoredWords.size()];
-                            for (int i = 0; i < censoredWords.size(); i++) {
-                                censorOptions[i] = String.format("%d. %s\n", i + 1, censoredWords.get(i).replace(":",
-                                        " >>> "));
-                            }
-                            String censorPair = (String) JOptionPane.showInputDialog(null, "Select censor pair to delete:",
-                                    "Censor Pairs", JOptionPane.QUESTION_MESSAGE, null, censorOptions,
-                                    censorOptions[0]);
 
-                            int censorOption = -1;
-                            for (int i = 0; i < censoredWords.size(); i++) {
-                                if (censorPair != null && censorPair.equals(censorOptions[i])) {
-                                    censorOption = i + 1;
-                                }
-                            }
-
-                            if (censorOption != -1) {
-                                loggedOnUser.removeCensoredWord(writer, censorOption - 1,
-                                        loggedOnUser.getCensoredWords().get(censorOption - 1));
-                                JOptionPane.showMessageDialog(null, "Censor Pair Deleted!");
-                            }
-                        } else {
-                            JOptionPane.showMessageDialog(null, "[No Censor Pairs]", "Censor Pairs", JOptionPane.INFORMATION_MESSAGE);
-                        }
                     } else if (selectedOption == 2) {
-                        loggedOnUser.toggleRequestsCensorship(writer);
+
+                    } else if (selectedOption == 3) {
+
+                    } else if (selectedOption == 4) {
+                        exitApplication(messengerClient, writer);
                     } else {
-                        break;
+                        JOptionPane.showMessageDialog(null, "Select an Option",
+                                "Messenger", JOptionPane.ERROR_MESSAGE);
                     }
                 }
-            } else if (accountOption == 5) {
-                int selectedOption = JOptionPane.showConfirmDialog(null, "Are you sure?",
-                        "Account " +
-                                "Deletion Confirmation",
-                        JOptionPane.YES_NO_OPTION);
-                deleteUser = selectedOption == JOptionPane.YES_OPTION;
-                if (deleteUser) {
-                    String request = "[DELETE]" + ((loggedOnUser instanceof Seller) ?
-                            ((Seller) loggedOnUser).detailedToString() : ((Customer) loggedOnUser).detailedToString());
-                    sendRequest(writer, request);
-                    break;
-                }
-            } else {
-                break;
-            }
-        }
-        return deleteUser;
-    }
-
-    // TODO: Make sure all titles are consistent with content (e.g., "Account Deletion Confirmation).
-    private static int printMainMenu(User user) {
-        String[] options;
-        // TODO: Change/remove numbers?
-        if (user instanceof Seller) {
-            options = new String[]{"1. Manage Stores", "2. View Conversations", "3. View All Customers", "4. Search " +
-                    "Customers", "5. Edit Account", "6. Log Out"};
-        } else {
-            options = new String[]{"1. View Conversations", "2. View All Stores", "3. Search " +
-                    "Sellers", "4. Edit Account", "5. Log Out"};
+            });
+            holder.add(list);
         }
 
-        int selectedOption = JOptionPane.showOptionDialog(null, "Select an action:", "Main Menu",
-                JOptionPane.DEFAULT_OPTION, JOptionPane.QUESTION_MESSAGE, null, options,
-                options[0]);
-        return selectedOption;
+        messengerClient.container.add("Main", holder);
+        messengerClient.cardLayout.show(messengerClient.container, "Main");
     }
+
+//    private static void runConversationsMenu(Scanner scan, BufferedReader reader, PrintWriter writer, User loggedOnUser) {
+//        ArrayList<Conversation> conversations = refreshVisibleConversations(reader, writer, loggedOnUser);
+//        if (conversations.size() < 1) {
+//            JOptionPane.showMessageDialog(null, "You have no active conversations");
+//        } else {
+//            JFrame frame = new JFrame();
+//
+//            String[] conversationName = new String[conversations.size()];
+//            for (int i = 0; i < conversations.size(); i++) {
+//                conversationName[i] = conversations.get(i).getConversationID();
+//            }
+//            JList converseList = new JList(conversationName);
+//
+//            frame.setSize(600, 400);
+//            frame.setLocationRelativeTo(null);
+//
+//            // Overall panel menu containing CardLayout
+//            JPanel conversationMenu = new JPanel();
+//            conversationMenu.setLayout(new CardLayout());
+//            CardLayout card = (CardLayout) conversationMenu.getLayout();
+//
+//            // Panel for conversation selection
+//            JPanel viewConversationList = new JPanel();
+//            viewConversationList.setLayout(new FlowLayout());
+//            viewConversationList.setAlignmentX(100);
+//            viewConversationList.setBorder(new EmptyBorder(new Insets(50, 200, 50, 200)));
+//
+//            JButton okButton = new JButton("Select");
+//            JButton cancelButton = new JButton("Cancel");
+//            JScrollPane selectList = new JScrollPane(converseList);
+//            selectList.setBounds(200, 200, 200, 200);
+//            viewConversationList.add(selectList);
+//            JPanel panel = new JPanel(new GridLayout(1, 2));
+//            panel.add(okButton);
+//            panel.add(cancelButton);
+//            viewConversationList.add(panel);
+//
+//            conversationMenu.add(viewConversationList, "Listing");
+//            card.show(conversationMenu, "Listing");
+//
+//
+//            JPanel messageOptions = new JPanel();
+//            conversationMenu.add(messageOptions, "Options");
+//
+//            JButton sendMessage = new JButton("Send");
+//            JButton editMessage = new JButton("Edit");
+//            JButton deleteMessage = new JButton("Delete");
+//            JButton exitMessage = new JButton("Exit");
+//
+//            JPanel flow = new JPanel(new FlowLayout());
+//            flow.add(sendMessage);
+//            flow.add(editMessage);
+//            flow.add(deleteMessage);
+//            flow.add(exitMessage);
+//            messageOptions.add(flow);
+//
+//
+//            DefaultListModel listModel = new DefaultListModel();
+//            JList messageHistory = new JList(listModel);
+//
+//            okButton.addActionListener(ok -> {
+//                try {
+//                    int index = converseList.getSelectedIndex();
+//                    Conversation selectedConversation = conversations.get(index);
+//                    messageOptions.setLayout(new GridLayout(2, 9));
+//                    ArrayList<Message> messageList = selectedConversation.readFileAsPerUser(loggedOnUser);
+//
+//                    // Populates an Array List with appropriate message displays
+//                    ArrayList<String> messageDisplay = new ArrayList<>();
+//                    for (int i = 0; i < messageList.size(); i++) {
+//                        messageDisplay.add(messageList.get(i).getSender().getUsername() + ": " + messageList.get(i).getMessage());
+//                    }
+//
+//                    DefaultListModel model = new DefaultListModel();
+//                    for (int i = 0; i < messageList.size(); i++) {
+//                        model.addElement(messageDisplay.get(i));
+//                    }
+//                    JList list = new JList(model);
+//                    JScrollPane history = new JScrollPane(list);
+//
+//                    messageOptions.add(history);
+//
+//
+//                    sendMessage.addActionListener(send -> {
+//                        String sending = JOptionPane.showInputDialog(null, "Enter a new message",
+//                                "Send Message", JOptionPane.PLAIN_MESSAGE);
+//                        if (loggedOnUser instanceof Customer) {
+//                            loggedOnUser.sendMessageToUser(reader, writer, sending, selectedConversation.getSeller());
+//                        }
+//                        if (loggedOnUser instanceof Seller) {
+//                            loggedOnUser.sendMessageToUser(reader, writer, sending, selectedConversation.getCustomer());
+//                        }
+//                        sendMessage.removeActionListener(null);
+//
+//                    });
+//
+//                    exitMessage.addActionListener(exit -> {
+//                        for (int i = 0; i < model.getSize(); i++) {
+//                            model.remove(i);
+//                        }
+//                        try {
+//                            sendMessage.removeActionListener(sendMessage.getActionListeners()[0]);
+//                            //deleteMessage.removeActionListener(deleteMessage.getActionListeners()[0]);
+//                            //editMessage.removeActionListener(editMessage.getActionListeners()[0]);
+//                            exitMessage.removeActionListener(exitMessage.getActionListeners()[0]);
+//                            card.show(conversationMenu, "Listing");
+//                            messageOptions.remove(history);
+//                        } catch (ArrayIndexOutOfBoundsException exception) {
+//                            System.out.println("EAT JAVA");
+//                        }
+//                    });
+//                    card.show(conversationMenu, "Options");
+//                } catch (IndexOutOfBoundsException indexException) {
+//                    JOptionPane.showMessageDialog(null, "Please select a conversation");
+//                }
+//            });
+//
+//            frame.add(conversationMenu);
+//            frame.setVisible(true);
+//        }
+//    }
 }

@@ -455,8 +455,6 @@ public class MessengerServer implements Runnable {
      * Runs the interface between a thread of the server and a connected client.
      */
     public void run() {
-
-
         try {
             PrintWriter writer = new PrintWriter(clientSocket.getOutputStream());
             BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
@@ -588,6 +586,8 @@ public class MessengerServer implements Runnable {
                     System.out.println("Error: Invalid Request");
                 }
             }
+
+            clientSocket.close();
         } catch (IOException e) {
             e.printStackTrace();
         }

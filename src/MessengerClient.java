@@ -279,7 +279,8 @@ public class MessengerClient {
     }
 
     public static void main(String[] args) {
-        try (Socket socket = new Socket("localhost", 8080)) {
+        try {
+            Socket socket = new Socket("localhost", 8080)
             PrintWriter writer = new PrintWriter(socket.getOutputStream());
             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
             MessengerClient messengerClient = new MessengerClient();

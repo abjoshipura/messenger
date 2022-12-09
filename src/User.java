@@ -606,7 +606,7 @@ public class User {
                     if (!Boolean.parseBoolean(MessengerClient.readResponse(reader))) {
                         return false;
                     }
-                    conversation.setSellerUnread(true, writer);
+                    conversation.setSellerUnread(writer, true);
                 }
             } catch (Exception e) {
                 return false;

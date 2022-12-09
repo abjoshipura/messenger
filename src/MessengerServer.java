@@ -456,7 +456,7 @@ public class MessengerServer implements Runnable {
      */
     public void run() {
         try {
-            PrintWriter writer = new PrintWriter(clientSocket.getOutputStream());
+            PrintWriter writer = new PrintWriter(clientSocket.getOutputStream(), true);
             BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
 
             while (true) {

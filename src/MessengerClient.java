@@ -714,9 +714,16 @@ public class MessengerClient {
                                     if (messengerClient.messages.size() > 0) {
                                         DefaultListModel messageModel = new DefaultListModel();
                                         for (int i = 0; i < messengerClient.messages.size(); i++) {
-                                            String message = String.format("%s: %s",
-                                                    messengerClient.messages.get(i).getSender().getUsername(),
-                                                    messengerClient.messages.get(i).getMessage());
+                                            String message = messengerClient.messages.get(i).getSender().getUsername()
+                                                    + ": ";
+
+                                            if (messengerClient.loggedOnUser.isRequestsCensorship()) {
+                                                message += messengerClient.messages.get(i)
+                                                        .getCensoredMessage(messengerClient.loggedOnUser);
+                                            } else {
+                                                message += messengerClient.messages.get(i).getMessage();
+                                            }
+
                                             messageModel.addElement(message);
                                         }
 
@@ -1310,9 +1317,16 @@ public class MessengerClient {
                                     if (messengerClient.messages.size() > 0) {
                                         DefaultListModel messageModel = new DefaultListModel();
                                         for (int i = 0; i < messengerClient.messages.size(); i++) {
-                                            String message = String.format("%s: %s",
-                                                    messengerClient.messages.get(i).getSender().getUsername(),
-                                                    messengerClient.messages.get(i).getMessage());
+                                            String message = messengerClient.messages.get(i).getSender().getUsername()
+                                                    + ": ";
+
+                                            if (messengerClient.loggedOnUser.isRequestsCensorship()) {
+                                                message += messengerClient.messages.get(i)
+                                                        .getCensoredMessage(messengerClient.loggedOnUser);
+                                            } else {
+                                                message += messengerClient.messages.get(i).getMessage();
+                                            }
+
                                             messageModel.addElement(message);
                                         }
 

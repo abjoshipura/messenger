@@ -267,7 +267,7 @@
 ### Test 22: User Imports .txt File as Message to Selected Conversation
 **Steps**:
 1. After Test 18, user selects existing conversation to send message from a .txt file to.
-2. User selects the "Export a TXT" button.
+2. User selects the "Import a TXT" button.
 3. User selects the ".txt File Source" text field.
 4. User enters source of .txt file via the keyboard.
 5. User selects the "Send" button.

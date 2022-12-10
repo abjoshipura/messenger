@@ -13,6 +13,7 @@ To run the messenger, follow these steps:
 ### 2. Submissions on Brightspace/Vocareum:
 > Akshara Joshipura - Submitted Vocareum Workspace
 > Akshara Joshipura - Submitted Report on Brightspace
+> Test cases (Tests.md) and README.md submitted in Vocareum Workspace
 
 ### 3.  The Classes
 #### 3.0 `MessengerClient`

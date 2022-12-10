@@ -1,4 +1,4 @@
-# CS 180 | Project 4: Messaging 
+# CS 180 | Project 4 & 5: Messaging 
 ##### By Joshipura, Akshara | Wang, Raymond | Tang, Kevin | Oh, Yejin
 
 ### 1. Running the Messenger

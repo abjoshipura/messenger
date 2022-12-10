@@ -168,7 +168,7 @@ public class Conversation {
      * @param writer       The PrintWriter object to be used to send the network request
      * @param sellerUnread The new read status of the conversation for the participating Seller
      */
-    public void setSellerUnread(boolean sellerUnread, PrintWriter writer) {
+    public void setSellerUnread(PrintWriter writer, boolean sellerUnread) {
         String oldString = this.toString();
         this.sellerUnread = sellerUnread;
         String newString = this.toString();

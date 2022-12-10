@@ -1,10 +1,8 @@
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.*;
 import java.io.*;
 import java.net.Socket;
 import java.nio.file.Files;
@@ -12,14 +10,6 @@ import java.nio.file.Paths;
 import java.util.*;
 
 public class MessengerClient {
-
-    private JFrame jFrame;
-
-    private Container container;
-
-    private CardLayout cardLayout = new CardLayout();
-
-    private User loggedOnUser = null;
     /**
      * The constant password/account file path: passwords.txt
      */
@@ -30,13 +20,40 @@ public class MessengerClient {
      */
     public static final String CONVERSATIONS_FILE_PATH = "conversations.txt";
 
-    public MessengerClient() {
+    private JFrame jFrame;
+
+    private Container container;
+
+    private CardLayout cardLayout = new CardLayout();
+
+    private User loggedOnUser = null;
+
+    private ArrayList<Conversation> conversations = new ArrayList<>();
+
+    private ArrayList<Message> messages = new ArrayList<>();
+
+    private ArrayList<Customer> customers = new ArrayList<>();
+
+    private ArrayList<Store> stores = new ArrayList<>();
+
+    private ArrayList<Customer> searchCustomers = new ArrayList<>();
+
+    private ArrayList<Seller> searchSellers = new ArrayList<>();
+
+    public MessengerClient(PrintWriter writer) {
         jFrame = new JFrame("Messenger");
         jFrame.setSize(400, 200);
         jFrame.setLocationRelativeTo(null);
         container = jFrame.getContentPane();
         container.setLayout(cardLayout);
-        jFrame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        jFrame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        jFrame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                super.windowClosing(e);
+                sendRequest(writer, "[LOGOUT]");
+            }
+        });
     }
 
     /**
@@ -69,32 +86,31 @@ public class MessengerClient {
      * Converts the chosen Conversation objects to exportable .csv files and exports them to the parameter
      * destinationPath
      *
-     * @param exportingConversations The ArrayList&lt;Conversation&gt; of conversations to be exported
+     * @param conversation The conversation to be exported
      * @return Returns whether the .csv conversion and export succeeded
      * @throws IOException in the case of a conversion failure
      */
-    public static boolean convertConversationsToCSV(BufferedReader reader, PrintWriter writer, ArrayList<Conversation> exportingConversations, User loggedOnUser) throws IOException {
+    public static boolean convertConversationToCSV(BufferedReader reader, PrintWriter writer, Conversation conversation, User loggedOnUser) throws IOException {
 
         Files.createDirectories(Paths.get("src/exports")); // Creates the subfolder exports if it does not exist
         File destinationFile = new File("src/exports");
 
-        for (Conversation conversation : exportingConversations) {
-            File tempTXTFile = new File(destinationFile, String.format("%s.txt", conversation.getConversationID()));
-            tempTXTFile.createNewFile(); // Creates a new .txt file for the Message object csv Strings
-            PrintWriter pw = new PrintWriter(new FileWriter(tempTXTFile, true));
+        File tempTXTFile = new File(destinationFile, String.format("%s.txt", conversation.getConversationID()));
+        tempTXTFile.createNewFile(); // Creates a new .txt file for the Message object csv Strings
+        PrintWriter pw = new PrintWriter(new FileWriter(tempTXTFile, true));
 
-            ArrayList<Message> temp = refreshVisibleMessages(reader, writer, conversation, loggedOnUser);
-            for (Message msg : temp) {
-                pw.println(msg.csvToString()); // Writes each csv String into the file
-            }
-            pw.close();
-
-            File csvFile = new File(destinationFile, String.format("%s.csv", conversation.getConversationID()));
-            if (csvFile.exists()) {
-                csvFile.delete(); // Deletes the existing file
-            }
-            tempTXTFile.renameTo(csvFile); // Converts new .txt file to a .csv file
+        ArrayList<Message> temp = refreshVisibleMessages(reader, writer, conversation, loggedOnUser);
+        for (Message msg : temp) {
+            pw.println(msg.csvToString()); // Writes each csv String into the file
         }
+        pw.close();
+
+        File csvFile = new File(destinationFile, String.format("%s.csv", conversation.getConversationID()));
+        if (csvFile.exists()) {
+            csvFile.delete(); // Deletes the existing file
+        }
+        tempTXTFile.renameTo(csvFile); // Converts new .txt file to a .csv file
+
         return true;
     }
 
@@ -282,9 +298,9 @@ public class MessengerClient {
     public static void main(String[] args) {
         try {
             Socket socket = new Socket("localhost", 8080);
-            PrintWriter writer = new PrintWriter(socket.getOutputStream());
+            PrintWriter writer = new PrintWriter(socket.getOutputStream(), true);
             BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-            MessengerClient messengerClient = new MessengerClient();
+            MessengerClient messengerClient = new MessengerClient(writer);
 
             JPanel holder = new JPanel(new GridLayout(4, 1));
             holder.add(new JPanel());
@@ -360,11 +376,8 @@ public class MessengerClient {
                             String email = emailTextField.getText();
                             String password = passwordTextField.getText();
 
-                            if (username.isEmpty() || email.isEmpty() || password.isEmpty() ||
-                                    (!sellerOption.isSelected() && !customerOption.isSelected())) {
-                                JOptionPane.showMessageDialog(null,
-                                        "Cannot Submit Incomplete Form", "Messenger",
-                                        JOptionPane.ERROR_MESSAGE);
+                            if (username.isEmpty() || email.isEmpty() || password.isEmpty() || (!sellerOption.isSelected() && !customerOption.isSelected())) {
+                                JOptionPane.showMessageDialog(null, "Cannot Submit Incomplete Form", "Messenger", JOptionPane.ERROR_MESSAGE);
                             } else {
                                 String role = (sellerOption.isSelected()) ? "Seller" : "Customer";
                                 String checkUsernameRequest = "[CHECK.USERNAME]" + usernameTextField.getText();
@@ -376,15 +389,12 @@ public class MessengerClient {
                                 boolean isEmailRegistered = Boolean.parseBoolean(readResponse(reader));
 
                                 if (!(isUsernameTaken || isEmailRegistered)) {
-                                    String createAccountRequest = String.format("[CREATE.USER]%s, %s, %s, %s",
-                                            username, email, password, role);
+                                    String createAccountRequest = String.format("[CREATE.USER]%s, %s, %s, %s", username, email, password, role);
                                     sendRequest(writer, createAccountRequest);
                                     String response = readResponse(reader);
 
-                                    if (response != null && response.substring(0, response.indexOf("<"))
-                                            .equalsIgnoreCase("Seller")) {
-                                        messengerClient.loggedOnUser = new Seller(response, true,
-                                                true);
+                                    if (response != null && response.substring(0, response.indexOf("<")).equalsIgnoreCase("Seller")) {
+                                        messengerClient.loggedOnUser = new Seller(response, true, true);
                                     } else {
                                         messengerClient.loggedOnUser = new Customer(response, true);
                                     }
@@ -402,14 +412,10 @@ public class MessengerClient {
 
                                     showMainMenu(messengerClient, reader, writer);
                                 } else if (isUsernameTaken) {
-                                    JOptionPane.showMessageDialog(null,
-                                            "Username already Taken", "Messenger",
-                                            JOptionPane.ERROR_MESSAGE);
+                                    JOptionPane.showMessageDialog(null, "Username already Taken", "Messenger", JOptionPane.ERROR_MESSAGE);
                                     usernameTextField.setText("");
                                 } else {
-                                    JOptionPane.showMessageDialog(null,
-                                            "Email already Registered", "Messenger",
-                                            JOptionPane.ERROR_MESSAGE);
+                                    JOptionPane.showMessageDialog(null, "Email already Registered", "Messenger", JOptionPane.ERROR_MESSAGE);
                                     emailTextField.setText("");
                                 }
                             }
@@ -421,6 +427,7 @@ public class MessengerClient {
                     backButton.addActionListener(new ActionListener() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
+                            messengerClient.jFrame.setTitle("Messenger");
                             messengerClient.cardLayout.show(messengerClient.container, "Onboard");
                         }
                     });
@@ -455,7 +462,7 @@ public class MessengerClient {
                     JLabel passwordPrompt = new JLabel("Password:");
                     passwordPrompt.setFont(new Font("Open Sans", Font.PLAIN, 14));
                     passwordPanel.add(passwordPrompt);
-                    JTextField passwordTextField = new JTextField(20);
+                    JPasswordField passwordTextField = new JPasswordField(20);
                     passwordPanel.add(passwordTextField);
                     holder.add(passwordPanel);
 
@@ -469,48 +476,51 @@ public class MessengerClient {
                             String password = passwordTextField.getText();
 
                             if (username.isEmpty() || password.isEmpty()) {
-                                JOptionPane.showMessageDialog(null,
-                                        "Cannot Submit Incomplete Form", "Messenger",
-                                        JOptionPane.ERROR_MESSAGE);
+                                JOptionPane.showMessageDialog(null, "Cannot Submit Incomplete Form", "Messenger", JOptionPane.ERROR_MESSAGE);
                             } else {
-                                String fetchAccountRequest = "[FETCH.USER]" + username;
-                                sendRequest(writer, fetchAccountRequest);
-                                String fetchResponse = readResponse(reader);
+                                String checkUsernameRequest = "[CHECK.USERNAME]" + username;
+                                sendRequest(writer, checkUsernameRequest);
+                                boolean isUsernameTaken = Boolean.parseBoolean(readResponse(reader));
 
-                                if (fetchResponse != null && fetchResponse.substring(0, fetchResponse.indexOf("<"))
-                                        .equalsIgnoreCase("Seller")) {
-                                    messengerClient.loggedOnUser = new Seller(fetchResponse, true, true);
-                                } else {
-                                    messengerClient.loggedOnUser = new Customer(fetchResponse, true);
-                                }
+                                String checkEmailRequest = "[CHECK.EMAIL]" + username;
+                                sendRequest(writer, checkEmailRequest);
+                                boolean isEmailRegistered = Boolean.parseBoolean(readResponse(reader));
 
-                                if (messengerClient.loggedOnUser.getPassword().equals(password)) {
-                                    JOptionPane.showMessageDialog(null, String.format("Welcome back %s!",
-                                            messengerClient.loggedOnUser.getUsername().toUpperCase()));
+                                if (isUsernameTaken || isEmailRegistered) {
+                                    String fetchAccountRequest = "[FETCH.USER]" + username;
+                                    sendRequest(writer, fetchAccountRequest);
+                                    String fetchResponse = readResponse(reader);
 
-                                    String fetchNumUnreadRequest;
-                                    if (messengerClient.loggedOnUser instanceof Seller) {
-                                        fetchNumUnreadRequest = "[FETCH.UNREAD]" +
-                                                ((Seller) messengerClient.loggedOnUser).detailedToString();
+                                    if (fetchResponse != null && fetchResponse.substring(0, fetchResponse.indexOf("<")).equalsIgnoreCase("Seller")) {
+                                        messengerClient.loggedOnUser = new Seller(fetchResponse, true, true);
                                     } else {
-                                        fetchNumUnreadRequest = "[FETCH.UNREAD]" +
-                                                ((Customer) messengerClient.loggedOnUser).detailedToString();
+                                        messengerClient.loggedOnUser = new Customer(fetchResponse, true);
                                     }
-                                    sendRequest(writer, fetchNumUnreadRequest);
-                                    fetchResponse = readResponse(reader);
 
-                                    if (fetchResponse != null && Integer.parseInt(fetchResponse) > 0) {
-                                        JOptionPane.showMessageDialog(null,
-                                                String.format("You have %d new unread conversation%s",
-                                                        Integer.parseInt(fetchResponse),
-                                                        (Integer.parseInt(fetchResponse) != 1) ? "s" : ""));
+                                    if (messengerClient.loggedOnUser.getPassword().equals(password)) {
+                                        JOptionPane.showMessageDialog(null, String.format("Welcome back %s!", messengerClient.loggedOnUser.getUsername().toUpperCase()));
+
+                                        String fetchNumUnreadRequest;
+                                        if (messengerClient.loggedOnUser instanceof Seller) {
+                                            fetchNumUnreadRequest = "[FETCH.UNREAD]" + ((Seller) messengerClient.loggedOnUser).detailedToString();
+                                        } else {
+                                            fetchNumUnreadRequest = "[FETCH.UNREAD]" + ((Customer) messengerClient.loggedOnUser).detailedToString();
+                                        }
+                                        sendRequest(writer, fetchNumUnreadRequest);
+                                        fetchResponse = readResponse(reader);
+
+                                        if (fetchResponse != null && Integer.parseInt(fetchResponse) > 0) {
+                                            JOptionPane.showMessageDialog(null, String.format("You have %d new unread conversation%s", Integer.parseInt(fetchResponse), (Integer.parseInt(fetchResponse) != 1) ? "s" : ""));
+                                        }
+                                        showMainMenu(messengerClient, reader, writer);
+                                    } else {
+                                        JOptionPane.showMessageDialog(null, "Incorrect Password", "Messenger", JOptionPane.ERROR_MESSAGE);
+                                        passwordTextField.setText("");
                                     }
-                                    showMainMenu(messengerClient, reader, writer);
                                 } else {
-                                    JOptionPane.showMessageDialog(null,
-                                            "Incorrect Password", "Messenger",
-                                            JOptionPane.ERROR_MESSAGE);
-                                    exitApplication(messengerClient, writer);
+                                    JOptionPane.showMessageDialog(null, "Unregistered Account");
+                                    usernameTextField.setText("");
+                                    passwordTextField.setText("");
                                 }
                             }
                         }
@@ -521,6 +531,7 @@ public class MessengerClient {
                     backButton.addActionListener(new ActionListener() {
                         @Override
                         public void actionPerformed(ActionEvent e) {
+                            messengerClient.jFrame.setTitle("Messenger");
                             messengerClient.cardLayout.show(messengerClient.container, "Onboard");
                         }
                     });
@@ -547,573 +558,1819 @@ public class MessengerClient {
 
     public static void showMainMenu(MessengerClient messengerClient, BufferedReader reader, PrintWriter writer) {
         messengerClient.jFrame.setTitle("Messenger: Main");
-        JPanel holder = new JPanel(new GridLayout(0, 3));
-        holder.add(new JPanel());
+        messengerClient.jFrame.setSize(400, 300);
+        JPanel holder = new JPanel(new GridLayout(0, 1));
 
         if (messengerClient.loggedOnUser instanceof Seller) {
-            String[] options = {"Manage Stores", "View Conversations", "View All Customers", "Search Customers",
-                    "Edit Account", "Log Out"};
-            JList list = new JList(options);
-            list.addListSelectionListener(new ListSelectionListener() {
+            JPanel manageStoresPanel = new JPanel();
+            JButton manageStoresButton = new JButton("Manage Stores");
+            manageStoresButton.setPreferredSize(new Dimension(175, 30));
+            manageStoresButton.addActionListener(new ActionListener() {
                 @Override
-                public void valueChanged(ListSelectionEvent e) {
-                    int selectedOption = list.getSelectedIndex();
-                    if (selectedOption == 0) {
-                        JPanel storeMenu = new JPanel();
-                        messengerClient.container.add(storeMenu, "StoreMenu");
-                        storeMenu.setLayout(new CardLayout());
-                        CardLayout card = (CardLayout) storeMenu.getLayout();
+                public void actionPerformed(ActionEvent e) {
+                    refreshManageStoresUI(messengerClient, reader, writer);
+                }
+            });
+            manageStoresPanel.add(manageStoresButton);
 
-                        JPanel storeOption = new JPanel(new GridLayout(4,4));
-                        JPanel createStore = new JPanel();
-                        createStore.setAlignmentX(100);
-                        createStore.setBorder(new EmptyBorder(new Insets(50, 200, 50, 200)));
+            JPanel conversationsPanel = new JPanel();
+            JButton conversationsButton = new JButton("View Conversations");
+            conversationsButton.setPreferredSize(new Dimension(175, 30));
+            conversationsButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    refreshConversationsUI(messengerClient, reader, writer);
+                }
+            });
+            conversationsPanel.add(conversationsButton);
 
-                        JPanel viewStore = new JPanel();
-                        viewStore.setAlignmentX(100);
-                        viewStore.setBorder(new EmptyBorder(new Insets(50, 200, 50, 200)));
+            JPanel listCustomersPanel = new JPanel();
+            JButton listCustomersButton = new JButton("View All Customers");
+            listCustomersButton.setPreferredSize(new Dimension(175, 30));
+            listCustomersButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    refreshCustomersUI(messengerClient, reader, writer);
+                }
+            });
+            listCustomersPanel.add(listCustomersButton);
 
-                        JPanel exitStore = new JPanel();
-                        exitStore.setAlignmentX(100);
-                        exitStore.setBorder(new EmptyBorder(new Insets(50, 200, 50, 200)));
+            JPanel searchCustomerPanel = new JPanel();
+            JButton searchCustomerButton = new JButton("Search for a Customer");
+            searchCustomerButton.setPreferredSize(new Dimension(175, 30));
+            searchCustomerButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    Object[] searchOptions = {"Cancel", "Search"};
 
-                        JButton create = new JButton("Create");
-                        create.setSize(10,8);
-                        JButton view = new JButton("View");
-                        view.setSize(10,8);
-                        JButton exit = new JButton("Exit");
-                        exit.setSize(10,8);
-                        createStore.add(create);
-                        viewStore.add(view);
-                        exitStore.add(exit);
-                        storeOption.add(createStore);
-                        storeOption.add(viewStore);
-                        storeOption.add(exitStore);
+                    JPanel searchHolder = new JPanel(new GridLayout(0, 1));
+                    searchHolder.add(new JPanel());
 
-                        create.addActionListener(creation -> {
-                            JTextField createName = new JTextField("Please enter the name of your new store");
+                    JLabel searchLabel = new JLabel("Search Keyword:");
+                    searchLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                    searchLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                    searchHolder.add(searchLabel);
+                    JTextField searchTextField = new JTextField(20);
+                    searchHolder.add(searchTextField);
 
-                            createName.setHorizontalAlignment(JTextField.CENTER);
-                            createName.setEditable(false);
-                            createName.setColumns(6);
-                            createName.setSize(4,4);
-                            Font font = new Font("Times New Roman", Font.PLAIN, 40);
-                            JPanel extraPanel2 = new JPanel(new GridLayout(1,4));
-                            extraPanel2.add(createName);
+                    searchHolder.add(new JPanel());
 
-                            createStore.setFont(font);
+                    int searchResult = JOptionPane.showOptionDialog(null, searchHolder, "Search Customers",
+                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                            null, searchOptions, null);
 
-                            JTextField enterStore = new JTextField();
-                            JPanel extraPanel = new JPanel(new FlowLayout());
-                            enterStore.setColumns(10);
-                            extraPanel.add(enterStore);
-
-                            JButton okCreate = new JButton("OK");
-                            JButton cancelCreate = new JButton("Cancel");
-
-                            JPanel okCancel = new JPanel(new FlowLayout());
-                            okCancel.add(okCreate);
-                            okCancel.add(cancelCreate);
-
-                            okCreate.addActionListener(okStore ->{
-                                String newStoreName = enterStore.getText();
-                                if(newStoreName.isBlank()) {
-                                    JOptionPane.showMessageDialog(null, "Please enter a name for your store.");
-                                } else {
-                                    //Store newStore = new Store(newStoreName);
-                                    ((Seller) messengerClient.loggedOnUser).addStore(writer, new Store(newStoreName, (Seller)messengerClient.loggedOnUser));
-                                    enterStore.setText("");
-                                    okCreate.removeActionListener(okCreate.getActionListeners()[0]);
-                                    cancelCreate.removeActionListener(cancelCreate.getActionListeners()[0]);
-                                    card.show(storeMenu, "Options");
-                                }
-                            });
-
-                            cancelCreate.addActionListener(cancel -> {
-                                enterStore.setText("");
-                                okCreate.removeActionListener(okCreate.getActionListeners()[0]);
-                                cancelCreate.removeActionListener(cancelCreate.getActionListeners()[0]);
-                                card.show(storeMenu, "Options");
-                            });
-
-                            JPanel createStoreMenu = new JPanel();
-                            createStoreMenu.setLayout(new BoxLayout(createStoreMenu,BoxLayout.PAGE_AXIS));
-                            createStoreMenu.add(extraPanel2);
-                            createStoreMenu.add(extraPanel);
-                            createStoreMenu.add(okCancel);
-                            storeMenu.add(createStoreMenu, "Create");
-
-                            card.show(storeMenu, "Create");
-
-                        });
-
-                        view.addActionListener(viewing -> {
-                            ArrayList<Store> userStores = ((Seller) messengerClient.loggedOnUser).getStores();
-                            String[] storeNames = new String[userStores.size()];
-
-                            for(int i = 0; i < userStores.size(); i++) {
-                                storeNames[i] = userStores.get(i).getStoreName();
-                            }
-
-                            JTextField blank = new JTextField("");
-
-                            blank.setHorizontalAlignment(JTextField.CENTER);
-                            blank.setEditable(false);
-                            blank.setColumns(6);
-                            blank.setSize(2,2);
-                            JPanel blankPanel = new JPanel(new GridLayout(1,4));
-                            blankPanel.add(blank);
-
-                            JComboBox storeList = new JComboBox(storeNames);
-
-                            JPanel storeSelection = new JPanel();
-                            storeSelection.setLayout(new BoxLayout(storeSelection, BoxLayout.PAGE_AXIS));
-
-                            JButton okSelection = new JButton("OK");
-                            JButton cancelSelection = new JButton("Cancel");
-                            JPanel buttons =  new JPanel(new FlowLayout());
-                            buttons.setAlignmentX(100);
-                            buttons.setBorder(new EmptyBorder(new Insets(50, 200, 50, 200)));
-                            buttons.add(okSelection);
-                            buttons.add(cancelSelection);
-
-
-                            JPanel storeListPanel = new JPanel();
-                            storeListPanel.add(storeList);
-                            storeSelection.add(blankPanel);
-                            storeSelection.add(storeListPanel);
-                            storeListPanel.add(buttons);
-
-                            okSelection.addActionListener(selectStore -> {
-                                int index = storeList.getSelectedIndex();
-                                Store selectedStore = userStores.get(index);
-                                JPanel storeEdit = new JPanel(new GridLayout(3,4));
-                                storeEdit.setBorder(new EmptyBorder(new Insets(50, 200, 50, 200)));
-
-                                JButton rename = new JButton("Rename");
-                                JButton delete = new JButton("Delete");
-                                JButton cancel = new JButton("Cancel");
-
-                                storeEdit.add(rename);
-                                rename.addActionListener(renameStore -> {
-                                    String newName = JOptionPane.showInputDialog(null, "Enter the store's new name");
-                                    if(!newName.isBlank()) {
-                                        selectedStore.setStoreName(newName);
-                                    }
-                                });
-
-                                delete.addActionListener(deleteStore -> {
-                                    int deleteConfirm = JOptionPane.showOptionDialog(null,
-                                            "Are you sure you wish to delete this store",
-                                            "Delete Store",JOptionPane.PLAIN_MESSAGE, JOptionPane.YES_NO_OPTION,
-                                            null, null, null);
-
-                                    if(deleteConfirm == 0) {
-                                        ((Seller) messengerClient.loggedOnUser).removeStore(writer, selectedStore);
-                                        try {
-                                            cancel.removeActionListener(cancel.getActionListeners()[0]);
-                                            rename.removeActionListener(rename.getActionListeners()[0]);
-                                            delete.removeActionListener(delete.getActionListeners()[0]);
-                                        } catch (ArrayIndexOutOfBoundsException exception) {
-                                            System.out.println("Store Menu action listener removal: bad");
-                                        }
-                                        card.show(storeMenu, "StoreList");
-                                    }
-
-                                });
-
-                                cancel.addActionListener(leaveStore -> {
-                                    card.show(storeMenu, "Listing");
-                                    try {
-                                        cancel.removeActionListener(cancel.getActionListeners()[0]);
-                                        rename.removeActionListener(rename.getActionListeners()[0]);
-                                        delete.removeActionListener(delete.getActionListeners()[0]);
-                                    } catch (ArrayIndexOutOfBoundsException exception) {
-                                        System.out.println("Store Menu action listener removal: bad");
-                                    }
-                                });
-
-                                storeEdit.add(delete);
-                                storeEdit.add(cancel);
-
-                                storeMenu.add(storeEdit, "Store");
-                                card.show(storeMenu, "Store");
-                            });
-                            cancelSelection.addActionListener(leaveSelection -> {
-                                okSelection.removeActionListener(okSelection.getActionListeners()[0]);
-                                cancelSelection.removeActionListener(null);
-                                card.show(storeMenu, "Options");
-                            });
-
-                            storeMenu.add(storeSelection, "StoreList");
-                            card.show(storeMenu, "StoreList");
-                        });
-
-                        exit.addActionListener(exitStoreMenu -> {
-                            storeMenu.removeAll();
-                            messengerClient.cardLayout.show(messengerClient.container, "Main");
-
-                        });
-                        card.show(storeMenu, "Options");
-
-                        storeMenu.add(storeOption, "Options");
-
-                        messengerClient.cardLayout.show(messengerClient.container, "StoreMenu");
-                        card.show(storeMenu, "Options");
-
-                    } else if (selectedOption == 1) {
-                        ArrayList<Conversation> conversations = refreshVisibleConversations(reader, writer, messengerClient.loggedOnUser);
-                        if (conversations.size() < 1) {
-                            JOptionPane.showMessageDialog(null, "You have no active conversations");
+                    String searchKeyword = searchTextField.getText();
+                    if (searchResult == 1) {
+                        if (searchKeyword.isEmpty()) {
+                            JOptionPane.showMessageDialog(null, "Cannot Leave Empty",
+                                    "Messenger", JOptionPane.ERROR_MESSAGE);
                         } else {
-                            String[] conversationName = new String[conversations.size()];
-                            for (int i = 0; i < conversations.size(); i++) {
-                                conversationName[i] = conversations.get(i).getConversationID();
-                            }
-                            JList converseList = new JList(conversationName);
-
-
-                            // Overall panel menu containing CardLayout
-                            JPanel conversationMenu = new JPanel();
-                            conversationMenu.setLayout(new CardLayout());
-                            CardLayout card = (CardLayout) conversationMenu.getLayout();
-                            messengerClient.container.add(conversationMenu, "ConversationMenu");
-
-                            // Panel for conversation selection
-                            JPanel viewConversationList = new JPanel();
-                            viewConversationList.setLayout(new FlowLayout());
-                            viewConversationList.setAlignmentX(100);
-                            viewConversationList.setBorder(new EmptyBorder(new Insets(50, 200, 50, 200)));
-
-                            JButton okButton = new JButton("Select");
-                            JButton cancelButton = new JButton("Cancel");
-                            JScrollPane selectList = new JScrollPane(converseList);
-                            selectList.setBounds(200, 200, 200, 200);
-                            viewConversationList.add(selectList);
-                            JPanel panel = new JPanel(new GridLayout(1, 2));
-                            panel.add(okButton);
-                            panel.add(cancelButton);
-                            viewConversationList.add(panel);
-
-                            conversationMenu.add(viewConversationList, "Listing");
-                            card.show(conversationMenu, "Listing");
-
-
-                            JPanel messageOptions = new JPanel();
-                            conversationMenu.add(messageOptions, "Options");
-
-                            JButton sendMessage = new JButton("Send");
-                            JButton editMessage = new JButton("Edit");
-                            JButton deleteMessage = new JButton("Delete");
-                            JButton exitMessage = new JButton("Exit");
-
-                            JPanel flow = new JPanel(new FlowLayout());
-                            flow.add(sendMessage);
-                            flow.add(editMessage);
-                            flow.add(deleteMessage);
-                            flow.add(exitMessage);
-                            messageOptions.add(flow);
-
-
-                            DefaultListModel listModel = new DefaultListModel();
-                            JList messageHistory = new JList(listModel);
-
-                            okButton.addActionListener(ok -> {
-                                try {
-                                    int index = converseList.getSelectedIndex();
-                                    Conversation selectedConversation = conversations.get(index);
-                                    messageOptions.setLayout(new GridLayout(2, 9));
-                                    ArrayList<Message> messageList = selectedConversation.readFileAsPerUser(messengerClient.loggedOnUser);
-
-                                    // Populates an Array List with appropriate message displays
-                                    ArrayList<String> messageDisplay = new ArrayList<>();
-                                    for (int i = 0; i < messageList.size(); i++) {
-                                        messageDisplay.add(messageList.get(i).getSender().getUsername() + ": " + messageList.get(i).getMessage());
-                                    }
-
-                                    DefaultListModel model = new DefaultListModel();
-                                    for (int i = 0; i < messageList.size(); i++) {
-                                        model.addElement(messageDisplay.get(i));
-                                    }
-                                    JList list = new JList(model);
-                                    JScrollPane history = new JScrollPane(list);
-
-                                    messageOptions.add(history);
-
-
-                                    sendMessage.addActionListener(send -> {
-                                        String sending = JOptionPane.showInputDialog(null, "Enter a new message",
-                                                "Send Message", JOptionPane.PLAIN_MESSAGE);
-                                        if (messengerClient.loggedOnUser instanceof Customer) {
-                                            messengerClient.loggedOnUser.sendMessageToUser(reader, writer, sending, selectedConversation.getSeller());
-                                        }
-                                        if (messengerClient.loggedOnUser instanceof Seller) {
-                                            messengerClient.loggedOnUser.sendMessageToUser(reader, writer, sending, selectedConversation.getCustomer());
-                                        }
-                                        sendMessage.removeActionListener(null);
-
-                                    });
-
-                                    editMessage.addActionListener(edit -> {
-                                        try {
-                                            int messageIndex = list.getSelectedIndex();
-                                            Message selectedMessage = messageList.get(messageIndex);
-                                            if (selectedMessage.getSender().equals(messengerClient.loggedOnUser)) {
-                                                String replacement = JOptionPane.showInputDialog(null, "Edit Message", selectedMessage.getMessage());
-                                                if (replacement != null) {
-                                                    messengerClient.loggedOnUser.editMessage(reader, writer, selectedMessage, selectedConversation, replacement);
-                                                }
-                                            } else {
-                                                JOptionPane.showMessageDialog(null, "You are not able to edit this message.");
-                                            }
-                                        } catch(IndexOutOfBoundsException exception) {
-                                            JOptionPane.showMessageDialog(null, "Please select a message to edit.");
-                                        }
-                                        editMessage.removeActionListener(null);
-                                    });
-
-                                    deleteMessage.addActionListener(delete -> {
-                                        try {
-                                            int messageIndex = list.getSelectedIndex();
-                                            Message selectedMessage = messageList.get(messageIndex);
-                                            if (selectedMessage.getSender().equals(messengerClient.loggedOnUser)) {
-                                                int deleteConfirm = JOptionPane.showOptionDialog(null,
-                                                        "Are you sure you want to delete this message?", "",
-                                                        JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE,
-                                                        null, null, null);
-                                                if (deleteConfirm == 0) {
-                                                    messengerClient.loggedOnUser.deleteMessage(reader, writer, selectedMessage, selectedConversation);
-                                                }
-                                            } else {
-                                                JOptionPane.showMessageDialog(null, "You are not able to delete this message");
-                                            }
-                                        } catch (IndexOutOfBoundsException exception) {
-                                            JOptionPane.showMessageDialog(null, "Please select a message to delete.");
-                                        }
-                                        deleteMessage.removeActionListener(null);
-                                    });
-
-                                    exitMessage.addActionListener(exit -> {
-                                        for (int i = 0; i < model.getSize(); i++) {
-                                            model.remove(i);
-                                        }
-                                        try {
-                                            sendMessage.removeActionListener(sendMessage.getActionListeners()[0]);
-                                            deleteMessage.removeActionListener(deleteMessage.getActionListeners()[0]);
-                                            editMessage.removeActionListener(editMessage.getActionListeners()[0]);
-                                            exitMessage.removeActionListener(exitMessage.getActionListeners()[0]);
-                                            card.show(conversationMenu, "Listing");
-                                            messageOptions.remove(history);
-                                        } catch (ArrayIndexOutOfBoundsException exception) {
-                                            System.out.println("Conversation Menu action listener removal: incorrect");
-                                        }
-                                    });
-                                    card.show(conversationMenu, "Options");
-                                } catch (IndexOutOfBoundsException indexException) {
-                                    JOptionPane.showMessageDialog(null, "Please select a conversation");
-                                }
-                            });
-
-                            cancelButton.addActionListener(cancel -> {
-                                okButton.removeActionListener(okButton.getActionListeners()[0]);
-                                cancelButton.removeActionListener(cancelButton.getActionListeners()[0]);
-                                conversationMenu.removeAll();
-                                messengerClient.cardLayout.show(messengerClient.container, "Main");
-                            });
-                            messengerClient.cardLayout.show(messengerClient.container, "ConversationMenu");
-
+                            refreshSearchCustomersUI(messengerClient, reader, writer, searchKeyword);
                         }
-                    } else if (selectedOption == 2) {
-                        ArrayList<Customer> customerSearchList = new ArrayList<>();
-                        ArrayList<Store> storeSearchList = new ArrayList<>();
-
-
-                        JPanel listMenu = new JPanel(new CardLayout());
-                        CardLayout card = (CardLayout) listMenu.getLayout();
-                        messengerClient.container.add(listMenu, "ListMenu");
-
-                        DefaultListModel model = new DefaultListModel();
-
-                        if(messengerClient.loggedOnUser instanceof Customer) {
-                            storeSearchList = refreshStores(reader, writer, messengerClient.loggedOnUser);
-                            for (int i = 0; i < storeSearchList.size(); i++) {
-                                model.addElement(storeSearchList.get(i).getStoreName());
-                            }
-                        }
-                        if(messengerClient.loggedOnUser instanceof Seller) {
-                            customerSearchList = refreshCustomers(reader, writer,messengerClient.loggedOnUser);
-                            for(int i = 0; i < customerSearchList.size(); i++) {
-                                model.addElement(customerSearchList.get(i).getUsername());
-                            }
-                        }
-
-                        JList selectUser = new JList(model);
-                        JScrollPane selectUserDisplay = new JScrollPane(selectUser);
-
-                        JPanel listDisplay = new JPanel(new FlowLayout());
-                        listDisplay.setAlignmentX(100);
-                        listDisplay.setBorder(new EmptyBorder(new Insets(30, 200, 30, 200)));
-                        listDisplay.add(selectUserDisplay);
-
-                        JButton okButton = new JButton("OK");
-                        JButton cancelButton = new JButton("Cancel");
-                        JPanel buttons = new JPanel(new GridLayout(1, 2));
-                        buttons.add(okButton);
-                        buttons.add(cancelButton);
-                        listDisplay.add(buttons);
-
-
-                        listMenu.add(listDisplay, "Display");
-
-                        ArrayList<Store> secondStoreSearchList = storeSearchList;
-                        ArrayList<Customer> secondCustomerSearchList = customerSearchList;
-                        okButton.addActionListener(ok -> {
-                            try {
-                                int index = selectUser.getSelectedIndex();
-                                User user = null;
-
-                                if (messengerClient.loggedOnUser instanceof Customer) {
-                                    user = secondStoreSearchList.get(index).getSeller();
-                                }
-                                if (messengerClient.loggedOnUser instanceof Seller) {
-                                    user = secondCustomerSearchList.get(index);
-                                }
-
-                                JPanel msgBlockInvi = new JPanel();
-                                msgBlockInvi.setLayout(new BoxLayout(msgBlockInvi, BoxLayout.PAGE_AXIS));
-
-                                String name = "";
-                                if (messengerClient.loggedOnUser instanceof Customer) {
-                                    name = secondStoreSearchList.get(index).getStoreName();
-                                }
-                                if (messengerClient.loggedOnUser instanceof Seller) {
-                                    name = user.getUsername();
-                                }
-
-                                JTextField usersName = new JTextField(name);
-                                usersName.setHorizontalAlignment(JTextField.CENTER);
-                                usersName.setEditable(false);
-                                usersName.setColumns(6);
-                                Font font = new Font("Times New Roman", Font.PLAIN, 20);
-                                usersName.setFont(font);
-
-                                msgBlockInvi.add(usersName);
-
-                                JButton messageButton = new JButton("Message");
-                                JButton blockButton = new JButton("Block");
-                                JButton invisibleButton = new JButton("Invisible");
-                                JButton exitButton = new JButton("Exit");
-                                JPanel optionButtons = new JPanel(new GridLayout(4, 1));
-                                optionButtons.setBorder(new EmptyBorder(new Insets(30, 200, 30, 200)));
-                                optionButtons.add(messageButton);
-                                optionButtons.add(blockButton);
-                                optionButtons.add(invisibleButton);
-                                optionButtons.add(exitButton);
-                                msgBlockInvi.add(optionButtons);
-
-                                listMenu.add(msgBlockInvi, "Options");
-                                card.show(listMenu, "Options");
-
-                                User restateUser = user;
-                                messageButton.addActionListener(message -> {
-                                    String msgToUser = JOptionPane.showInputDialog(null, "Enter your message");
-                                    if (msgToUser != null) {
-                                        messengerClient.loggedOnUser.sendMessageToUser(reader, writer, msgToUser, restateUser);
-                                    }
-                                    messageButton.removeActionListener(null);
-                                });
-
-                                blockButton.addActionListener(block -> {
-                                    int confirmBlock = JOptionPane.showConfirmDialog(null,
-                                            "Are you sure you wish to Block this user?", "Blocking", JOptionPane.YES_NO_OPTION);
-                                    if (confirmBlock == 0) {
-                                        messengerClient.loggedOnUser.addBlockedUser(writer, restateUser);
-                                    }
-                                    blockButton.removeActionListener(null);
-                                });
-
-                                invisibleButton.addActionListener(invisible -> {
-                                    int confirmInvisible = JOptionPane.showConfirmDialog(null,
-                                            "Are you sure you wish to become Invisible to this user?",
-                                            "Invisiblility", JOptionPane.YES_NO_OPTION);
-                                    if(confirmInvisible == 0) {
-                                        messengerClient.loggedOnUser.addInvisibleUser(writer, restateUser);
-                                    }
-                                    invisibleButton.removeActionListener(null);
-                                });
-
-                                exitButton.addActionListener(exit -> {
-                                    try {
-                                        messageButton.removeActionListener(messageButton.getActionListeners()[0]);
-                                        blockButton.removeActionListener(blockButton.getActionListeners()[0]);
-                                        invisibleButton.removeActionListener(invisibleButton.getActionListeners()[0]);
-                                        exitButton.removeActionListener(exitButton.getActionListeners()[0]);
-                                        card.show(listMenu, "Display");
-                                        msgBlockInvi.remove(usersName);
-                                    } catch (ArrayIndexOutOfBoundsException exception) {
-                                        System.out.println("List Menu action listener removal: incorrect");
-                                    }
-                                });
-
-                            } catch (IndexOutOfBoundsException exception) {
-                                JOptionPane.showMessageDialog(null, "Please select an option.");
-                            } catch (NullPointerException exception) {
-                                JOptionPane.showMessageDialog(null, "Something horribly wrong has occurred.");
-                            }
-                            okButton.removeActionListener(null);
-                        });
-
-                        cancelButton.addActionListener(cancel -> {
-                            listDisplay.remove(selectUserDisplay);
-                            cancelButton.removeActionListener(cancelButton.getActionListeners()[0]);
-                            okButton.removeActionListener(okButton.getActionListeners()[0]);
-                            listMenu.removeAll();
-                            messengerClient.cardLayout.show(messengerClient.container, "Main");
-                        });
-
-                        card.show(listMenu, "Display");
-                        messengerClient.cardLayout.show(messengerClient.container, "ListMenu");
-
-                    } else if (selectedOption == 3) {
-
-                    } else if (selectedOption == 4) {
-
-                    } else if (selectedOption == 5) {
-                        exitApplication(messengerClient, writer);
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Select an Option",
-                                "Messenger", JOptionPane.ERROR_MESSAGE);
                     }
                 }
             });
-            holder.add(list);
-        } else {
-            String[] options = {"View Conversations", "View All Stores", "Search Sellers", "Edit Account", "Log Out"};
-            JList list = new JList(options);
-            list.addListSelectionListener(new ListSelectionListener() {
+            searchCustomerPanel.add(searchCustomerButton);
+
+            JPanel editAccountPanel = new JPanel();
+            JButton editAccountButton = new JButton("Edit Account");
+            editAccountButton.setPreferredSize(new Dimension(175, 30));
+            editAccountButton.addActionListener(new ActionListener() {
                 @Override
-                public void valueChanged(ListSelectionEvent e) {
-                    int selectedOption = list.getSelectedIndex();
-                    if (selectedOption == 0) {
+                public void actionPerformed(ActionEvent e) {
+                    showEditAccountMenu(messengerClient, reader, writer);
+                }
+            });
+            editAccountPanel.add(editAccountButton);
 
-                    } else if (selectedOption == 1) {
+            JPanel logOutPanel = new JPanel();
+            JButton logOutButton = new JButton("Log Out");
+            logOutButton.setPreferredSize(new Dimension(175, 30));
+            logOutButton.setBackground(new Color(235, 64, 52));
+            logOutButton.setForeground(Color.black);
+            logOutButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    exitApplication(messengerClient, writer);
+                }
+            });
+            logOutPanel.add(logOutButton);
 
-                    } else if (selectedOption == 2) {
+            holder.add(manageStoresPanel);
+            holder.add(conversationsPanel);
+            holder.add(listCustomersPanel);
+            holder.add(searchCustomerPanel);
+            holder.add(editAccountPanel);
+            holder.add(logOutPanel);
+        } else {
+            JPanel conversationsPanel = new JPanel();
+            JButton conversationsButton = new JButton("View Conversations");
+            conversationsButton.setPreferredSize(new Dimension(175, 30));
+            conversationsButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    refreshConversationsUI(messengerClient, reader, writer);
+                }
+            });
+            conversationsPanel.add(conversationsButton);
 
-                    } else if (selectedOption == 3) {
+            JPanel listStoresPanel = new JPanel();
+            JButton listStoresButton = new JButton("View All Stores");
+            listStoresButton.setPreferredSize(new Dimension(175, 30));
+            listStoresButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    refreshStoresUI(messengerClient, reader, writer);
+                }
+            });
+            listStoresPanel.add(listStoresButton);
 
-                    } else if (selectedOption == 4) {
-                        exitApplication(messengerClient, writer);
-                    } else {
-                        JOptionPane.showMessageDialog(null, "Select an Option",
-                                "Messenger", JOptionPane.ERROR_MESSAGE);
+            JPanel searchSellersPanel = new JPanel();
+            JButton searchSellersButton = new JButton("Search for a Seller");
+            searchSellersButton.setPreferredSize(new Dimension(175, 30));
+            searchSellersButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    Object[] searchOptions = {"Cancel", "Search"};
+
+                    JPanel searchHolder = new JPanel(new GridLayout(0, 1));
+                    searchHolder.add(new JPanel());
+
+                    JLabel searchLabel = new JLabel("Search Keyword:");
+                    searchLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                    searchLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                    searchHolder.add(searchLabel);
+                    JTextField searchTextField = new JTextField(20);
+                    searchHolder.add(searchTextField);
+
+                    searchHolder.add(new JPanel());
+
+                    int searchResult = JOptionPane.showOptionDialog(null, searchHolder, "Search Sellers",
+                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                            null, searchOptions, null);
+
+                    String searchKeyword = searchTextField.getText();
+                    if (searchResult == 1) {
+                        if (searchKeyword.isEmpty()) {
+                            JOptionPane.showMessageDialog(null, "Cannot Leave Empty",
+                                    "Messenger", JOptionPane.ERROR_MESSAGE);
+                        } else {
+                            refreshSearchSellersUI(messengerClient, reader, writer, searchKeyword);
+                        }
                     }
                 }
             });
-            holder.add(list);
+            searchSellersPanel.add(searchSellersButton);
+
+            JPanel editAccountPanel = new JPanel();
+            JButton editAccountButton = new JButton("Edit Account");
+            editAccountButton.setPreferredSize(new Dimension(175, 30));
+            editAccountButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    showEditAccountMenu(messengerClient, reader, writer);
+                }
+            });
+            editAccountPanel.add(editAccountButton);
+
+            JPanel logOutPanel = new JPanel();
+            JButton logOutButton = new JButton("Log Out");
+            logOutButton.setPreferredSize(new Dimension(175, 30));
+            logOutButton.setBackground(new Color(235, 64, 52));
+            logOutButton.setForeground(Color.black);
+            logOutButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    exitApplication(messengerClient, writer);
+                }
+            });
+            logOutPanel.add(logOutButton);
+
+            holder.add(conversationsPanel);
+            holder.add(listStoresPanel);
+            holder.add(searchSellersPanel);
+            holder.add(editAccountPanel);
+            holder.add(logOutPanel);
         }
 
         messengerClient.container.add("Main", holder);
         messengerClient.cardLayout.show(messengerClient.container, "Main");
+    }
+
+    public static void showEditAccountMenu(MessengerClient messengerClient, BufferedReader reader, PrintWriter writer) {
+        messengerClient.jFrame.setTitle("Messenger: Account");
+        messengerClient.jFrame.setSize(400, 300);
+        JPanel holder = new JPanel(new GridLayout(0, 1));
+
+        JPanel changeUsernamePanel = new JPanel();
+        JButton changeUsernameButton = new JButton("Change Username");
+        changeUsernameButton.setPreferredSize(new Dimension(200, 30));
+        changeUsernameButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Object[] usernameOptions = {"Cancel", "Change"};
+
+                JPanel usernameHolder = new JPanel(new GridLayout(0, 1));
+                usernameHolder.add(new JPanel());
+
+                JLabel usernameLabel = new JLabel("New Username:");
+                usernameLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                usernameLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                usernameHolder.add(usernameLabel);
+                JTextField usernameTextField = new JTextField(20);
+                usernameHolder.add(usernameTextField);
+
+                usernameHolder.add(new JPanel());
+
+                int usernameResult = JOptionPane.showOptionDialog(null, usernameHolder, "Change Username",
+                        JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                        null, usernameOptions, null);
+
+                if (usernameResult == 1) {
+                    String username = usernameTextField.getText();
+                    if (username.isEmpty()) {
+                        JOptionPane.showMessageDialog(null, "Cannot Submit Incomplete Form",
+                                "Messenger", JOptionPane.ERROR_MESSAGE);
+                    } else {
+                        String checkUsernameRequest = "[CHECK.USERNAME]" + username;
+                        sendRequest(writer, checkUsernameRequest);
+                        boolean isUsernameTaken = Boolean.parseBoolean(readResponse(reader));
+
+                        if (isUsernameTaken) {
+                            JOptionPane.showMessageDialog(null, "Username already Taken",
+                                    "Messenger", JOptionPane.ERROR_MESSAGE);
+                        } else {
+                            messengerClient.loggedOnUser.setUsername(reader, writer, username);
+                        }
+                    }
+                }
+            }
+        });
+        changeUsernamePanel.add(changeUsernameButton);
+
+        JPanel changePasswordPanel = new JPanel();
+        JButton changePasswordButton = new JButton("Change Password");
+        changePasswordButton.setPreferredSize(new Dimension(200, 30));
+        changePasswordButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Object[] passwordOptions = {"Cancel", "Change"};
+
+                JPanel passwordHolder = new JPanel(new GridLayout(3, 1));
+
+                JLabel passwordLabel = new JLabel("Current Password:");
+                passwordLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                passwordLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                passwordHolder.add(passwordLabel);
+                JPasswordField passwordTextField = new JPasswordField(20);
+                passwordHolder.add(passwordTextField);
+
+                JLabel newPasswordLabel = new JLabel("New Password:");
+                newPasswordLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                newPasswordLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                passwordHolder.add(newPasswordLabel);
+                JPasswordField newPasswordTextField = new JPasswordField(20);
+                passwordHolder.add(newPasswordTextField);
+
+                JLabel confirmNewPasswordLabel = new JLabel("Confirm New Password:");
+                confirmNewPasswordLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                confirmNewPasswordLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                passwordHolder.add(confirmNewPasswordLabel);
+                JPasswordField confirmNewPasswordTextField = new JPasswordField(20);
+                passwordHolder.add(confirmNewPasswordTextField);
+
+                int passwordResult = JOptionPane.showOptionDialog(null, passwordHolder, "Change Password",
+                        JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                        null, passwordOptions, null);
+
+                String currentPassword = String.valueOf(passwordTextField.getPassword());
+                String newPassword = String.valueOf(newPasswordTextField.getPassword());
+                String confirmNewPassword = String.valueOf(confirmNewPasswordTextField.getPassword());
+
+                if (passwordResult == 1) {
+
+                    if (currentPassword.isEmpty() || newPassword.isEmpty() || confirmNewPassword.isEmpty()) {
+                        JOptionPane.showMessageDialog(null, "Cannot Submit Incomplete Form",
+                                "Messenger", JOptionPane.ERROR_MESSAGE);
+                    } else {
+                        if (!currentPassword.equals(messengerClient.loggedOnUser.getPassword())) {
+                            JOptionPane.showMessageDialog(null, "Incorrect Password",
+                                    "Messenger", JOptionPane.ERROR_MESSAGE);
+                        } else if (!newPassword.equals(confirmNewPassword)) {
+                            JOptionPane.showMessageDialog(null, "New Passwords Did Not Match",
+                                    "Messenger", JOptionPane.ERROR_MESSAGE);
+                        } else {
+                            messengerClient.loggedOnUser.setPassword(reader, writer, confirmNewPassword);
+                        }
+                    }
+                }
+            }
+        });
+        changePasswordPanel.add(changePasswordButton);
+
+        JPanel manageBlockedUsersPanel = new JPanel();
+        JButton manageBlockedUsersButton = new JButton("Manage Blocked Users");
+        manageBlockedUsersButton.setPreferredSize(new Dimension(200, 30));
+        manageBlockedUsersButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                refreshManageBlockedUI(messengerClient, reader, writer);
+            }
+        });
+        manageBlockedUsersPanel.add(manageBlockedUsersButton);
+
+        JPanel manageInvisibleUsersPanel = new JPanel();
+        JButton manageInvisibleUsersButton = new JButton("Manage Invisible to Users");
+        manageInvisibleUsersButton.setPreferredSize(new Dimension(200, 30));
+        manageInvisibleUsersButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                refreshManageInvisibleUI(messengerClient, reader, writer);
+            }
+        });
+        manageInvisibleUsersPanel.add(manageInvisibleUsersButton);
+
+        JPanel censoringPanel = new JPanel();
+        JButton censoringButton = new JButton("Edit Censoring");
+        censoringButton.setPreferredSize(new Dimension(200, 30));
+        censoringButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                refreshCensorUI(messengerClient, reader, writer);
+            }
+        });
+        censoringPanel.add(censoringButton);
+
+        JPanel deleteAccountPanel = new JPanel();
+        JButton deleteAccountButton = new JButton("Delete Account");
+        deleteAccountButton.setPreferredSize(new Dimension(200, 30));
+        deleteAccountButton.setBackground(new Color(235, 64, 52));
+        deleteAccountButton.setForeground(Color.black);
+        deleteAccountButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                JPanel deleteHolder = new JPanel(new GridLayout(4, 1));
+                deleteHolder.add(new JPanel());
+
+                JLabel deleteLabel = new JLabel("Are you sure you want to delete this account?");
+                deleteLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                deleteLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                deleteHolder.add(deleteLabel);
+
+                deleteHolder.add(new JPanel());
+                String[] deleteOptions = {"Cancel", "Delete"};
+                int result = JOptionPane.showOptionDialog(null, deleteHolder, "Delete Account",
+                        JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE,
+                        null, deleteOptions, null);
+
+                if (result == 1) {
+                    String request = "[DELETE]" + ((messengerClient.loggedOnUser instanceof Seller) ?
+                            ((Seller) messengerClient.loggedOnUser).detailedToString() :
+                            ((Customer) messengerClient.loggedOnUser).detailedToString());
+                    sendRequest(writer, request);
+                    exitApplication(messengerClient, writer);
+                }
+            }
+        });
+        deleteAccountPanel.add(deleteAccountButton);
+
+        JPanel backPanel = new JPanel();
+        JButton backButton = new JButton("Back");
+        backButton.setPreferredSize(new Dimension(200, 30));
+        backButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                messengerClient.jFrame.setTitle("Messenger: Main");
+                messengerClient.cardLayout.show(messengerClient.container, "Main");
+            }
+        });
+        backPanel.add(backButton);
+
+        holder.add(changeUsernamePanel);
+        holder.add(changePasswordPanel);
+        holder.add(manageBlockedUsersPanel);
+        holder.add(manageInvisibleUsersPanel);
+        holder.add(censoringPanel);
+        holder.add(deleteAccountPanel);
+        holder.add(backPanel);
+
+        messengerClient.container.add("Edit Account", holder);
+        messengerClient.cardLayout.show(messengerClient.container, "Edit Account");
+    }
+
+    public static void refreshManageStoresUI(MessengerClient messengerClient, BufferedReader reader, PrintWriter writer) {
+        messengerClient.jFrame.setTitle("Messenger: Manage Stores");
+        JPanel holder = new JPanel(new BorderLayout());
+        JPanel storePanel = new JPanel(new GridLayout(0, 1, 0, 10));
+
+        if (((Seller) messengerClient.loggedOnUser).getStores().size() > 0) {
+            for (int i = 0; i < ((Seller) messengerClient.loggedOnUser).getStores().size(); i++) {
+                final int index = i;
+                final Store selectedStore = ((Seller) messengerClient.loggedOnUser).getStores().get(i);
+                String title = selectedStore.getStoreName();
+
+                JMenuItem storeElement = new JMenuItem(title);
+                storeElement.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        Object[] storeActions = {"Cancel", "Delete"};
+
+                        JPanel holder = new JPanel(new GridLayout(4, 1));
+                        holder.add(new JPanel());
+
+                        JLabel storeLabel = new JLabel("Selected: " + title);
+                        storeLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                        storeLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                        holder.add(storeLabel);
+
+                        holder.add(new JPanel());
+
+                        int result = JOptionPane.showOptionDialog(null, holder, "Delete Store",
+                                JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE,
+                                null, storeActions, null);
+                        if (result == 1) {
+                            ((Seller) messengerClient.loggedOnUser).removeStore(writer, selectedStore);
+                        }
+                        refreshManageStoresUI(messengerClient, reader, writer);
+                    }
+                });
+                storePanel.add(storeElement);
+            }
+
+            JScrollPane scrollPane = new JScrollPane();
+            scrollPane.setViewportView(storePanel);
+            holder.add(scrollPane);
+
+            messengerClient.jFrame.setSize(400,
+                    Math.min(((Seller) messengerClient.loggedOnUser).getStores().size() * 60 + 40, 250));
+        } else {
+            messengerClient.jFrame.setSize(400, 120);
+            JLabel storeLabel = new JLabel("No Stores");
+            storeLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+            storeLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            holder.add(storeLabel);
+        }
+
+        JPanel buttonPanel = new JPanel();
+        JButton backButton = new JButton("Back");
+        backButton.setSize(new Dimension(150, 30));
+        backButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                messengerClient.jFrame.setSize(400, 300);
+                messengerClient.jFrame.setTitle("Messenger: Main");
+                messengerClient.cardLayout.show(messengerClient.container, "Main");
+            }
+        });
+        buttonPanel.add(backButton);
+
+        JButton addButton = new JButton("Add");
+        addButton.setSize(new Dimension(150, 30));
+        addButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Object[] storeOptions = {"Cancel", "Add"};
+
+                JPanel storeHolder = new JPanel(new GridLayout(2, 1));
+
+                JLabel storeLabel = new JLabel("New Store Name:");
+                storeLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                storeLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                storeHolder.add(storeLabel);
+                JTextField storeTextField = new JTextField(20);
+                storeHolder.add(storeTextField);
+
+                int storeResult = JOptionPane.showOptionDialog(null, storeHolder, "Add Store",
+                        JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                        null, storeOptions, null);
+
+                String newStoreName = storeTextField.getText();
+                if (storeResult == 1) {
+                    if (newStoreName.isEmpty()) {
+                        JOptionPane.showMessageDialog(null, "Cannot Submit Incomplete Form",
+                                "Messenger", JOptionPane.ERROR_MESSAGE);
+                    } else {
+                        ((Seller) messengerClient.loggedOnUser).addStore(writer,
+                                new Store(newStoreName, (Seller) messengerClient.loggedOnUser));
+                    }
+                }
+                refreshManageStoresUI(messengerClient, reader, writer);
+            }
+        });
+        buttonPanel.add(addButton);
+        holder.add(buttonPanel, BorderLayout.SOUTH);
+
+        messengerClient.container.add("Store Menu", holder);
+        messengerClient.cardLayout.show(messengerClient.container, "Store Menu");
+    }
+
+    public static void refreshConversationsUI(MessengerClient messengerClient, BufferedReader reader, PrintWriter writer) {
+        messengerClient.jFrame.setTitle("Messenger: View Conversations");
+        messengerClient.conversations = refreshVisibleConversations(reader, writer, messengerClient.loggedOnUser);
+        JPanel holder = new JPanel(new BorderLayout());
+
+        JPanel conversationsPanel = new JPanel(new GridLayout(0, 1, 0, 10));
+        if (messengerClient.conversations.size() > 0) {
+            for (int i = 0; i < messengerClient.conversations.size(); i++) {
+                final Conversation conversation = messengerClient.conversations.get(i);
+                String title = conversation.getConversationID();
+                JMenuItem conversationElement = new JMenuItem(title);
+
+                conversationElement.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        Conversation selectedConversation = null;
+                        messengerClient.conversations = refreshVisibleConversations(reader, writer, messengerClient.loggedOnUser);
+                        for (Conversation iteratedConversation : messengerClient.conversations) {
+                            if (iteratedConversation.equals(conversation)) {
+                                selectedConversation = iteratedConversation;
+                            }
+                        }
+
+                        if (selectedConversation != null) {
+                            refreshMessagesUI(messengerClient, reader, writer, conversation);
+                        }
+                    }
+                });
+                conversationsPanel.add(conversationElement);
+            }
+
+            JScrollPane scrollPane = new JScrollPane();
+            scrollPane.setViewportView(conversationsPanel);
+            holder.add(scrollPane);
+
+            messengerClient.jFrame.setSize(400,
+                    Math.min(messengerClient.conversations.size() * 60 + 40, 250));
+        } else {
+            messengerClient.jFrame.setSize(400, 100);
+            JLabel conversationLabel = new JLabel("No Conversations");
+            conversationLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+            conversationLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            holder.add(conversationLabel);
+        }
+
+        JButton backButton = new JButton("Back");
+        backButton.setSize(new Dimension(150, 30));
+        backButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                messengerClient.jFrame.setSize(400, 300);
+                messengerClient.jFrame.setTitle("Messenger: Main");
+                messengerClient.cardLayout.show(messengerClient.container, "Main");
+            }
+        });
+        holder.add(backButton, BorderLayout.SOUTH);
+
+        messengerClient.container.add("List Conversations", holder);
+        messengerClient.cardLayout.show(messengerClient.container, "List Conversations");
+    }
+
+    public static void refreshMessagesUI(MessengerClient messengerClient, BufferedReader reader, PrintWriter writer, Conversation conversation) {
+        messengerClient.jFrame.setTitle(conversation.getConversationID());
+        messengerClient.jFrame.setSize(700, 300);
+        messengerClient.messages = refreshVisibleMessages(reader, writer, conversation,
+                messengerClient.loggedOnUser);
+
+        if (messengerClient.loggedOnUser instanceof Seller) {
+            conversation.setSellerUnread(writer, false);
+        } else {
+            conversation.setCustomerUnread(writer, false);
+        }
+
+        JPanel holder = new JPanel(new BorderLayout());
+        if (messengerClient.messages.size() > 0) {
+            DefaultListModel messageModel = new DefaultListModel();
+            for (int i = 0; i < messengerClient.messages.size(); i++) {
+                String message = messengerClient.messages.get(i).getSender().getUsername()
+                        + ": ";
+                if (messengerClient.loggedOnUser.isRequestsCensorship()) {
+                    message += messengerClient.messages.get(i)
+                            .getCensoredMessage(messengerClient.loggedOnUser);
+                } else {
+                    message += messengerClient.messages.get(i).getMessage();
+                }
+                messageModel.addElement(message);
+            }
+
+            JList messageList = new JList(messageModel);
+            messageList.addListSelectionListener(new ListSelectionListener() {
+                @Override
+                public void valueChanged(ListSelectionEvent e) {
+                    Conversation selectedConversation = null;
+                    messengerClient.conversations = refreshVisibleConversations(reader, writer, messengerClient.loggedOnUser);
+                    for (Conversation iteratedConversation : messengerClient.conversations) {
+                        if (iteratedConversation.equals(conversation)) {
+                            selectedConversation = iteratedConversation;
+                        }
+                    }
+                    messengerClient.messages = refreshVisibleMessages(reader, writer, selectedConversation, messengerClient.loggedOnUser);
+
+                    Message selectedMessage = messengerClient.messages.get(e.getLastIndex());
+
+                    Object[] userActions = {"Back", "Delete Message", "Edit Message"};
+
+                    JPanel holder = new JPanel(new GridLayout(4, 1));
+                    holder.add(new JPanel());
+
+                    JLabel messageLabel = new JLabel("Message Actions");
+                    messageLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                    messageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                    holder.add(messageLabel);
+
+                    holder.add(new JPanel());
+
+                    int result = JOptionPane.showOptionDialog(null, holder, "Message Actions",
+                            JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                            null, userActions, null);
+
+                    if (result == 1) {
+                        if (!messengerClient.loggedOnUser.deleteMessage(reader, writer, selectedMessage, selectedConversation)) {
+                            JOptionPane.showMessageDialog(null, "Could Not Delete Message",
+                                    "Messenger", JOptionPane.WARNING_MESSAGE);
+                        }
+                    } else if (result == 2) {
+                        if (selectedMessage.getSender().equals(messengerClient.loggedOnUser)) {
+                            Object[] sendOptions = {"Cancel", "Edit & Send"};
+
+                            JPanel sendHolder = new JPanel(new GridLayout(0, 1));
+                            sendHolder.add(new JPanel());
+
+                            JLabel sendLabel = new JLabel("Edited Message:");
+                            sendLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                            sendLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                            sendHolder.add(sendLabel);
+                            JTextField sendTextField = new JTextField(20);
+                            sendHolder.add(sendTextField);
+
+                            sendHolder.add(new JPanel());
+
+                            int sendResult = JOptionPane.showOptionDialog(null, sendHolder, "Edit a Message",
+                                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                                    null, sendOptions, null);
+
+                            if (sendResult == 1) {
+                                selectedConversation = null;
+                                messengerClient.conversations = refreshVisibleConversations(reader, writer, messengerClient.loggedOnUser);
+                                for (Conversation iteratedConversation : messengerClient.conversations) {
+                                    if (iteratedConversation.equals(conversation)) {
+                                        selectedConversation = iteratedConversation;
+                                    }
+                                }
+
+                                if (selectedConversation != null) {
+                                    User recipient = (messengerClient.loggedOnUser instanceof Seller) ?
+                                            selectedConversation.getCustomer() : selectedConversation.getSeller();
+                                    String message = sendTextField.getText();
+
+                                    if (!recipient.getBlockedUsers().contains(messengerClient.loggedOnUser) &&
+                                            !messengerClient.loggedOnUser.getBlockedUsers().contains(recipient)) {
+                                        if (message.isEmpty()) {
+                                            JOptionPane.showMessageDialog(null, "Not Sent. Empty Message");
+                                        } else {
+                                            if (!messengerClient.loggedOnUser.editMessage(reader,
+                                                    writer, selectedMessage, selectedConversation, message)) {
+                                                JOptionPane.showMessageDialog(null, "Update Failed",
+                                                        "Messenger", JOptionPane.ERROR_MESSAGE);
+                                            }
+                                        }
+                                    } else {
+                                        JOptionPane.showMessageDialog(null, "You cannot message this user!",
+                                                "Messenger", JOptionPane.WARNING_MESSAGE);
+                                    }
+                                } else {
+                                    refreshConversationsUI(messengerClient, reader, writer);
+                                    JOptionPane.showMessageDialog(null, "You cannot view this conversation!",
+                                            "Messenger", JOptionPane.WARNING_MESSAGE);
+                                }
+                            }
+                        } else {
+                            JOptionPane.showMessageDialog(null, "You cannot edit received messages!",
+                                    "Messenger", JOptionPane.WARNING_MESSAGE);
+                        }
+                    }
+                    selectedConversation = null;
+                    messengerClient.conversations =
+                            refreshVisibleConversations(reader, writer, messengerClient.loggedOnUser);
+                    for (Conversation iteratedConversation : messengerClient.conversations) {
+                        if (iteratedConversation.equals(conversation)) {
+                            selectedConversation = iteratedConversation;
+                        }
+                    }
+
+                    if (selectedConversation != null) {
+                        refreshMessagesUI(messengerClient, reader, writer, selectedConversation);
+                    } else {
+                        refreshConversationsUI(messengerClient, reader, writer);
+                        JOptionPane.showMessageDialog(null, "You cannot view this conversation!",
+                                "Messenger", JOptionPane.WARNING_MESSAGE);
+                    }
+                }
+            });
+
+            JScrollPane scrollPane = new JScrollPane();
+            scrollPane.setViewportView(messageList);
+            holder.add(scrollPane);
+        } else {
+            messengerClient.jFrame.setSize(700, 120);
+            JLabel messageLabel = new JLabel("No Messages");
+            messageLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+            messageLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            holder.add(messageLabel);
+        }
+
+        JPanel buttonPanel = new JPanel();
+        JButton backButton = new JButton("Back");
+        backButton.setSize(new Dimension(150, 30));
+        backButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                messengerClient.jFrame.setSize(400,
+                        Math.min(messengerClient.conversations.size() * 60 + 40, 250));
+                refreshConversationsUI(messengerClient, reader, writer);
+            }
+        });
+        buttonPanel.add(backButton);
+
+        JButton exportButton = new JButton("Export to CSV");
+        exportButton.setSize(new Dimension(150, 30));
+        exportButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    convertConversationToCSV(reader, writer, conversation, messengerClient.loggedOnUser);
+                    JOptionPane.showMessageDialog(null, "Exported to src/exports!");
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(null, "Could Not Convert", "Messenger", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+        buttonPanel.add(exportButton);
+
+        JButton importButton = new JButton("Import a TXT");
+        importButton.setSize(new Dimension(150, 30));
+        importButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Conversation selectedConversation = null;
+                messengerClient.conversations = refreshVisibleConversations(reader, writer, messengerClient.loggedOnUser);
+                for (Conversation iteratedConversation : messengerClient.conversations) {
+                    if (iteratedConversation.equals(conversation)) {
+                        selectedConversation = iteratedConversation;
+                    }
+                }
+
+                if (selectedConversation != null) {
+                    User recipient = (messengerClient.loggedOnUser instanceof Seller) ?
+                            selectedConversation.getCustomer() : selectedConversation.getSeller();
+
+                    if (!recipient.getBlockedUsers().contains(messengerClient.loggedOnUser) &&
+                            !messengerClient.loggedOnUser.getBlockedUsers().contains(recipient)) {
+                        Object[] sendOptions = {"Cancel", "Send"};
+
+                        JPanel sendHolder = new JPanel(new GridLayout(0, 1));
+                        sendHolder.add(new JPanel());
+
+                        JLabel sendLabel = new JLabel(".TXT File Source:");
+                        sendLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                        sendLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                        sendHolder.add(sendLabel);
+                        JTextField sendTextField = new JTextField(20);
+                        sendHolder.add(sendTextField);
+
+                        sendHolder.add(new JPanel());
+
+                        int sendResult = JOptionPane.showOptionDialog(null, sendHolder, "Import a .TXT",
+                                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                                null, sendOptions, null);
+
+                        String filePath = sendTextField.getText();
+                        if (sendResult == 1 && !filePath.isEmpty()) {
+                            selectedConversation = null;
+                            messengerClient.conversations = refreshVisibleConversations(reader, writer, messengerClient.loggedOnUser);
+                            for (Conversation iteratedConversation : messengerClient.conversations) {
+                                if (iteratedConversation.equals(conversation)) {
+                                    selectedConversation = iteratedConversation;
+                                }
+                            }
+
+                            if (selectedConversation != null) {
+                                recipient = (messengerClient.loggedOnUser instanceof Seller) ?
+                                        selectedConversation.getCustomer() : selectedConversation.getSeller();
+
+                                if (!selectedConversation.importTXT(reader, writer, filePath,
+                                        messengerClient.loggedOnUser, recipient)) {
+                                    JOptionPane.showMessageDialog(null, "Import Failed. Check the entered path.",
+                                            "Messenger", JOptionPane.WARNING_MESSAGE);
+                                }
+                            }
+                        }
+                    } else {
+                        JOptionPane.showMessageDialog(null, "You cannot message this user!",
+                                "Messenger", JOptionPane.WARNING_MESSAGE);
+                    }
+                    refreshMessagesUI(messengerClient, reader, writer, selectedConversation);
+                } else {
+                    refreshConversationsUI(messengerClient, reader, writer);
+                    JOptionPane.showMessageDialog(null, "You cannot view this conversation!",
+                            "Messenger", JOptionPane.WARNING_MESSAGE);
+                }
+            }
+        });
+        buttonPanel.add(importButton);
+
+        JTextField sendTextField = new JTextField(20);
+        buttonPanel.add(sendTextField);
+        JButton sendButton = new JButton("Send");
+        sendButton.setSize(new Dimension(150, 30));
+        sendButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Conversation selectedConversation = null;
+                messengerClient.conversations = refreshVisibleConversations(reader, writer, messengerClient.loggedOnUser);
+                for (Conversation iteratedConversation : messengerClient.conversations) {
+                    if (iteratedConversation.equals(conversation)) {
+                        selectedConversation = iteratedConversation;
+                    }
+                }
+
+                if (selectedConversation != null) {
+                    User recipient = (messengerClient.loggedOnUser instanceof Seller) ?
+                            conversation.getCustomer() : conversation.getSeller();
+
+                    if (!recipient.getBlockedUsers().contains(messengerClient.loggedOnUser) &&
+                            !messengerClient.loggedOnUser.getBlockedUsers().contains(recipient)) {
+                        String message = sendTextField.getText().strip();
+                        if (message.isEmpty()) {
+                            JOptionPane.showMessageDialog(null, "Not Sent. Empty Message");
+                        } else {
+                            if (!messengerClient.loggedOnUser.sendMessageToUser(reader, writer, message, recipient)) {
+                                JOptionPane.showMessageDialog(null, "Message Failed",
+                                        "Messenger", JOptionPane.ERROR_MESSAGE);
+                            }
+                        }
+                        sendTextField.setText("");
+                    } else {
+                        JOptionPane.showMessageDialog(null, "You cannot message this user!",
+                                "Messenger", JOptionPane.WARNING_MESSAGE);
+                    }
+                    refreshMessagesUI(messengerClient, reader, writer, conversation);
+                } else {
+                    refreshConversationsUI(messengerClient, reader, writer);
+                    JOptionPane.showMessageDialog(null, "You cannot view this conversation!",
+                            "Messenger", JOptionPane.WARNING_MESSAGE);
+                }
+            }
+        });
+        buttonPanel.add(sendButton);
+
+        JButton refreshButton = new JButton("Refresh");
+        refreshButton.setSize(new Dimension(150, 30));
+        refreshButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Conversation selectedConversation = null;
+                messengerClient.conversations = refreshVisibleConversations(reader, writer, messengerClient.loggedOnUser);
+                for (Conversation iteratedConversation : messengerClient.conversations) {
+                    if (iteratedConversation.equals(conversation)) {
+                        selectedConversation = iteratedConversation;
+                    }
+                }
+
+                if (selectedConversation != null) {
+                    refreshMessagesUI(messengerClient, reader, writer, selectedConversation);
+                } else {
+                    refreshConversationsUI(messengerClient, reader, writer);
+                    JOptionPane.showMessageDialog(null, "You cannot view this conversation!",
+                            "Messenger", JOptionPane.WARNING_MESSAGE);
+                }
+            }
+        });
+        buttonPanel.add(refreshButton);
+        holder.add(buttonPanel, BorderLayout.SOUTH);
+
+        messengerClient.container.add("Messages View", holder);
+        messengerClient.cardLayout.show(messengerClient.container, "Messages View");
+    }
+
+    public static void refreshCustomersUI(MessengerClient messengerClient, BufferedReader reader, PrintWriter writer) {
+        messengerClient.jFrame.setTitle("Messenger: View All Customers");
+        messengerClient.customers = refreshCustomers(reader, writer, messengerClient.loggedOnUser);
+
+        JPanel holder = new JPanel(new BorderLayout());
+        JPanel customersPanel = new JPanel(new GridLayout(0, 1, 0, 10));
+        if (messengerClient.customers.size() > 0) {
+            for (int i = 0; i < messengerClient.customers.size(); i++) {
+                final Customer customer = messengerClient.customers.get(i);
+                String title = String.format("%s | %s", customer.getUsername(), customer.getEmail());
+                JMenuItem customerElement = new JMenuItem(title);
+
+                customerElement.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        String blockedUserTitle = "Block";
+                        String invisibleUserTitle = "Become Invisible";
+                        if (messengerClient.loggedOnUser.getBlockedUsers().contains(customer)) {
+                            blockedUserTitle = "Unblock";
+                        }
+                        if (messengerClient.loggedOnUser.getInvisibleUsers().contains(customer)) {
+                            invisibleUserTitle = "Become Visible";
+                        }
+                        Object[] userActions = {"Message", blockedUserTitle, invisibleUserTitle};
+
+                        JPanel holder = new JPanel(new GridLayout(4, 1));
+                        holder.add(new JPanel());
+
+                        JLabel customerLabel = new JLabel("Selected: " + title);
+                        customerLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                        customerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                        holder.add(customerLabel);
+
+                        holder.add(new JPanel());
+
+                        int result = JOptionPane.showOptionDialog(null, holder, "User Actions",
+                                JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                                null, userActions, null);
+
+                        if (result == 0) {
+                            messengerClient.customers = refreshCustomers(reader, writer, messengerClient.loggedOnUser);
+                            Customer selectedCustomer = null;
+                            for (Customer iteratedCustomer : messengerClient.customers) {
+                                if (iteratedCustomer.equals(customer)) {
+                                    selectedCustomer = iteratedCustomer;
+                                }
+                            }
+
+                            if (selectedCustomer != null) {
+                                if (!selectedCustomer.getBlockedUsers().contains(messengerClient.loggedOnUser) &&
+                                        !messengerClient.loggedOnUser.getBlockedUsers().contains(selectedCustomer)) {
+                                    Object[] sendOptions = {"Cancel", "Send"};
+
+                                    JPanel sendHolder = new JPanel(new GridLayout(0, 1));
+                                    sendHolder.add(new JPanel());
+
+                                    JLabel sendLabel = new JLabel("Your Message:");
+                                    sendLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                                    sendLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                                    sendHolder.add(sendLabel);
+                                    JTextField sendTextField = new JTextField(20);
+                                    sendHolder.add(sendTextField);
+
+                                    sendHolder.add(new JPanel());
+
+                                    int sendResult = JOptionPane.showOptionDialog(null, sendHolder, "Send a Message",
+                                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                                            null, sendOptions, null);
+
+                                    String message = sendTextField.getText();
+                                    if (sendResult == 1 && !message.isEmpty()) {
+                                        messengerClient.customers = refreshCustomers(reader, writer, messengerClient.loggedOnUser);
+                                        selectedCustomer = null;
+                                        for (Customer iteratedCustomer : messengerClient.customers) {
+                                            if (iteratedCustomer.equals(customer)) {
+                                                selectedCustomer = iteratedCustomer;
+                                            }
+                                        }
+
+                                        if (messengerClient.loggedOnUser.sendMessageToUser(reader, writer, message, selectedCustomer)) {
+                                            JOptionPane.showMessageDialog(null, "Sent!");
+                                        } else {
+                                            JOptionPane.showMessageDialog(null, "Message Failed!");
+                                        }
+                                    }
+                                } else {
+                                    JOptionPane.showMessageDialog(null, "You cannot message this user!",
+                                            "Messenger", JOptionPane.WARNING_MESSAGE);
+                                }
+                            }
+                        } else if (result == 1) {
+                            messengerClient.customers = refreshCustomers(reader, writer, messengerClient.loggedOnUser);
+                            Customer selectedCustomer = null;
+                            for (Customer iteratedCustomer : messengerClient.customers) {
+                                if (iteratedCustomer.equals(customer)) {
+                                    selectedCustomer = iteratedCustomer;
+                                }
+                            }
+
+                            if (selectedCustomer != null) {
+                                ArrayList<User> blockedUsers = messengerClient.loggedOnUser.getBlockedUsers();
+                                if (blockedUsers.contains(selectedCustomer)) {
+                                    messengerClient.loggedOnUser.removeBlockedUser(writer, selectedCustomer);
+                                } else {
+                                    messengerClient.loggedOnUser.addBlockedUser(writer, selectedCustomer);
+                                }
+                            }
+                        } else if (result == 2) {
+                            messengerClient.customers = refreshCustomers(reader, writer, messengerClient.loggedOnUser);
+                            Customer selectedCustomer = null;
+                            for (Customer iteratedCustomer : messengerClient.customers) {
+                                if (iteratedCustomer.equals(customer)) {
+                                    selectedCustomer = iteratedCustomer;
+                                }
+                            }
+                            if (selectedCustomer != null) {
+                                ArrayList<User> invisibleUsers = messengerClient.loggedOnUser.getInvisibleUsers();
+                                if (invisibleUsers.contains(selectedCustomer)) {
+                                    messengerClient.loggedOnUser.removeInvisibleUser(writer, selectedCustomer);
+                                } else {
+                                    messengerClient.loggedOnUser.addInvisibleUser(writer, customer);
+                                }
+                            }
+                        }
+                        refreshCustomersUI(messengerClient, reader, writer);
+                    }
+                });
+                customersPanel.add(customerElement);
+            }
+
+            JScrollPane scrollPane = new JScrollPane();
+            scrollPane.setViewportView(customersPanel);
+            holder.add(scrollPane);
+
+            messengerClient.jFrame.setSize(400, Math.min(messengerClient.customers.size() * 60 + 40, 250));
+        } else {
+            messengerClient.jFrame.setSize(400, 100);
+            JLabel customerLabel = new JLabel("No Customers");
+            customerLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+            customerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            holder.add(customerLabel);
+        }
+
+        JButton backButton = new JButton("Back");
+        backButton.setSize(new Dimension(150, 30));
+        backButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                messengerClient.jFrame.setSize(400, 300);
+                messengerClient.jFrame.setTitle("Messenger: Main");
+                messengerClient.cardLayout.show(messengerClient.container, "Main");
+            }
+        });
+        holder.add(backButton, BorderLayout.SOUTH);
+
+        messengerClient.container.add("List Customers", holder);
+        messengerClient.cardLayout.show(messengerClient.container, "List Customers");
+    }
+
+    public static void refreshStoresUI(MessengerClient messengerClient, BufferedReader reader, PrintWriter writer) {
+        messengerClient.jFrame.setTitle("Messenger: View All Stores");
+        messengerClient.stores = refreshStores(reader, writer, messengerClient.loggedOnUser);
+
+        JPanel holder = new JPanel(new BorderLayout());
+        JPanel storesPanel = new JPanel(new GridLayout(0, 1, 0, 10));
+        if (messengerClient.stores.size() > 0) {
+            for (int i = 0; i < messengerClient.stores.size(); i++) {
+                final Store store = messengerClient.stores.get(i);
+                String title = String.format("%s by %s", store.getStoreName(), store.getSeller().getUsername());
+                JMenuItem storeElement = new JMenuItem(title);
+
+                storeElement.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        String blockedUserTitle = "Block";
+                        String invisibleUserTitle = "Become Invisible";
+                        if (messengerClient.loggedOnUser.getBlockedUsers().contains(store.getSeller())) {
+                            blockedUserTitle = "Unblock";
+                        }
+                        if (messengerClient.loggedOnUser.getInvisibleUsers().contains(store.getSeller())) {
+                            invisibleUserTitle = "Become Visible";
+                        }
+                        Object[] userActions = {"Message", blockedUserTitle, invisibleUserTitle};
+
+                        messengerClient.stores = refreshStores(reader, writer, messengerClient.loggedOnUser);
+                        Store selectedStore = null;
+                        for (Store iteratedStore : messengerClient.stores) {
+                            if (iteratedStore.equals(store)) {
+                                selectedStore = iteratedStore;
+                            }
+                        }
+                        messengerClient.loggedOnUser.sendMessageToUser(reader, writer,
+                                messengerClient.loggedOnUser.getUsername() +
+                                        " looked up the Store: " + selectedStore.getStoreName(),
+                                selectedStore.getSeller());
+
+
+                        JPanel holder = new JPanel(new GridLayout(4, 1));
+                        holder.add(new JPanel());
+
+                        JLabel storeLabel = new JLabel("Selected: " + title);
+                        storeLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                        storeLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                        holder.add(storeLabel);
+
+                        holder.add(new JPanel());
+
+                        int result = JOptionPane.showOptionDialog(null, holder, "User Actions",
+                                JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                                null, userActions, null);
+
+                        if (result == 0) {
+                            messengerClient.stores = refreshStores(reader, writer, messengerClient.loggedOnUser);
+                            selectedStore = null;
+                            for (Store iteratedStore : messengerClient.stores) {
+                                if (iteratedStore.equals(store)) {
+                                    selectedStore = iteratedStore;
+                                }
+                            }
+
+                            if (selectedStore != null) {
+                                if (!selectedStore.getSeller().getBlockedUsers().contains(messengerClient.loggedOnUser) &&
+                                        !messengerClient.loggedOnUser.getBlockedUsers().contains(selectedStore.getSeller())) {
+                                    Object[] sendOptions = {"Cancel", "Send"};
+
+                                    JPanel sendHolder = new JPanel(new GridLayout(0, 1));
+                                    sendHolder.add(new JPanel());
+
+                                    JLabel sendLabel = new JLabel("Your Message:");
+                                    sendLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                                    sendLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                                    sendHolder.add(sendLabel);
+                                    JTextField sendTextField = new JTextField(20);
+                                    sendHolder.add(sendTextField);
+
+                                    sendHolder.add(new JPanel());
+
+                                    int sendResult = JOptionPane.showOptionDialog(null, sendHolder, "Send a Message",
+                                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                                            null, sendOptions, null);
+
+                                    String message = sendTextField.getText();
+                                    if (sendResult == 1 && !message.isEmpty()) {
+                                        messengerClient.stores = refreshStores(reader, writer, messengerClient.loggedOnUser);
+                                        selectedStore = null;
+                                        for (Store iteratedStore : messengerClient.stores) {
+                                            if (iteratedStore.equals(store)) {
+                                                selectedStore = iteratedStore;
+                                            }
+                                        }
+
+                                        if (messengerClient.loggedOnUser.sendMessageToUser(reader, writer, message, selectedStore.getSeller())) {
+                                            JOptionPane.showMessageDialog(null, "Sent!");
+                                        } else {
+                                            JOptionPane.showMessageDialog(null, "Message Failed!");
+                                        }
+                                    }
+                                } else {
+                                    JOptionPane.showMessageDialog(null, "You cannot message this user!",
+                                            "Messenger", JOptionPane.WARNING_MESSAGE);
+                                }
+                            }
+                        } else if (result == 1) {
+                            messengerClient.stores = refreshStores(reader, writer, messengerClient.loggedOnUser);
+                            selectedStore = null;
+                            for (Store iteratedStore : messengerClient.stores) {
+                                if (iteratedStore.equals(store)) {
+                                    selectedStore = iteratedStore;
+                                }
+                            }
+
+                            if (selectedStore != null) {
+                                ArrayList<User> blockedUsers = messengerClient.loggedOnUser.getBlockedUsers();
+                                if (blockedUsers.contains(selectedStore.getSeller())) {
+                                    messengerClient.loggedOnUser.removeBlockedUser(writer, selectedStore.getSeller());
+                                } else {
+                                    messengerClient.loggedOnUser.addBlockedUser(writer, selectedStore.getSeller());
+                                }
+                            }
+                        } else if (result == 2) {
+                            messengerClient.stores = refreshStores(reader, writer, messengerClient.loggedOnUser);
+                            selectedStore = null;
+                            for (Store iteratedStore : messengerClient.stores) {
+                                if (iteratedStore.equals(store)) {
+                                    selectedStore = iteratedStore;
+                                }
+                            }
+
+                            if (selectedStore != null) {
+                                ArrayList<User> invisibleUsers = messengerClient.loggedOnUser.getInvisibleUsers();
+                                if (invisibleUsers.contains(selectedStore.getSeller())) {
+                                    messengerClient.loggedOnUser.removeInvisibleUser(writer, selectedStore.getSeller());
+                                } else {
+                                    messengerClient.loggedOnUser.addInvisibleUser(writer, selectedStore.getSeller());
+                                }
+                            }
+                        }
+                        refreshStoresUI(messengerClient, reader, writer);
+                    }
+                });
+                storesPanel.add(storeElement);
+            }
+
+            JScrollPane scrollPane = new JScrollPane();
+            scrollPane.setViewportView(storesPanel);
+            holder.add(scrollPane);
+
+            messengerClient.jFrame.setSize(400, Math.min(messengerClient.stores.size() * 60 + 40, 250));
+        } else {
+            messengerClient.jFrame.setSize(400, 100);
+            JLabel storeLabel = new JLabel("No Stores");
+            storeLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+            storeLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            holder.add(storeLabel);
+        }
+
+        JButton backButton = new JButton("Back");
+        backButton.setSize(new Dimension(150, 30));
+        backButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                messengerClient.jFrame.setSize(400, 300);
+                messengerClient.jFrame.setTitle("Messenger: Main");
+                messengerClient.cardLayout.show(messengerClient.container, "Main");
+            }
+        });
+        holder.add(backButton, BorderLayout.SOUTH);
+
+        messengerClient.container.add("List Stores", holder);
+        messengerClient.cardLayout.show(messengerClient.container, "List Stores");
+    }
+
+    public static void refreshSearchCustomersUI(MessengerClient messengerClient, BufferedReader reader, PrintWriter writer, String searchKeyword) {
+        messengerClient.jFrame.setTitle("Messenger: Customer Search Results");
+        messengerClient.searchCustomers = refreshSearchCustomers(reader, writer,
+                messengerClient.loggedOnUser, searchKeyword);
+
+        JPanel holder = new JPanel(new BorderLayout());
+        JPanel customersPanel = new JPanel(new GridLayout(0, 1, 0, 10));
+        if (messengerClient.searchCustomers.size() > 0) {
+            for (int i = 0; i < messengerClient.searchCustomers.size(); i++) {
+                final Customer customer = messengerClient.searchCustomers.get(i);
+                String title = String.format("%s | %s", customer.getUsername(), customer.getEmail());
+                JMenuItem customerElement = new JMenuItem(title);
+
+                customerElement.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        String blockedUserTitle = "Block";
+                        String invisibleUserTitle = "Become Invisible";
+                        if (messengerClient.loggedOnUser.getBlockedUsers().contains(customer)) {
+                            blockedUserTitle = "Unblock";
+                        }
+                        if (messengerClient.loggedOnUser.getInvisibleUsers().contains(customer)) {
+                            invisibleUserTitle = "Become Visible";
+                        }
+                        Object[] userActions = {"Message", blockedUserTitle, invisibleUserTitle};
+
+                        JPanel holder = new JPanel(new GridLayout(4, 1));
+                        holder.add(new JPanel());
+
+                        JLabel customerLabel = new JLabel("Selected: " + title);
+                        customerLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                        customerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                        holder.add(customerLabel);
+
+                        holder.add(new JPanel());
+
+                        int result = JOptionPane.showOptionDialog(null, holder, "User Actions",
+                                JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                                null, userActions, null);
+                        if (result == 0) {
+                            messengerClient.searchCustomers = refreshSearchCustomers(reader, writer, messengerClient.loggedOnUser, searchKeyword);
+                            Customer selectedCustomer = null;
+                            for (Customer iteratedCustomer : messengerClient.searchCustomers) {
+                                if (iteratedCustomer.equals(customer)) {
+                                    selectedCustomer = iteratedCustomer;
+                                }
+                            }
+
+                            if (selectedCustomer != null) {
+                                if (!selectedCustomer.getBlockedUsers().contains(messengerClient.loggedOnUser) &&
+                                        !messengerClient.loggedOnUser.getBlockedUsers().contains(selectedCustomer)) {
+                                    Object[] sendOptions = {"Cancel", "Send"};
+
+                                    JPanel sendHolder = new JPanel(new GridLayout(0, 1));
+                                    sendHolder.add(new JPanel());
+
+                                    JLabel sendLabel = new JLabel("Your Message:");
+                                    sendLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                                    sendLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                                    sendHolder.add(sendLabel);
+                                    JTextField sendTextField = new JTextField(20);
+                                    sendHolder.add(sendTextField);
+
+                                    sendHolder.add(new JPanel());
+
+                                    int sendResult = JOptionPane.showOptionDialog(null, sendHolder, "Send a Message",
+                                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                                            null, sendOptions, null);
+
+                                    String message = sendTextField.getText();
+                                    if (sendResult == 1 && !message.isEmpty()) {
+                                        messengerClient.searchCustomers = refreshSearchCustomers(reader, writer, messengerClient.loggedOnUser, searchKeyword);
+                                        selectedCustomer = null;
+                                        for (Customer iteratedCustomer : messengerClient.searchCustomers) {
+                                            if (iteratedCustomer.equals(customer)) {
+                                                selectedCustomer = iteratedCustomer;
+                                            }
+                                        }
+
+                                        if (messengerClient.loggedOnUser.sendMessageToUser(reader, writer, message, selectedCustomer)) {
+                                            JOptionPane.showMessageDialog(null, "Sent!");
+                                        } else {
+                                            JOptionPane.showMessageDialog(null, "Message Failed!");
+                                        }
+                                    }
+                                } else {
+                                    JOptionPane.showMessageDialog(null, "You cannot message this user!",
+                                            "Messenger", JOptionPane.WARNING_MESSAGE);
+                                }
+                            }
+                        } else if (result == 1) {
+                            messengerClient.searchCustomers = refreshSearchCustomers(reader, writer, messengerClient.loggedOnUser, searchKeyword);
+                            Customer selectedCustomer = null;
+                            for (Customer iteratedCustomer : messengerClient.searchCustomers) {
+                                if (iteratedCustomer.equals(customer)) {
+                                    selectedCustomer = iteratedCustomer;
+                                }
+                            }
+
+                            if (selectedCustomer != null) {
+                                ArrayList<User> blockedUsers = messengerClient.loggedOnUser.getBlockedUsers();
+                                if (blockedUsers.contains(customer)) {
+                                    messengerClient.loggedOnUser.removeBlockedUser(writer, customer);
+                                } else {
+                                    messengerClient.loggedOnUser.addBlockedUser(writer, customer);
+                                }
+                            }
+                        } else if (result == 2) {
+                            messengerClient.searchCustomers = refreshSearchCustomers(reader, writer, messengerClient.loggedOnUser, searchKeyword);
+                            Customer selectedCustomer = null;
+                            for (Customer iteratedCustomer : messengerClient.searchCustomers) {
+                                if (iteratedCustomer.equals(customer)) {
+                                    selectedCustomer = iteratedCustomer;
+                                }
+                            }
+
+                            if (selectedCustomer != null) {
+                                ArrayList<User> invisibleUsers = messengerClient.loggedOnUser.getInvisibleUsers();
+                                if (invisibleUsers.contains(customer)) {
+                                    messengerClient.loggedOnUser.removeInvisibleUser(writer, customer);
+                                } else {
+                                    messengerClient.loggedOnUser.addInvisibleUser(writer, customer);
+                                }
+                            }
+                        }
+                        refreshSearchCustomersUI(messengerClient, reader, writer, searchKeyword);
+                    }
+                });
+                customersPanel.add(customerElement);
+            }
+
+            JScrollPane scrollPane = new JScrollPane();
+            scrollPane.setViewportView(customersPanel);
+            holder.add(scrollPane);
+
+            messengerClient.jFrame.setSize(400, Math.min(messengerClient.searchCustomers.size() * 60 + 40, 250));
+        } else {
+            messengerClient.jFrame.setSize(400, 100);
+            JLabel customerLabel = new JLabel("No Customers");
+            customerLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+            customerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            holder.add(customerLabel);
+        }
+
+        JButton backButton = new JButton("Back");
+        backButton.setSize(new Dimension(150, 30));
+        backButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                messengerClient.jFrame.setSize(400, 300);
+                messengerClient.jFrame.setTitle("Messenger: Main");
+                messengerClient.cardLayout.show(messengerClient.container, "Main");
+            }
+        });
+        holder.add(backButton, BorderLayout.SOUTH);
+
+        messengerClient.container.add("Search Customers", holder);
+        messengerClient.cardLayout.show(messengerClient.container, "Search Customers");
+    }
+
+    public static void refreshSearchSellersUI(MessengerClient messengerClient, BufferedReader reader, PrintWriter writer, String searchKeyword) {
+        messengerClient.jFrame.setTitle("Messenger: Seller Search Results");
+        messengerClient.searchSellers = refreshSearchSellers(reader, writer,
+                messengerClient.loggedOnUser, searchKeyword);
+
+        JPanel holder = new JPanel(new BorderLayout());
+        JPanel sellersPanel = new JPanel(new GridLayout(0, 1, 0, 10));
+        if (messengerClient.searchSellers.size() > 0) {
+            for (int i = 0; i < messengerClient.searchSellers.size(); i++) {
+                final Seller seller = messengerClient.searchSellers.get(i);
+                String title = String.format("%s | %s", seller.getUsername(), seller.getEmail());
+                JMenuItem sellerElement = new JMenuItem(title);
+
+                sellerElement.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        String blockedUserTitle = "Block";
+                        String invisibleUserTitle = "Become Invisible";
+                        if (messengerClient.loggedOnUser.getBlockedUsers().contains(seller)) {
+                            blockedUserTitle = "Unblock";
+                        }
+                        if (messengerClient.loggedOnUser.getInvisibleUsers().contains(seller)) {
+                            invisibleUserTitle = "Become Visible";
+                        }
+                        Object[] userActions = {"Message", blockedUserTitle, invisibleUserTitle};
+
+                        JPanel holder = new JPanel(new GridLayout(4, 1));
+                        holder.add(new JPanel());
+
+                        JLabel sellerLabel = new JLabel("Selected: " + title);
+                        sellerLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                        sellerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                        holder.add(sellerLabel);
+
+                        holder.add(new JPanel());
+
+                        int result = JOptionPane.showOptionDialog(null, holder, "User Actions",
+                                JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                                null, userActions, null);
+                        if (result == 0) {
+                            messengerClient.searchSellers = refreshSearchSellers(reader, writer, messengerClient.loggedOnUser, searchKeyword);
+                            Seller selectedSeller = null;
+                            for (Seller iteratedSeller : messengerClient.searchSellers) {
+                                if (iteratedSeller.equals(seller)) {
+                                    selectedSeller = iteratedSeller;
+                                }
+                            }
+
+                            if (!seller.getBlockedUsers().contains(messengerClient.loggedOnUser) &&
+                                    !messengerClient.loggedOnUser.getBlockedUsers().contains(seller)) {
+                                Object[] sendOptions = {"Cancel", "Send"};
+
+                                JPanel sendHolder = new JPanel(new GridLayout(0, 1));
+                                sendHolder.add(new JPanel());
+
+                                JLabel sendLabel = new JLabel("Your Message:");
+                                sendLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                                sendLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                                sendHolder.add(sendLabel);
+                                JTextField sendTextField = new JTextField(20);
+                                sendHolder.add(sendTextField);
+
+                                sendHolder.add(new JPanel());
+
+                                int sendResult = JOptionPane.showOptionDialog(null, sendHolder, "Send a Message",
+                                        JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                                        null, sendOptions, null);
+
+                                String message = sendTextField.getText();
+                                if (sendResult == 1 && !message.isEmpty()) {
+                                    messengerClient.searchSellers = refreshSearchSellers(reader, writer, messengerClient.loggedOnUser, searchKeyword);
+                                    selectedSeller = null;
+                                    for (Seller iteratedSeller : messengerClient.searchSellers) {
+                                        if (iteratedSeller.equals(seller)) {
+                                            selectedSeller = iteratedSeller;
+                                        }
+                                    }
+
+                                    if (selectedSeller != null) {
+                                        if (messengerClient.loggedOnUser.sendMessageToUser(reader, writer, message, seller)) {
+                                            JOptionPane.showMessageDialog(null, "Sent!");
+                                        } else {
+                                            JOptionPane.showMessageDialog(null, "Message Failed!");
+                                        }
+                                    }
+                                }
+                            } else {
+                                JOptionPane.showMessageDialog(null, "You cannot message this user!",
+                                        "Messenger", JOptionPane.WARNING_MESSAGE);
+                            }
+                        } else if (result == 1) {
+                            messengerClient.searchSellers = refreshSearchSellers(reader, writer, messengerClient.loggedOnUser, searchKeyword);
+                            Seller selectedSeller = null;
+                            for (Seller iteratedSeller : messengerClient.searchSellers) {
+                                if (iteratedSeller.equals(seller)) {
+                                    selectedSeller = iteratedSeller;
+                                }
+                            }
+
+                            if (selectedSeller != null) {
+                                ArrayList<User> blockedUsers = messengerClient.loggedOnUser.getBlockedUsers();
+                                if (blockedUsers.contains(seller)) {
+                                    messengerClient.loggedOnUser.removeBlockedUser(writer, seller);
+                                } else {
+                                    messengerClient.loggedOnUser.addBlockedUser(writer, seller);
+                                }
+                            }
+                        } else if (result == 2) {
+                            messengerClient.searchSellers = refreshSearchSellers(reader, writer, messengerClient.loggedOnUser, searchKeyword);
+                            Seller selectedSeller = null;
+                            for (Seller iteratedSeller : messengerClient.searchSellers) {
+                                if (iteratedSeller.equals(seller)) {
+                                    selectedSeller = iteratedSeller;
+                                }
+                            }
+
+                            if (selectedSeller != null) {
+                                ArrayList<User> invisibleUsers = messengerClient.loggedOnUser.getInvisibleUsers();
+                                if (invisibleUsers.contains(seller)) {
+                                    messengerClient.loggedOnUser.removeInvisibleUser(writer, seller);
+                                } else {
+                                    messengerClient.loggedOnUser.addInvisibleUser(writer, seller);
+                                }
+                            }
+                        }
+                        refreshSearchSellersUI(messengerClient, reader, writer, searchKeyword);
+                    }
+                });
+                sellersPanel.add(sellerElement);
+            }
+
+            JScrollPane scrollPane = new JScrollPane();
+            scrollPane.setViewportView(sellersPanel);
+            holder.add(scrollPane);
+
+            messengerClient.jFrame.setSize(400, Math.min(messengerClient.searchSellers.size() * 60 + 40, 250));
+        } else {
+            messengerClient.jFrame.setSize(400, 100);
+            JLabel sellerLabel = new JLabel("No Sellers");
+            sellerLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+            sellerLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            holder.add(sellerLabel);
+        }
+
+        JButton backButton = new JButton("Back");
+        backButton.setSize(new Dimension(150, 30));
+        backButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                messengerClient.jFrame.setSize(400, 300);
+                messengerClient.jFrame.setTitle("Messenger: Main");
+                messengerClient.cardLayout.show(messengerClient.container, "Main");
+            }
+        });
+        holder.add(backButton, BorderLayout.SOUTH);
+
+        messengerClient.container.add("Search Sellers", holder);
+        messengerClient.cardLayout.show(messengerClient.container, "Search Sellers");
+    }
+
+    public static void refreshManageBlockedUI(MessengerClient messengerClient, BufferedReader reader, PrintWriter writer) {
+        messengerClient.jFrame.setTitle("Manage Blocked Users");
+        JPanel holder = new JPanel(new BorderLayout());
+        JPanel userPanel = new JPanel(new GridLayout(0, 1, 0, 10));
+
+        if (messengerClient.loggedOnUser.getBlockedUsers().size() > 0) {
+            for (int i = 0; i < messengerClient.loggedOnUser.getBlockedUsers().size(); i++) {
+                final User selectedUser = messengerClient.loggedOnUser.getBlockedUsers().get(i);
+                String title = String.format("%s | %s", selectedUser.getUsername(), selectedUser.getEmail());
+
+                JMenuItem userElement = new JMenuItem(title);
+                userElement.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        Object[] userActions = {"Cancel", "Unblock"};
+
+                        JPanel holder = new JPanel(new GridLayout(4, 1));
+                        holder.add(new JPanel());
+
+                        JLabel userLabel = new JLabel("Selected: " + title);
+                        userLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                        userLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                        holder.add(userLabel);
+
+                        holder.add(new JPanel());
+
+                        int result = JOptionPane.showOptionDialog(null, holder, "Unblock User",
+                                JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE,
+                                null, userActions, null);
+                        if (result == 1) {
+                            messengerClient.loggedOnUser.removeBlockedUser(writer, selectedUser);
+                            messengerClient.jFrame.setSize(400, 300);
+                            messengerClient.cardLayout.show(messengerClient.container, "Edit Account");
+                        }
+                        refreshManageBlockedUI(messengerClient, reader, writer);
+                    }
+                });
+                userPanel.add(userElement);
+            }
+
+            JScrollPane scrollPane = new JScrollPane();
+            scrollPane.setViewportView(userPanel);
+            holder.add(scrollPane);
+
+            messengerClient.jFrame.setSize(400,
+                    Math.min(messengerClient.loggedOnUser.getBlockedUsers().size() * 60 + 40, 250));
+        } else {
+            messengerClient.jFrame.setSize(400, 100);
+            JLabel blockedLabel = new JLabel("No Blocked Users");
+            blockedLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+            blockedLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            holder.add(blockedLabel);
+        }
+
+        JButton backButton = new JButton("Back");
+        backButton.setSize(new Dimension(150, 30));
+        backButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                messengerClient.jFrame.setSize(400, 300);
+                messengerClient.jFrame.setTitle("Messenger: Account");
+                messengerClient.cardLayout.show(messengerClient.container, "Edit Account");
+            }
+        });
+        holder.add(backButton, BorderLayout.SOUTH);
+
+        messengerClient.container.add("Manage Blocked Users", holder);
+        messengerClient.cardLayout.show(messengerClient.container, "Manage Blocked Users");
+    }
+
+    public static void refreshManageInvisibleUI(MessengerClient messengerClient, BufferedReader reader, PrintWriter writer) {
+        messengerClient.jFrame.setTitle("Manage Invisible to Users");
+        JPanel holder = new JPanel(new BorderLayout());
+        JPanel userPanel = new JPanel(new GridLayout(0, 1, 0, 10));
+
+        if (messengerClient.loggedOnUser.getInvisibleUsers().size() > 0) {
+            for (int i = 0; i < messengerClient.loggedOnUser.getInvisibleUsers().size(); i++) {
+                final User selectedUser = messengerClient.loggedOnUser.getInvisibleUsers().get(i);
+                String title = String.format("%s | %s", selectedUser.getUsername(), selectedUser.getEmail());
+
+                JMenuItem userElement = new JMenuItem(title);
+                userElement.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        Object[] userActions = {"Cancel", "Become Visible"};
+
+                        JPanel holder = new JPanel(new GridLayout(4, 1));
+                        holder.add(new JPanel());
+
+                        JLabel userLabel = new JLabel("Selected: " + title);
+                        userLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                        userLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                        holder.add(userLabel);
+
+                        holder.add(new JPanel());
+
+                        int result = JOptionPane.showOptionDialog(null, holder, "Become Visible to User",
+                                JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE,
+                                null, userActions, null);
+                        if (result == 1) {
+                            messengerClient.loggedOnUser.removeInvisibleUser(writer, selectedUser);
+                            messengerClient.jFrame.setSize(400, 300);
+                            messengerClient.cardLayout.show(messengerClient.container, "Edit Account");
+                        }
+                        refreshManageInvisibleUI(messengerClient, reader, writer);
+                    }
+                });
+                userPanel.add(userElement);
+            }
+
+            JScrollPane scrollPane = new JScrollPane();
+            scrollPane.setViewportView(userPanel);
+            holder.add(scrollPane);
+
+            messengerClient.jFrame.setSize(400,
+                    Math.min(messengerClient.loggedOnUser.getInvisibleUsers().size() * 60 + 40, 250));
+        } else {
+            messengerClient.jFrame.setSize(400, 100);
+            JLabel invisibleLabel = new JLabel("No Invisible to Users");
+            invisibleLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+            invisibleLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            holder.add(invisibleLabel);
+        }
+
+        JButton backButton = new JButton("Back");
+        backButton.setSize(new Dimension(150, 30));
+        backButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                messengerClient.jFrame.setSize(400, 300);
+                messengerClient.jFrame.setTitle("Messenger: Account");
+                messengerClient.cardLayout.show(messengerClient.container, "Edit Account");
+            }
+        });
+        holder.add(backButton, BorderLayout.SOUTH);
+
+        messengerClient.container.add("Manage Invisible to Users", holder);
+        messengerClient.cardLayout.show(messengerClient.container, "Manage Invisible to Users");
+    }
+
+    public static void refreshCensorUI(MessengerClient messengerClient, BufferedReader reader, PrintWriter writer) {
+        messengerClient.jFrame.setTitle("Censoring Options");
+        JPanel holder = new JPanel(new BorderLayout());
+        JPanel censorPanel = new JPanel(new GridLayout(0, 1, 0, 10));
+
+        if (messengerClient.loggedOnUser.getCensoredWords().size() > 0) {
+            for (int i = 0; i < messengerClient.loggedOnUser.getCensoredWords().size(); i++) {
+                final int index = i;
+                final String selectedCensorPair = messengerClient.loggedOnUser.getCensoredWords().get(i);
+                String title = String.format("%s >>>> %s",
+                        selectedCensorPair.split(":")[0], selectedCensorPair.split(":")[1]);
+
+                JMenuItem censorElement = new JMenuItem(title);
+                censorElement.addActionListener(new ActionListener() {
+                    @Override
+                    public void actionPerformed(ActionEvent e) {
+                        Object[] censorActions = {"Cancel", "Delete Censor Pair"};
+
+                        JPanel holder = new JPanel(new GridLayout(4, 1));
+                        holder.add(new JPanel());
+
+                        JLabel censorLabel = new JLabel("Selected: " + title);
+                        censorLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                        censorLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                        holder.add(censorLabel);
+
+                        holder.add(new JPanel());
+
+                        int result = JOptionPane.showOptionDialog(null, holder, "Delete Censor Pair",
+                                JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE,
+                                null, censorActions, null);
+                        if (result == 1) {
+                            messengerClient.loggedOnUser.removeCensoredWord(writer, index, selectedCensorPair);
+                        }
+                        refreshCensorUI(messengerClient, reader, writer);
+                    }
+                });
+                censorPanel.add(censorElement);
+            }
+
+            JScrollPane scrollPane = new JScrollPane();
+            scrollPane.setViewportView(censorPanel);
+            holder.add(scrollPane);
+
+            messengerClient.jFrame.setSize(400,
+                    Math.min(messengerClient.loggedOnUser.getCensoredWords().size() * 60 + 40, 250));
+        } else {
+            messengerClient.jFrame.setSize(400, 120);
+            JLabel censorPairLabel = new JLabel("No Censored Words");
+            censorPairLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+            censorPairLabel.setHorizontalAlignment(SwingConstants.CENTER);
+            holder.add(censorPairLabel);
+        }
+
+        JPanel buttonPanel = new JPanel();
+        JButton backButton = new JButton("Back");
+        backButton.setSize(new Dimension(150, 30));
+        backButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                messengerClient.jFrame.setSize(400, 300);
+                messengerClient.jFrame.setTitle("Messenger: Account");
+                messengerClient.cardLayout.show(messengerClient.container, "Edit Account");
+            }
+        });
+        buttonPanel.add(backButton);
+
+        JButton addButton = new JButton("Add");
+        addButton.setSize(new Dimension(150, 30));
+        addButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                Object[] censorOptions = {"Cancel", "Add"};
+
+                JPanel censorHolder = new JPanel(new GridLayout(2, 1));
+
+                JLabel censorLabel = new JLabel("Censored Word:");
+                censorLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                censorLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                censorHolder.add(censorLabel);
+                JTextField censorTextField = new JTextField(20);
+                censorHolder.add(censorTextField);
+
+                JLabel replacementLabel = new JLabel("Replacement:");
+                replacementLabel.setFont(new Font("Open Sans", Font.PLAIN, 14));
+                replacementLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                censorHolder.add(replacementLabel);
+                JTextField replacementTextField = new JTextField(20);
+                replacementTextField.setText("****");
+                censorHolder.add(replacementTextField);
+
+                int censorResult = JOptionPane.showOptionDialog(null, censorHolder, "Add Censor Pair",
+                        JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                        null, censorOptions, null);
+
+                String censoredWord = censorTextField.getText();
+                String replacement = replacementTextField.getText();
+                if (censorResult == 1) {
+                    if (censoredWord.isEmpty() || replacement.isEmpty()) {
+                        JOptionPane.showMessageDialog(null, "Cannot Submit Incomplete Form",
+                                "Messenger", JOptionPane.ERROR_MESSAGE);
+                    } else {
+                        messengerClient.loggedOnUser.addCensoredWord(writer, censoredWord + ":"
+                                + replacement);
+                    }
+                }
+                refreshCensorUI(messengerClient, reader, writer);
+            }
+        });
+        buttonPanel.add(addButton);
+        holder.add(buttonPanel, BorderLayout.SOUTH);
+
+        JButton onoffButton = new JButton("On / Off");
+        onoffButton.setSize(new Dimension(150, 30));
+        onoffButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent se) {
+                messengerClient.loggedOnUser.toggleRequestsCensorship(writer);
+
+                String message = String.format("Censoring Switched %s!",
+                        (messengerClient.loggedOnUser.isRequestsCensorship()) ? "ON" : "OFF");
+                JOptionPane.showMessageDialog(null, message);
+            }
+        });
+        buttonPanel.add(onoffButton);
+
+        messengerClient.container.add("Censored Words", holder);
+        messengerClient.cardLayout.show(messengerClient.container, "Censored Words");
     }
 }

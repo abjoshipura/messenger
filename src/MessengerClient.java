@@ -1264,13 +1264,13 @@ public class MessengerClient {
                                             if (!messengerClient.loggedOnUser.editMessage(reader,
                                                     writer, selectedMessage, selectedConversation, message)) {
                                                 JOptionPane.showMessageDialog(null,
-                                                        "Update Failed","Messenger",
+                                                        "Update Failed", "Messenger",
                                                         JOptionPane.ERROR_MESSAGE);
                                             }
                                         }
                                     } else {
                                         JOptionPane.showMessageDialog(null,
-                                                "You cannot message this user!","Messenger",
+                                                "You cannot message this user!", "Messenger",
                                                 JOptionPane.WARNING_MESSAGE);
                                     }
                                 } else {
@@ -1563,7 +1563,7 @@ public class MessengerClient {
 
                                     int sendResult = JOptionPane.showOptionDialog(null, sendHolder,
                                             "Send a Message",
-                                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,null,
+                                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null,
                                             sendOptions, null);
 
                                     String message = sendTextField.getText();
@@ -1587,7 +1587,7 @@ public class MessengerClient {
                                     }
                                 } else {
                                     JOptionPane.showMessageDialog(null,
-                                            "You cannot message this user!","Messenger",
+                                            "You cannot message this user!", "Messenger",
                                             JOptionPane.WARNING_MESSAGE);
                                 }
                             }
@@ -1741,7 +1741,7 @@ public class MessengerClient {
 
                                     int sendResult = JOptionPane.showOptionDialog(null, sendHolder,
                                             "Send a Message", JOptionPane.OK_CANCEL_OPTION,
-                                            JOptionPane.PLAIN_MESSAGE,null, sendOptions, null);
+                                            JOptionPane.PLAIN_MESSAGE, null, sendOptions, null);
 
                                     String message = sendTextField.getText();
                                     if (sendResult == 1 && !message.isEmpty()) {
@@ -1764,7 +1764,7 @@ public class MessengerClient {
                                     }
                                 } else {
                                     JOptionPane.showMessageDialog(null,
-                                            "You cannot message this user!","Messenger",
+                                            "You cannot message this user!", "Messenger",
                                             JOptionPane.WARNING_MESSAGE);
                                 }
                             }
@@ -1907,7 +1907,7 @@ public class MessengerClient {
 
                                     int sendResult = JOptionPane.showOptionDialog(null, sendHolder,
                                             "Send a Message", JOptionPane.OK_CANCEL_OPTION,
-                                            JOptionPane.PLAIN_MESSAGE,null, sendOptions, null);
+                                            JOptionPane.PLAIN_MESSAGE, null, sendOptions, null);
 
                                     String message = sendTextField.getText();
                                     if (sendResult == 1 && !message.isEmpty()) {
@@ -1930,7 +1930,7 @@ public class MessengerClient {
                                     }
                                 } else {
                                     JOptionPane.showMessageDialog(null,
-                                            "You cannot message this user!","Messenger",
+                                            "You cannot message this user!", "Messenger",
                                             JOptionPane.WARNING_MESSAGE);
                                 }
                             }
@@ -2099,7 +2099,7 @@ public class MessengerClient {
                                 }
                             } else {
                                 JOptionPane.showMessageDialog(null,
-                                        "You cannot message this user!","Messenger",
+                                        "You cannot message this user!", "Messenger",
                                         JOptionPane.WARNING_MESSAGE);
                             }
                         } else if (result == 1) {

@@ -90,7 +90,8 @@ public class MessengerClient {
      * @return Returns whether the .csv conversion and export succeeded
      * @throws IOException in the case of a conversion failure
      */
-    public static boolean convertConversationToCSV(BufferedReader reader, PrintWriter writer, Conversation conversation, User loggedOnUser) throws IOException {
+    public static boolean convertConversationToCSV(BufferedReader reader, PrintWriter writer, Conversation conversation,
+                                                   User loggedOnUser) throws IOException {
 
         Files.createDirectories(Paths.get("src/exports")); // Creates the subfolder exports if it does not exist
         File destinationFile = new File("src/exports");
@@ -123,10 +124,12 @@ public class MessengerClient {
      * @param loggedOnUser The active user
      * @return Returns the updated ArrayList&lt;Conversation&gt; conversations
      */
-    public static ArrayList<Conversation> refreshVisibleConversations(BufferedReader reader, PrintWriter writer, User loggedOnUser) {
+    public static ArrayList<Conversation> refreshVisibleConversations(BufferedReader reader, PrintWriter writer,
+                                                                      User loggedOnUser) {
         ArrayList<Conversation> conversations = new ArrayList<>();
 
-        String userString = (loggedOnUser instanceof Seller) ? ((Seller) loggedOnUser).detailedToString() : ((Customer) loggedOnUser).detailedToString();
+        String userString = (loggedOnUser instanceof Seller) ? ((Seller) loggedOnUser).detailedToString() :
+                ((Customer) loggedOnUser).detailedToString();
         String listConversationsRequest = "[LIST.VISIBLE_CONVERSATIONS]" + userString;
         sendRequest(writer, listConversationsRequest);
         String stringListOfConversations = readResponse(reader);
@@ -151,7 +154,8 @@ public class MessengerClient {
      * @param loggedOnUser The active user
      * @return Returns the updated ArrayList&lt;Message&gt; messages
      */
-    public static ArrayList<Message> refreshVisibleMessages(BufferedReader reader, PrintWriter writer, Conversation conversation, User loggedOnUser) {
+    public static ArrayList<Message> refreshVisibleMessages(BufferedReader reader, PrintWriter writer,
+                                                            Conversation conversation, User loggedOnUser) {
         ArrayList<Message> messages = new ArrayList<>();
 
         String listMessagesRequest = "[LIST.VISIBLE_MESSAGES]" + conversation + ";" + loggedOnUser;
@@ -231,7 +235,8 @@ public class MessengerClient {
      * @param loggedOnUser The active user
      * @return Returns the updated ArrayList&lt;Customer&gt; customers
      */
-    public static ArrayList<Customer> refreshSearchCustomers(BufferedReader reader, PrintWriter writer, User loggedOnUser, String searchKeyword) {
+    public static ArrayList<Customer> refreshSearchCustomers(BufferedReader reader, PrintWriter writer,
+                                                             User loggedOnUser, String searchKeyword) {
         ArrayList<Customer> customers = new ArrayList<>();
 
         String userString = ((Seller) loggedOnUser).detailedToString();
@@ -258,7 +263,8 @@ public class MessengerClient {
      * @param loggedOnUser The active user
      * @return Returns the updated ArrayList&lt;Seller&gt; sellers
      */
-    public static ArrayList<Seller> refreshSearchSellers(BufferedReader reader, PrintWriter writer, User loggedOnUser, String searchKeyword) {
+    public static ArrayList<Seller> refreshSearchSellers(BufferedReader reader, PrintWriter writer,
+                                                         User loggedOnUser, String searchKeyword) {
         ArrayList<Seller> sellers = new ArrayList<>();
 
         String userString = ((Customer) loggedOnUser).detailedToString();
@@ -376,8 +382,11 @@ public class MessengerClient {
                             String email = emailTextField.getText();
                             String password = passwordTextField.getText();
 
-                            if (username.isEmpty() || email.isEmpty() || password.isEmpty() || (!sellerOption.isSelected() && !customerOption.isSelected())) {
-                                JOptionPane.showMessageDialog(null, "Cannot Submit Incomplete Form", "Messenger", JOptionPane.ERROR_MESSAGE);
+                            if (username.isEmpty() || email.isEmpty() || password.isEmpty() ||
+                                    (!sellerOption.isSelected() && !customerOption.isSelected())) {
+                                JOptionPane.showMessageDialog(null,
+                                        "Cannot Submit Incomplete Form", "Messenger",
+                                        JOptionPane.ERROR_MESSAGE);
                             } else {
                                 String role = (sellerOption.isSelected()) ? "Seller" : "Customer";
                                 String checkUsernameRequest = "[CHECK.USERNAME]" + usernameTextField.getText();
@@ -389,12 +398,15 @@ public class MessengerClient {
                                 boolean isEmailRegistered = Boolean.parseBoolean(readResponse(reader));
 
                                 if (!(isUsernameTaken || isEmailRegistered)) {
-                                    String createAccountRequest = String.format("[CREATE.USER]%s, %s, %s, %s", username, email, password, role);
+                                    String createAccountRequest = String.format("[CREATE.USER]%s, %s, %s, %s",
+                                            username, email, password, role);
                                     sendRequest(writer, createAccountRequest);
                                     String response = readResponse(reader);
 
-                                    if (response != null && response.substring(0, response.indexOf("<")).equalsIgnoreCase("Seller")) {
-                                        messengerClient.loggedOnUser = new Seller(response, true, true);
+                                    if (response != null && response.substring(0, response.indexOf("<"))
+                                            .equalsIgnoreCase("Seller")) {
+                                        messengerClient.loggedOnUser = new Seller(response, true,
+                                                true);
                                     } else {
                                         messengerClient.loggedOnUser = new Customer(response, true);
                                     }
@@ -412,10 +424,12 @@ public class MessengerClient {
 
                                     showMainMenu(messengerClient, reader, writer);
                                 } else if (isUsernameTaken) {
-                                    JOptionPane.showMessageDialog(null, "Username already Taken", "Messenger", JOptionPane.ERROR_MESSAGE);
+                                    JOptionPane.showMessageDialog(null, "Username already Taken",
+                                            "Messenger", JOptionPane.ERROR_MESSAGE);
                                     usernameTextField.setText("");
                                 } else {
-                                    JOptionPane.showMessageDialog(null, "Email already Registered", "Messenger", JOptionPane.ERROR_MESSAGE);
+                                    JOptionPane.showMessageDialog(null, "Email already Registered"
+                                            , "Messenger", JOptionPane.ERROR_MESSAGE);
                                     emailTextField.setText("");
                                 }
                             }
@@ -476,7 +490,9 @@ public class MessengerClient {
                             String password = passwordTextField.getText();
 
                             if (username.isEmpty() || password.isEmpty()) {
-                                JOptionPane.showMessageDialog(null, "Cannot Submit Incomplete Form", "Messenger", JOptionPane.ERROR_MESSAGE);
+                                JOptionPane.showMessageDialog(null,
+                                        "Cannot Submit Incomplete Form", "Messenger",
+                                        JOptionPane.ERROR_MESSAGE);
                             } else {
                                 String checkUsernameRequest = "[CHECK.USERNAME]" + username;
                                 sendRequest(writer, checkUsernameRequest);
@@ -491,30 +507,40 @@ public class MessengerClient {
                                     sendRequest(writer, fetchAccountRequest);
                                     String fetchResponse = readResponse(reader);
 
-                                    if (fetchResponse != null && fetchResponse.substring(0, fetchResponse.indexOf("<")).equalsIgnoreCase("Seller")) {
-                                        messengerClient.loggedOnUser = new Seller(fetchResponse, true, true);
+                                    if (fetchResponse != null && fetchResponse.substring(0, fetchResponse.indexOf("<"))
+                                            .equalsIgnoreCase("Seller")) {
+                                        messengerClient.loggedOnUser = new Seller(fetchResponse, true,
+                                                true);
                                     } else {
                                         messengerClient.loggedOnUser = new Customer(fetchResponse, true);
                                     }
 
                                     if (messengerClient.loggedOnUser.getPassword().equals(password)) {
-                                        JOptionPane.showMessageDialog(null, String.format("Welcome back %s!", messengerClient.loggedOnUser.getUsername().toUpperCase()));
+                                        JOptionPane.showMessageDialog(null,
+                                                String.format("Welcome back %s!", messengerClient.loggedOnUser
+                                                        .getUsername().toUpperCase()));
 
                                         String fetchNumUnreadRequest;
                                         if (messengerClient.loggedOnUser instanceof Seller) {
-                                            fetchNumUnreadRequest = "[FETCH.UNREAD]" + ((Seller) messengerClient.loggedOnUser).detailedToString();
+                                            fetchNumUnreadRequest = "[FETCH.UNREAD]" +
+                                                    ((Seller) messengerClient.loggedOnUser).detailedToString();
                                         } else {
-                                            fetchNumUnreadRequest = "[FETCH.UNREAD]" + ((Customer) messengerClient.loggedOnUser).detailedToString();
+                                            fetchNumUnreadRequest = "[FETCH.UNREAD]" +
+                                                    ((Customer) messengerClient.loggedOnUser).detailedToString();
                                         }
                                         sendRequest(writer, fetchNumUnreadRequest);
                                         fetchResponse = readResponse(reader);
 
                                         if (fetchResponse != null && Integer.parseInt(fetchResponse) > 0) {
-                                            JOptionPane.showMessageDialog(null, String.format("You have %d new unread conversation%s", Integer.parseInt(fetchResponse), (Integer.parseInt(fetchResponse) != 1) ? "s" : ""));
+                                            JOptionPane.showMessageDialog(null,
+                                                    String.format("You have %d new unread conversation%s",
+                                                            Integer.parseInt(fetchResponse),
+                                                            (Integer.parseInt(fetchResponse) != 1) ? "s" : ""));
                                         }
                                         showMainMenu(messengerClient, reader, writer);
                                     } else {
-                                        JOptionPane.showMessageDialog(null, "Incorrect Password", "Messenger", JOptionPane.ERROR_MESSAGE);
+                                        JOptionPane.showMessageDialog(null, "Incorrect Password",
+                                                "Messenger", JOptionPane.ERROR_MESSAGE);
                                         passwordTextField.setText("");
                                     }
                                 } else {
@@ -615,9 +641,9 @@ public class MessengerClient {
 
                     searchHolder.add(new JPanel());
 
-                    int searchResult = JOptionPane.showOptionDialog(null, searchHolder, "Search Customers",
-                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
-                            null, searchOptions, null);
+                    int searchResult = JOptionPane.showOptionDialog(null, searchHolder,
+                            "Search Customers", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null,
+                            searchOptions, null);
 
                     String searchKeyword = searchTextField.getText();
                     if (searchResult == 1) {
@@ -705,9 +731,9 @@ public class MessengerClient {
 
                     searchHolder.add(new JPanel());
 
-                    int searchResult = JOptionPane.showOptionDialog(null, searchHolder, "Search Sellers",
-                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
-                            null, searchOptions, null);
+                    int searchResult = JOptionPane.showOptionDialog(null, searchHolder,
+                            "Search Sellers", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null,
+                            searchOptions, null);
 
                     String searchKeyword = searchTextField.getText();
                     if (searchResult == 1) {
@@ -782,9 +808,9 @@ public class MessengerClient {
 
                 usernameHolder.add(new JPanel());
 
-                int usernameResult = JOptionPane.showOptionDialog(null, usernameHolder, "Change Username",
-                        JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
-                        null, usernameOptions, null);
+                int usernameResult = JOptionPane.showOptionDialog(null, usernameHolder,
+                        "Change Username", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null,
+                        usernameOptions, null);
 
                 if (usernameResult == 1) {
                     String username = usernameTextField.getText();
@@ -839,9 +865,9 @@ public class MessengerClient {
                 JPasswordField confirmNewPasswordTextField = new JPasswordField(20);
                 passwordHolder.add(confirmNewPasswordTextField);
 
-                int passwordResult = JOptionPane.showOptionDialog(null, passwordHolder, "Change Password",
-                        JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
-                        null, passwordOptions, null);
+                int passwordResult = JOptionPane.showOptionDialog(null, passwordHolder,
+                        "Change Password", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE, null,
+                        passwordOptions, null);
 
                 String currentPassword = String.valueOf(passwordTextField.getPassword());
                 String newPassword = String.valueOf(newPasswordTextField.getPassword());
@@ -1080,7 +1106,8 @@ public class MessengerClient {
                     @Override
                     public void actionPerformed(ActionEvent e) {
                         Conversation selectedConversation = null;
-                        messengerClient.conversations = refreshVisibleConversations(reader, writer, messengerClient.loggedOnUser);
+                        messengerClient.conversations = refreshVisibleConversations(reader, writer,
+                                messengerClient.loggedOnUser);
                         for (Conversation iteratedConversation : messengerClient.conversations) {
                             if (iteratedConversation.equals(conversation)) {
                                 selectedConversation = iteratedConversation;
@@ -1125,7 +1152,9 @@ public class MessengerClient {
         messengerClient.cardLayout.show(messengerClient.container, "List Conversations");
     }
 
-    public static void refreshMessagesUI(MessengerClient messengerClient, BufferedReader reader, PrintWriter writer, Conversation conversation) {
+
+    public static void refreshMessagesUI(MessengerClient messengerClient, BufferedReader reader,
+                                         PrintWriter writer, Conversation conversation) {
         messengerClient.jFrame.setTitle(conversation.getConversationID());
         messengerClient.jFrame.setSize(700, 300);
         messengerClient.messages = refreshVisibleMessages(reader, writer, conversation,
@@ -1157,13 +1186,15 @@ public class MessengerClient {
                 @Override
                 public void valueChanged(ListSelectionEvent e) {
                     Conversation selectedConversation = null;
-                    messengerClient.conversations = refreshVisibleConversations(reader, writer, messengerClient.loggedOnUser);
+                    messengerClient.conversations = refreshVisibleConversations(reader, writer,
+                            messengerClient.loggedOnUser);
                     for (Conversation iteratedConversation : messengerClient.conversations) {
                         if (iteratedConversation.equals(conversation)) {
                             selectedConversation = iteratedConversation;
                         }
                     }
-                    messengerClient.messages = refreshVisibleMessages(reader, writer, selectedConversation, messengerClient.loggedOnUser);
+                    messengerClient.messages = refreshVisibleMessages(reader, writer, selectedConversation,
+                            messengerClient.loggedOnUser);
 
                     Message selectedMessage = messengerClient.messages.get(e.getLastIndex());
 
@@ -1184,7 +1215,8 @@ public class MessengerClient {
                             null, userActions, null);
 
                     if (result == 1) {
-                        if (!messengerClient.loggedOnUser.deleteMessage(reader, writer, selectedMessage, selectedConversation)) {
+                        if (!messengerClient.loggedOnUser.deleteMessage(reader, writer, selectedMessage,
+                                selectedConversation)) {
                             JOptionPane.showMessageDialog(null, "Could Not Delete Message",
                                     "Messenger", JOptionPane.WARNING_MESSAGE);
                         }
@@ -1204,13 +1236,14 @@ public class MessengerClient {
 
                             sendHolder.add(new JPanel());
 
-                            int sendResult = JOptionPane.showOptionDialog(null, sendHolder, "Edit a Message",
-                                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                            int sendResult = JOptionPane.showOptionDialog(null, sendHolder,
+                                    "Edit a Message", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
                                     null, sendOptions, null);
 
                             if (sendResult == 1) {
                                 selectedConversation = null;
-                                messengerClient.conversations = refreshVisibleConversations(reader, writer, messengerClient.loggedOnUser);
+                                messengerClient.conversations = refreshVisibleConversations(reader, writer,
+                                        messengerClient.loggedOnUser);
                                 for (Conversation iteratedConversation : messengerClient.conversations) {
                                     if (iteratedConversation.equals(conversation)) {
                                         selectedConversation = iteratedConversation;
@@ -1225,27 +1258,32 @@ public class MessengerClient {
                                     if (!recipient.getBlockedUsers().contains(messengerClient.loggedOnUser) &&
                                             !messengerClient.loggedOnUser.getBlockedUsers().contains(recipient)) {
                                         if (message.isEmpty()) {
-                                            JOptionPane.showMessageDialog(null, "Not Sent. Empty Message");
+                                            JOptionPane.showMessageDialog(null,
+                                                    "Not Sent. Empty Message");
                                         } else {
                                             if (!messengerClient.loggedOnUser.editMessage(reader,
                                                     writer, selectedMessage, selectedConversation, message)) {
-                                                JOptionPane.showMessageDialog(null, "Update Failed",
-                                                        "Messenger", JOptionPane.ERROR_MESSAGE);
+                                                JOptionPane.showMessageDialog(null,
+                                                        "Update Failed","Messenger",
+                                                        JOptionPane.ERROR_MESSAGE);
                                             }
                                         }
                                     } else {
-                                        JOptionPane.showMessageDialog(null, "You cannot message this user!",
-                                                "Messenger", JOptionPane.WARNING_MESSAGE);
+                                        JOptionPane.showMessageDialog(null,
+                                                "You cannot message this user!","Messenger",
+                                                JOptionPane.WARNING_MESSAGE);
                                     }
                                 } else {
                                     refreshConversationsUI(messengerClient, reader, writer);
-                                    JOptionPane.showMessageDialog(null, "You cannot view this conversation!",
-                                            "Messenger", JOptionPane.WARNING_MESSAGE);
+                                    JOptionPane.showMessageDialog(null,
+                                            "You cannot view this conversation!", "Messenger",
+                                            JOptionPane.WARNING_MESSAGE);
                                 }
                             }
                         } else {
-                            JOptionPane.showMessageDialog(null, "You cannot edit received messages!",
-                                    "Messenger", JOptionPane.WARNING_MESSAGE);
+                            JOptionPane.showMessageDialog(null,
+                                    "You cannot edit received messages!", "Messenger",
+                                    JOptionPane.WARNING_MESSAGE);
                         }
                     }
                     selectedConversation = null;
@@ -1300,7 +1338,8 @@ public class MessengerClient {
                     convertConversationToCSV(reader, writer, conversation, messengerClient.loggedOnUser);
                     JOptionPane.showMessageDialog(null, "Exported to src/exports!");
                 } catch (IOException ex) {
-                    JOptionPane.showMessageDialog(null, "Could Not Convert", "Messenger", JOptionPane.ERROR_MESSAGE);
+                    JOptionPane.showMessageDialog(null, "Could Not Convert", "Messenger",
+                            JOptionPane.ERROR_MESSAGE);
                 }
             }
         });
@@ -1312,7 +1351,8 @@ public class MessengerClient {
             @Override
             public void actionPerformed(ActionEvent e) {
                 Conversation selectedConversation = null;
-                messengerClient.conversations = refreshVisibleConversations(reader, writer, messengerClient.loggedOnUser);
+                messengerClient.conversations = refreshVisibleConversations(reader, writer,
+                        messengerClient.loggedOnUser);
                 for (Conversation iteratedConversation : messengerClient.conversations) {
                     if (iteratedConversation.equals(conversation)) {
                         selectedConversation = iteratedConversation;
@@ -1339,14 +1379,15 @@ public class MessengerClient {
 
                         sendHolder.add(new JPanel());
 
-                        int sendResult = JOptionPane.showOptionDialog(null, sendHolder, "Import a .TXT",
-                                JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                        int sendResult = JOptionPane.showOptionDialog(null, sendHolder,
+                                "Import a .TXT", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
                                 null, sendOptions, null);
 
                         String filePath = sendTextField.getText();
                         if (sendResult == 1 && !filePath.isEmpty()) {
                             selectedConversation = null;
-                            messengerClient.conversations = refreshVisibleConversations(reader, writer, messengerClient.loggedOnUser);
+                            messengerClient.conversations = refreshVisibleConversations(reader, writer,
+                                    messengerClient.loggedOnUser);
                             for (Conversation iteratedConversation : messengerClient.conversations) {
                                 if (iteratedConversation.equals(conversation)) {
                                     selectedConversation = iteratedConversation;
@@ -1359,8 +1400,9 @@ public class MessengerClient {
 
                                 if (!selectedConversation.importTXT(reader, writer, filePath,
                                         messengerClient.loggedOnUser, recipient)) {
-                                    JOptionPane.showMessageDialog(null, "Import Failed. Check the entered path.",
-                                            "Messenger", JOptionPane.WARNING_MESSAGE);
+                                    JOptionPane.showMessageDialog(null,
+                                            "Import Failed. Check the entered path.", "Messenger",
+                                            JOptionPane.WARNING_MESSAGE);
                                 }
                             }
                         }
@@ -1386,7 +1428,8 @@ public class MessengerClient {
             @Override
             public void actionPerformed(ActionEvent e) {
                 Conversation selectedConversation = null;
-                messengerClient.conversations = refreshVisibleConversations(reader, writer, messengerClient.loggedOnUser);
+                messengerClient.conversations = refreshVisibleConversations(reader, writer,
+                        messengerClient.loggedOnUser);
                 for (Conversation iteratedConversation : messengerClient.conversations) {
                     if (iteratedConversation.equals(conversation)) {
                         selectedConversation = iteratedConversation;
@@ -1429,7 +1472,8 @@ public class MessengerClient {
             @Override
             public void actionPerformed(ActionEvent e) {
                 Conversation selectedConversation = null;
-                messengerClient.conversations = refreshVisibleConversations(reader, writer, messengerClient.loggedOnUser);
+                messengerClient.conversations = refreshVisibleConversations(reader, writer,
+                        messengerClient.loggedOnUser);
                 for (Conversation iteratedConversation : messengerClient.conversations) {
                     if (iteratedConversation.equals(conversation)) {
                         selectedConversation = iteratedConversation;
@@ -1517,13 +1561,15 @@ public class MessengerClient {
 
                                     sendHolder.add(new JPanel());
 
-                                    int sendResult = JOptionPane.showOptionDialog(null, sendHolder, "Send a Message",
-                                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
-                                            null, sendOptions, null);
+                                    int sendResult = JOptionPane.showOptionDialog(null, sendHolder,
+                                            "Send a Message",
+                                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,null,
+                                            sendOptions, null);
 
                                     String message = sendTextField.getText();
                                     if (sendResult == 1 && !message.isEmpty()) {
-                                        messengerClient.customers = refreshCustomers(reader, writer, messengerClient.loggedOnUser);
+                                        messengerClient.customers = refreshCustomers(reader, writer,
+                                                messengerClient.loggedOnUser);
                                         selectedCustomer = null;
                                         for (Customer iteratedCustomer : messengerClient.customers) {
                                             if (iteratedCustomer.equals(customer)) {
@@ -1531,15 +1577,18 @@ public class MessengerClient {
                                             }
                                         }
 
-                                        if (messengerClient.loggedOnUser.sendMessageToUser(reader, writer, message, selectedCustomer)) {
+                                        if (messengerClient.loggedOnUser.sendMessageToUser(reader, writer, message,
+                                                selectedCustomer)) {
                                             JOptionPane.showMessageDialog(null, "Sent!");
                                         } else {
-                                            JOptionPane.showMessageDialog(null, "Message Failed!");
+                                            JOptionPane.showMessageDialog(null,
+                                                    "Message Failed!");
                                         }
                                     }
                                 } else {
-                                    JOptionPane.showMessageDialog(null, "You cannot message this user!",
-                                            "Messenger", JOptionPane.WARNING_MESSAGE);
+                                    JOptionPane.showMessageDialog(null,
+                                            "You cannot message this user!","Messenger",
+                                            JOptionPane.WARNING_MESSAGE);
                                 }
                             }
                         } else if (result == 1) {
@@ -1673,8 +1722,9 @@ public class MessengerClient {
                             }
 
                             if (selectedStore != null) {
-                                if (!selectedStore.getSeller().getBlockedUsers().contains(messengerClient.loggedOnUser) &&
-                                        !messengerClient.loggedOnUser.getBlockedUsers().contains(selectedStore.getSeller())) {
+                                if (!selectedStore.getSeller().getBlockedUsers().contains(messengerClient.loggedOnUser)
+                                        && !messengerClient.loggedOnUser.getBlockedUsers()
+                                        .contains(selectedStore.getSeller())) {
                                     Object[] sendOptions = {"Cancel", "Send"};
 
                                     JPanel sendHolder = new JPanel(new GridLayout(0, 1));
@@ -1689,13 +1739,14 @@ public class MessengerClient {
 
                                     sendHolder.add(new JPanel());
 
-                                    int sendResult = JOptionPane.showOptionDialog(null, sendHolder, "Send a Message",
-                                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
-                                            null, sendOptions, null);
+                                    int sendResult = JOptionPane.showOptionDialog(null, sendHolder,
+                                            "Send a Message", JOptionPane.OK_CANCEL_OPTION,
+                                            JOptionPane.PLAIN_MESSAGE,null, sendOptions, null);
 
                                     String message = sendTextField.getText();
                                     if (sendResult == 1 && !message.isEmpty()) {
-                                        messengerClient.stores = refreshStores(reader, writer, messengerClient.loggedOnUser);
+                                        messengerClient.stores = refreshStores(reader, writer,
+                                                messengerClient.loggedOnUser);
                                         selectedStore = null;
                                         for (Store iteratedStore : messengerClient.stores) {
                                             if (iteratedStore.equals(store)) {
@@ -1703,15 +1754,18 @@ public class MessengerClient {
                                             }
                                         }
 
-                                        if (messengerClient.loggedOnUser.sendMessageToUser(reader, writer, message, selectedStore.getSeller())) {
+                                        if (messengerClient.loggedOnUser.sendMessageToUser(reader, writer, message,
+                                                selectedStore.getSeller())) {
                                             JOptionPane.showMessageDialog(null, "Sent!");
                                         } else {
-                                            JOptionPane.showMessageDialog(null, "Message Failed!");
+                                            JOptionPane.showMessageDialog(null,
+                                                    "Message Failed!");
                                         }
                                     }
                                 } else {
-                                    JOptionPane.showMessageDialog(null, "You cannot message this user!",
-                                            "Messenger", JOptionPane.WARNING_MESSAGE);
+                                    JOptionPane.showMessageDialog(null,
+                                            "You cannot message this user!","Messenger",
+                                            JOptionPane.WARNING_MESSAGE);
                                 }
                             }
                         } else if (result == 1) {
@@ -1784,7 +1838,8 @@ public class MessengerClient {
         messengerClient.cardLayout.show(messengerClient.container, "List Stores");
     }
 
-    public static void refreshSearchCustomersUI(MessengerClient messengerClient, BufferedReader reader, PrintWriter writer, String searchKeyword) {
+    public static void refreshSearchCustomersUI(MessengerClient messengerClient, BufferedReader reader,
+                                                PrintWriter writer, String searchKeyword) {
         messengerClient.jFrame.setTitle("Messenger: Customer Search Results");
         messengerClient.searchCustomers = refreshSearchCustomers(reader, writer,
                 messengerClient.loggedOnUser, searchKeyword);
@@ -1824,7 +1879,8 @@ public class MessengerClient {
                                 JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
                                 null, userActions, null);
                         if (result == 0) {
-                            messengerClient.searchCustomers = refreshSearchCustomers(reader, writer, messengerClient.loggedOnUser, searchKeyword);
+                            messengerClient.searchCustomers = refreshSearchCustomers(reader, writer,
+                                    messengerClient.loggedOnUser, searchKeyword);
                             Customer selectedCustomer = null;
                             for (Customer iteratedCustomer : messengerClient.searchCustomers) {
                                 if (iteratedCustomer.equals(customer)) {
@@ -1849,13 +1905,14 @@ public class MessengerClient {
 
                                     sendHolder.add(new JPanel());
 
-                                    int sendResult = JOptionPane.showOptionDialog(null, sendHolder, "Send a Message",
-                                            JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
-                                            null, sendOptions, null);
+                                    int sendResult = JOptionPane.showOptionDialog(null, sendHolder,
+                                            "Send a Message", JOptionPane.OK_CANCEL_OPTION,
+                                            JOptionPane.PLAIN_MESSAGE,null, sendOptions, null);
 
                                     String message = sendTextField.getText();
                                     if (sendResult == 1 && !message.isEmpty()) {
-                                        messengerClient.searchCustomers = refreshSearchCustomers(reader, writer, messengerClient.loggedOnUser, searchKeyword);
+                                        messengerClient.searchCustomers = refreshSearchCustomers(reader, writer,
+                                                messengerClient.loggedOnUser, searchKeyword);
                                         selectedCustomer = null;
                                         for (Customer iteratedCustomer : messengerClient.searchCustomers) {
                                             if (iteratedCustomer.equals(customer)) {
@@ -1863,19 +1920,23 @@ public class MessengerClient {
                                             }
                                         }
 
-                                        if (messengerClient.loggedOnUser.sendMessageToUser(reader, writer, message, selectedCustomer)) {
+                                        if (messengerClient.loggedOnUser.sendMessageToUser(reader, writer, message,
+                                                selectedCustomer)) {
                                             JOptionPane.showMessageDialog(null, "Sent!");
                                         } else {
-                                            JOptionPane.showMessageDialog(null, "Message Failed!");
+                                            JOptionPane.showMessageDialog(null,
+                                                    "Message Failed!");
                                         }
                                     }
                                 } else {
-                                    JOptionPane.showMessageDialog(null, "You cannot message this user!",
-                                            "Messenger", JOptionPane.WARNING_MESSAGE);
+                                    JOptionPane.showMessageDialog(null,
+                                            "You cannot message this user!","Messenger",
+                                            JOptionPane.WARNING_MESSAGE);
                                 }
                             }
                         } else if (result == 1) {
-                            messengerClient.searchCustomers = refreshSearchCustomers(reader, writer, messengerClient.loggedOnUser, searchKeyword);
+                            messengerClient.searchCustomers = refreshSearchCustomers(reader, writer,
+                                    messengerClient.loggedOnUser, searchKeyword);
                             Customer selectedCustomer = null;
                             for (Customer iteratedCustomer : messengerClient.searchCustomers) {
                                 if (iteratedCustomer.equals(customer)) {
@@ -1892,7 +1953,8 @@ public class MessengerClient {
                                 }
                             }
                         } else if (result == 2) {
-                            messengerClient.searchCustomers = refreshSearchCustomers(reader, writer, messengerClient.loggedOnUser, searchKeyword);
+                            messengerClient.searchCustomers = refreshSearchCustomers(reader, writer,
+                                    messengerClient.loggedOnUser, searchKeyword);
                             Customer selectedCustomer = null;
                             for (Customer iteratedCustomer : messengerClient.searchCustomers) {
                                 if (iteratedCustomer.equals(customer)) {
@@ -1944,7 +2006,8 @@ public class MessengerClient {
         messengerClient.cardLayout.show(messengerClient.container, "Search Customers");
     }
 
-    public static void refreshSearchSellersUI(MessengerClient messengerClient, BufferedReader reader, PrintWriter writer, String searchKeyword) {
+    public static void refreshSearchSellersUI(MessengerClient messengerClient, BufferedReader reader,
+                                              PrintWriter writer, String searchKeyword) {
         messengerClient.jFrame.setTitle("Messenger: Seller Search Results");
         messengerClient.searchSellers = refreshSearchSellers(reader, writer,
                 messengerClient.loggedOnUser, searchKeyword);
@@ -1984,7 +2047,8 @@ public class MessengerClient {
                                 JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
                                 null, userActions, null);
                         if (result == 0) {
-                            messengerClient.searchSellers = refreshSearchSellers(reader, writer, messengerClient.loggedOnUser, searchKeyword);
+                            messengerClient.searchSellers = refreshSearchSellers(reader, writer,
+                                    messengerClient.loggedOnUser, searchKeyword);
                             Seller selectedSeller = null;
                             for (Seller iteratedSeller : messengerClient.searchSellers) {
                                 if (iteratedSeller.equals(seller)) {
@@ -2008,13 +2072,14 @@ public class MessengerClient {
 
                                 sendHolder.add(new JPanel());
 
-                                int sendResult = JOptionPane.showOptionDialog(null, sendHolder, "Send a Message",
-                                        JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
+                                int sendResult = JOptionPane.showOptionDialog(null, sendHolder,
+                                        "Send a Message", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE,
                                         null, sendOptions, null);
 
                                 String message = sendTextField.getText();
                                 if (sendResult == 1 && !message.isEmpty()) {
-                                    messengerClient.searchSellers = refreshSearchSellers(reader, writer, messengerClient.loggedOnUser, searchKeyword);
+                                    messengerClient.searchSellers = refreshSearchSellers(reader, writer,
+                                            messengerClient.loggedOnUser, searchKeyword);
                                     selectedSeller = null;
                                     for (Seller iteratedSeller : messengerClient.searchSellers) {
                                         if (iteratedSeller.equals(seller)) {
@@ -2023,19 +2088,23 @@ public class MessengerClient {
                                     }
 
                                     if (selectedSeller != null) {
-                                        if (messengerClient.loggedOnUser.sendMessageToUser(reader, writer, message, seller)) {
+                                        if (messengerClient.loggedOnUser.sendMessageToUser(reader, writer, message,
+                                                seller)) {
                                             JOptionPane.showMessageDialog(null, "Sent!");
                                         } else {
-                                            JOptionPane.showMessageDialog(null, "Message Failed!");
+                                            JOptionPane.showMessageDialog(null,
+                                                    "Message Failed!");
                                         }
                                     }
                                 }
                             } else {
-                                JOptionPane.showMessageDialog(null, "You cannot message this user!",
-                                        "Messenger", JOptionPane.WARNING_MESSAGE);
+                                JOptionPane.showMessageDialog(null,
+                                        "You cannot message this user!","Messenger",
+                                        JOptionPane.WARNING_MESSAGE);
                             }
                         } else if (result == 1) {
-                            messengerClient.searchSellers = refreshSearchSellers(reader, writer, messengerClient.loggedOnUser, searchKeyword);
+                            messengerClient.searchSellers = refreshSearchSellers(reader, writer,
+                                    messengerClient.loggedOnUser, searchKeyword);
                             Seller selectedSeller = null;
                             for (Seller iteratedSeller : messengerClient.searchSellers) {
                                 if (iteratedSeller.equals(seller)) {
@@ -2052,7 +2121,8 @@ public class MessengerClient {
                                 }
                             }
                         } else if (result == 2) {
-                            messengerClient.searchSellers = refreshSearchSellers(reader, writer, messengerClient.loggedOnUser, searchKeyword);
+                            messengerClient.searchSellers = refreshSearchSellers(reader, writer,
+                                    messengerClient.loggedOnUser, searchKeyword);
                             Seller selectedSeller = null;
                             for (Seller iteratedSeller : messengerClient.searchSellers) {
                                 if (iteratedSeller.equals(seller)) {
@@ -2104,7 +2174,8 @@ public class MessengerClient {
         messengerClient.cardLayout.show(messengerClient.container, "Search Sellers");
     }
 
-    public static void refreshManageBlockedUI(MessengerClient messengerClient, BufferedReader reader, PrintWriter writer) {
+    public static void refreshManageBlockedUI(MessengerClient messengerClient, BufferedReader reader,
+                                              PrintWriter writer) {
         messengerClient.jFrame.setTitle("Manage Blocked Users");
         JPanel holder = new JPanel(new BorderLayout());
         JPanel userPanel = new JPanel(new GridLayout(0, 1, 0, 10));
@@ -2174,7 +2245,8 @@ public class MessengerClient {
         messengerClient.cardLayout.show(messengerClient.container, "Manage Blocked Users");
     }
 
-    public static void refreshManageInvisibleUI(MessengerClient messengerClient, BufferedReader reader, PrintWriter writer) {
+    public static void refreshManageInvisibleUI(MessengerClient messengerClient, BufferedReader reader,
+                                                PrintWriter writer) {
         messengerClient.jFrame.setTitle("Manage Invisible to Users");
         JPanel holder = new JPanel(new BorderLayout());
         JPanel userPanel = new JPanel(new GridLayout(0, 1, 0, 10));
@@ -2200,8 +2272,8 @@ public class MessengerClient {
 
                         holder.add(new JPanel());
 
-                        int result = JOptionPane.showOptionDialog(null, holder, "Become Visible to User",
-                                JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE,
+                        int result = JOptionPane.showOptionDialog(null, holder,
+                                "Become Visible to User", JOptionPane.YES_NO_OPTION, JOptionPane.PLAIN_MESSAGE,
                                 null, userActions, null);
                         if (result == 1) {
                             messengerClient.loggedOnUser.removeInvisibleUser(writer, selectedUser);

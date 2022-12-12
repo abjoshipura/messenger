@@ -267,7 +267,7 @@
 ### Test 22: User Imports .txt File as Message to Selected Conversation
 **Steps**:
 1. After Test 18, user selects existing conversation to send message from a .txt file to.
-2. User selects the "Export a TXT" button.
+2. User selects the "Import a TXT" button.
 3. User selects the ".txt File Source" text field.
 4. User enters source of .txt file via the keyboard.
 5. User selects the "Send" button.
@@ -285,9 +285,26 @@
 
 **Test Status**: Passed.
 
-### Test 24: Multithreading and Synchronization?
+### Test 24: Multithreading
 **Steps**:
+1. User runs server.
+2. User generates two separate instances of application.
 
-**Expected Result**:
+**Expected Result**: There should be two windows of the application opened. Each window is used by a separate user.
 
-**Test Status**:
+**Test Status**: Passed.
+
+### Test 25: Synchronization
+**Steps**:
+1. After Test 24, let a different user log into the application in each window, one being a customer and the other being a seller.
+2. User 1 starts a conversation with User 2.
+3. In the conversation, User 2 sends a message to User 1.
+4. User 1 selects the "Refresh" button to view updates on their side of the conversation.
+5. User 1 send a message to User 2.
+6. User 2 selects the "Refresh" button to view updates on their side of the conversation.
+7. User 1 blocks User 2.
+8. User 2 attempts to send a message to User 1.
+
+**Expected Result**: Each user should be able to view content updates after selecting the "Refresh" button. After User 1 blocks User 2, User 2 should not be able to send a message to them.
+
+**Test Status**: Passed.
